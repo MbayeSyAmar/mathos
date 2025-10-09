@@ -149,6 +149,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       await signOut(auth)
+      // Supprimer le cookie de session
+      document.cookie = "session=; path=/; max-age=0"
+      // Supprimer les données mock
+      localStorage.removeItem('mockUser')
     } catch (error) {
       console.error("Logout error:", error)
       throw error

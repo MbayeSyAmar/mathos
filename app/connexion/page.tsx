@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
 
@@ -18,57 +18,86 @@ export default function ConnexionPage() {
   const redirect = searchParams.get("redirect") || "/dashboard"
 
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("demo@mathosphere.fr")
+  const [password, setPassword] = useState("mathosphere123")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
   const { login } = useAuth()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault()
-  setIsLoading(true)
-  setError("")
+    e.preventDefault()
+    setIsLoading(true)
+    setError("")
 
-  try {
-    // 1️⃣ Connexion Firebase
-    const user = await login(email, password)
-    console.log("User logged in:", user)
+    try {
+      // Pour les identifiants de démonstration, simuler une connexion réussie
+      if (email === "demo@mathosphere.fr" && password === "mathosphere123") {
+        // Attendre un peu pour simuler une connexion
+        await new Promise((resolve) => setTimeout(resolve, 800))
+        
+        // Stocker les informations utilisateur en localStorage pour simulation
+        localStorage.setItem('mockUser', JSON.stringify({
+          id: 'user1',
+          email: email,
+          name: 'Utilisateur Démo',
+          role: 'student'
+        }))
+        
+        // Créer un cookie de session
+        document.cookie = `session=demo_user_${Date.now()}; path=/; max-age=86400`
+        
+        router.push(redirect)
+        return
+      }
 
-    // 2️⃣ Récupération du rôle
-    const res = await fetch(`/api/getUserRole?uid=${user.uid}`)
-    console.log("Role fetch status:", res.status)
+      // Autres comptes de test
+      if (email === "etudiant@test.fr" && password === "test123") {
+        await new Promise((resolve) => setTimeout(resolve, 800))
+        localStorage.setItem('mockUser', JSON.stringify({
+          id: 'user2',
+          email: email,
+          name: 'Étudiant Test',
+          role: 'student'
+        }))
+        // Créer un cookie de session
+        document.cookie = `session=student_user_${Date.now()}; path=/; max-age=86400`
+        router.push(redirect)
+        return
+      }
 
-    if (!res.ok) throw new Error("Impossible de récupérer le rôle utilisateur")
+      if (email === "prof@mathosphere.fr" && password === "prof123") {
+        await new Promise((resolve) => setTimeout(resolve, 800))
+        localStorage.setItem('mockUser', JSON.stringify({
+          id: 'user3',
+          email: email,
+          name: 'Professeur Démo',
+          role: 'teacher'
+        }))
+        // Créer un cookie de session
+        document.cookie = `session=teacher_user_${Date.now()}; path=/; max-age=86400`
+        router.push(redirect)
+        return
+      }
 
-    const data = await res.json()
-    console.log("Role data:", data)
-
-    const role = data.role || "student" // fallback si role manquant
-    console.log("Redirecting role:", role)
-
-    // 3️⃣ Redirection sécurisée
-    switch (role) {
-      case "student":
-        router.push("/dashboard")
-        break
-      case "teacher":
-        router.push("/admin/professeur")
-        break
-      case "admin":
-        router.push("/admin/super")
-        break
-      default:
-        router.push("/dashboard")
+      // Pour les autres identifiants, essayer Firebase Authentication
+      try {
+        await login(email, password)
+        // Créer un cookie de session pour Firebase auth
+        document.cookie = `session=firebase_user_${Date.now()}; path=/; max-age=86400`
+        router.push(redirect)
+      } catch (firebaseError) {
+        console.error("Firebase login error:", firebaseError)
+        setError("Identifiants incorrects. Utilisez un compte de démo : demo@mathosphere.fr / mathosphere123")
+        return
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      setError("Erreur de connexion. Identifiants de démo : demo@mathosphere.fr / mathosphere123")
+    } finally {
+      setIsLoading(false)
     }
-  } catch (error: any) {
-    console.error("Login error:", error)
-    setError(error?.message || "Email ou mot de passe incorrect.")
-  } finally {
-    setIsLoading(false)
   }
-}
-
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
@@ -170,6 +199,23 @@ export default function ConnexionPage() {
                   Inscrivez-vous
                 </Link>
               </p>
+              <div className="text-xs text-center text-muted-foreground border-t pt-4 mt-2">
+                <p className="mb-2">Identifiants de démonstration :</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mb-2"
+                  onClick={() => {
+                    setEmail("demo@mathosphere.fr")
+                    setPassword("mathosphere123")
+                  }}
+                >
+                  Remplir les identifiants de démo
+                </Button>
+                <p className="text-xs mt-2">Email : demo@mathosphere.fr</p>
+                <p className="text-xs">Mot de passe : mathosphere123</p>
+              </div>
             </CardFooter>
           </form>
         </Card>
