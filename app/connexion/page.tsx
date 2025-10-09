@@ -193,12 +193,20 @@ export default function ConnexionPage() {
                   </>
                 )}
               </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                Vous n'avez pas de compte ?{" "}
-                <Link href="/inscription" className="text-primary hover:underline">
-                  Inscrivez-vous
-                </Link>
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-center text-muted-foreground">
+                  Vous n'avez pas de compte ?{" "}
+                  <Link href="/inscription" className="text-primary hover:underline">
+                    Inscrivez-vous
+                  </Link>
+                </p>
+                <p className="text-sm text-center text-muted-foreground">
+                  Vous êtes administrateur ?{" "}
+                  <Link href="/admin/login" className="text-primary hover:underline font-medium">
+                    Connexion admin
+                  </Link>
+                </p>
+              </div>
               <div className="text-xs text-center text-muted-foreground border-t pt-4 mt-2">
                 <p className="mb-2">Identifiants de démonstration :</p>
                 <Button
