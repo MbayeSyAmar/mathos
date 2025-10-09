@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
 
@@ -26,38 +26,49 @@ export default function ConnexionPage() {
   const { login } = useAuth()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  e.preventDefault()
+  setIsLoading(true)
+  setError("")
 
-    try {
-      // Connexion réelle avec Firebase
-      const user = await login(email, password)
-      const userId = user.uid
+  try {
+    // 1️⃣ Connexion Firebase
+    const user = await login(email, password)
+    console.log("User logged in:", user)
 
-      // Récupérer le rôle depuis la base de données via une API route
-      let role = null
-      if (userId) {
-        const res = await fetch(`/api/getUserRole?uid=${userId}`)
-        if (!res.ok) throw new Error("Impossible de récupérer le rôle utilisateur")
-        const data = await res.json()
-        role = data.role
-      }
+    // 2️⃣ Récupération du rôle
+    const res = await fetch(`/api/getUserRole?uid=${user.uid}`)
+    console.log("Role fetch status:", res.status)
 
-      if (!role) throw new Error("Aucun rôle défini pour cet utilisateur")
+    if (!res.ok) throw new Error("Impossible de récupérer le rôle utilisateur")
 
-      // Redirection selon le rôle
-      if (role === "student") router.push("/dashboard")
-      else if (role === "teacher") router.push("/admin/professeur")
-      else if (role === "admin") router.push("/admin/super")
-      else router.push("/dashboard")
-    } catch (error: any) {
-      console.error("Login error:", error)
-      setError(error?.message || "Email ou mot de passe incorrect.")
-    } finally {
-      setIsLoading(false)
+    const data = await res.json()
+    console.log("Role data:", data)
+
+    const role = data.role || "student" // fallback si role manquant
+    console.log("Redirecting role:", role)
+
+    // 3️⃣ Redirection sécurisée
+    switch (role) {
+      case "student":
+        router.push("/dashboard")
+        break
+      case "teacher":
+        router.push("/admin/professeur")
+        break
+      case "admin":
+        router.push("/admin/super")
+        break
+      default:
+        router.push("/dashboard")
     }
+  } catch (error: any) {
+    console.error("Login error:", error)
+    setError(error?.message || "Email ou mot de passe incorrect.")
+  } finally {
+    setIsLoading(false)
   }
+}
+
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
