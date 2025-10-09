@@ -11,11 +11,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 export default function ConnexionPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get("redirect") || "/dashboard"
+  const from = searchParams.get("from")
 
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("demo@mathosphere.fr")
@@ -24,6 +26,27 @@ export default function ConnexionPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   const { login } = useAuth()
+
+  // Fonction pour rediriger selon le rôle
+  const redirectByRole = (role: string) => {
+    if (from && !from.includes('/dashboard') && !from.includes('/admin')) {
+      return from
+    }
+    
+    switch (role) {
+      case 'super_admin':
+        return '/admin/super/dashboard'
+      case 'teacher':
+        return '/admin/professeur/dashboard'
+      case 'tutor':
+        return '/admin/tuteur/dashboard'
+      case 'editor':
+        return '/admin/redacteur/dashboard'
+      case 'student':
+      default:
+        return '/dashboard'
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -37,55 +60,63 @@ export default function ConnexionPage() {
         await new Promise((resolve) => setTimeout(resolve, 800))
         
         // Stocker les informations utilisateur en localStorage pour simulation
-        localStorage.setItem('mockUser', JSON.stringify({
+        const mockUser = {
           id: 'user1',
           email: email,
           name: 'Utilisateur Démo',
           role: 'student'
-        }))
+        }
+        localStorage.setItem('mockUser', JSON.stringify(mockUser))
         
         // Créer un cookie de session
         document.cookie = `session=demo_user_${Date.now()}; path=/; max-age=86400`
         
-        router.push(redirect)
+        router.push(redirectByRole('student'))
         return
       }
 
       // Autres comptes de test
       if (email === "etudiant@test.fr" && password === "test123") {
         await new Promise((resolve) => setTimeout(resolve, 800))
-        localStorage.setItem('mockUser', JSON.stringify({
+        const mockUser = {
           id: 'user2',
           email: email,
           name: 'Étudiant Test',
           role: 'student'
-        }))
-        // Créer un cookie de session
+        }
+        localStorage.setItem('mockUser', JSON.stringify(mockUser))
         document.cookie = `session=student_user_${Date.now()}; path=/; max-age=86400`
-        router.push(redirect)
+        router.push(redirectByRole('student'))
         return
       }
 
       if (email === "prof@mathosphere.fr" && password === "prof123") {
         await new Promise((resolve) => setTimeout(resolve, 800))
-        localStorage.setItem('mockUser', JSON.stringify({
+        const mockUser = {
           id: 'user3',
           email: email,
           name: 'Professeur Démo',
           role: 'teacher'
-        }))
-        // Créer un cookie de session
+        }
+        localStorage.setItem('mockUser', JSON.stringify(mockUser))
         document.cookie = `session=teacher_user_${Date.now()}; path=/; max-age=86400`
-        router.push(redirect)
+        router.push(redirectByRole('teacher'))
         return
       }
 
       // Pour les autres identifiants, essayer Firebase Authentication
       try {
-        await login(email, password)
+        const firebaseUser = await login(email, password)
+        
+        // Récupérer le rôle depuis Firestore
+        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+        
+        const userRole = userDoc.exists() ? userDoc.data()?.role || 'student' : 'student'
+        
         // Créer un cookie de session pour Firebase auth
         document.cookie = `session=firebase_user_${Date.now()}; path=/; max-age=86400`
-        router.push(redirect)
+        
+        router.push(redirectByRole(userRole))
       } catch (firebaseError) {
         console.error("Firebase login error:", firebaseError)
         setError("Identifiants incorrects. Utilisez un compte de démo : demo@mathosphere.fr / mathosphere123")

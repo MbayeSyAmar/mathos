@@ -29,6 +29,8 @@ const navigation = {
   super_admin: [
     { name: "Tableau de bord", href: "/admin/super/dashboard", icon: LayoutDashboard },
     { name: "Utilisateurs", href: "/admin/super/utilisateurs", icon: Users },
+    { name: "Demandes", href: "/admin/super/demandes", icon: FileText },
+    { name: "Messages", href: "/admin/super/messages", icon: MessageSquare },
     { name: "Boutique", href: "/admin/super/boutique", icon: ShoppingCart },
     { name: "Contenu", href: "/admin/super/contenu", icon: FileText },
     { name: "Statistiques", href: "/admin/super/statistiques", icon: BarChart3 },
@@ -36,6 +38,8 @@ const navigation = {
   ],
   teacher: [
     { name: "Tableau de bord", href: "/admin/professeur/dashboard", icon: LayoutDashboard },
+    { name: "Demandes", href: "/admin/professeur/demandes", icon: Users },
+    { name: "Messages", href: "/admin/professeur/messages", icon: MessageSquare },
     { name: "Cours", href: "/admin/professeur/cours", icon: BookOpen },
     { name: "Exercices", href: "/admin/professeur/exercices", icon: FileText },
     { name: "Quiz", href: "/admin/professeur/quiz", icon: FileText },
@@ -57,9 +61,9 @@ const navigation = {
   ],
 }
 
-export function AdminSidebar({ userRole }) {
+export function AdminSidebar({ userRole }: { userRole: string }) {
   const pathname = usePathname()
-  const navItems = navigation[userRole] || []
+  const navItems = navigation[userRole as keyof typeof navigation] || []
 
   return (
     <Sidebar>

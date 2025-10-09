@@ -1,0 +1,279 @@
+/**
+ * Service pour gérer les demandes d'encadrement
+ */
+
+import {
+  collection,
+  doc,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+  serverTimestamp,
+} from 'firebase/firestore';
+import { db } from '../firebase';
+
+export interface EncadrementRequest {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentEmail: string;
+  studentClass: string;
+  studentLevel: string;
+  studentSchool: string;
+  teacherId: string;
+  teacherName: string;
+  formule: string;
+  subject: string;
+  objectives: string;
+  availability: string[];
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled';
+  message: string;
+  adminNotes?: string;
+  rejectionReason?: string;
+  processedBy?: string;
+  processedAt?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+// ==================== CRÉER UNE DEMANDE ====================
+
+export const createEncadrementRequest = async (
+  data: Omit<EncadrementRequest, 'id' | 'status' | 'createdAt' | 'updatedAt'>
+): Promise<string> => {
+  try {
+    const docRef = await addDoc(collection(db, 'encadrement_requests'), {
+      ...data,
+      status: 'pending',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating encadrement request:', error);
+    throw error;
+  }
+};
+
+// ==================== RÉCUPÉRER LES DEMANDES ====================
+
+// Demandes d'un étudiant
+export const getStudentRequests = async (studentId: string): Promise<EncadrementRequest[]> => {
+  try {
+    const q = query(
+      collection(db, 'encadrement_requests'),
+      where('studentId', '==', studentId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+  } catch (error) {
+    console.error('Error fetching student requests:', error);
+    throw error;
+  }
+};
+
+// Demandes pour un professeur
+export const getTeacherRequests = async (teacherId: string): Promise<EncadrementRequest[]> => {
+  try {
+    const q = query(
+      collection(db, 'encadrement_requests'),
+      where('teacherId', '==', teacherId),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+  } catch (error) {
+    console.error('Error fetching teacher requests:', error);
+    throw error;
+  }
+};
+
+// Toutes les demandes (pour super admin)
+export const getAllRequests = async (): Promise<EncadrementRequest[]> => {
+  try {
+    const q = query(
+      collection(db, 'encadrement_requests'),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+  } catch (error) {
+    console.error('Error fetching all requests:', error);
+    throw error;
+  }
+};
+
+// Demandes en attente pour un professeur
+export const getPendingTeacherRequests = async (teacherId: string): Promise<EncadrementRequest[]> => {
+  try {
+    const q = query(
+      collection(db, 'encadrement_requests'),
+      where('teacherId', '==', teacherId),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+  } catch (error) {
+    console.error('Error fetching pending teacher requests:', error);
+    throw error;
+  }
+};
+
+// Toutes les demandes en attente (pour super admin)
+export const getAllPendingRequests = async (): Promise<EncadrementRequest[]> => {
+  try {
+    const q = query(
+      collection(db, 'encadrement_requests'),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+  } catch (error) {
+    console.error('Error fetching all pending requests:', error);
+    throw error;
+  }
+};
+
+// ==================== METTRE À JOUR UNE DEMANDE ====================
+
+// Approuver une demande
+export const approveRequest = async (
+  requestId: string,
+  processedBy: string,
+  adminNotes?: string
+): Promise<void> => {
+  try {
+    await updateDoc(doc(db, 'encadrement_requests', requestId), {
+      status: 'approved',
+      processedBy,
+      processedAt: serverTimestamp(),
+      adminNotes,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error approving request:', error);
+    throw error;
+  }
+};
+
+// Rejeter une demande
+export const rejectRequest = async (
+  requestId: string,
+  processedBy: string,
+  rejectionReason: string,
+  adminNotes?: string
+): Promise<void> => {
+  try {
+    await updateDoc(doc(db, 'encadrement_requests', requestId), {
+      status: 'rejected',
+      processedBy,
+      processedAt: serverTimestamp(),
+      rejectionReason,
+      adminNotes,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error rejecting request:', error);
+    throw error;
+  }
+};
+
+// Annuler une demande (par l'étudiant)
+export const cancelRequest = async (requestId: string): Promise<void> => {
+  try {
+    await updateDoc(doc(db, 'encadrement_requests', requestId), {
+      status: 'cancelled',
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error cancelling request:', error);
+    throw error;
+  }
+};
+
+// Mettre à jour les notes admin
+export const updateRequestNotes = async (
+  requestId: string,
+  adminNotes: string
+): Promise<void> => {
+  try {
+    await updateDoc(doc(db, 'encadrement_requests', requestId), {
+      adminNotes,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error updating request notes:', error);
+    throw error;
+  }
+};
+
+// Réassigner à un autre professeur
+export const reassignRequest = async (
+  requestId: string,
+  newTeacherId: string,
+  newTeacherName: string,
+  processedBy: string
+): Promise<void> => {
+  try {
+    await updateDoc(doc(db, 'encadrement_requests', requestId), {
+      teacherId: newTeacherId,
+      teacherName: newTeacherName,
+      processedBy,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error reassigning request:', error);
+    throw error;
+  }
+};
+
+// ==================== SUPPRIMER UNE DEMANDE ====================
+
+export const deleteRequest = async (requestId: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(db, 'encadrement_requests', requestId));
+  } catch (error) {
+    console.error('Error deleting request:', error);
+    throw error;
+  }
+};
+
+// ==================== STATISTIQUES ====================
+
+export const getRequestsStats = async (): Promise<{
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  cancelled: number;
+}> => {
+  try {
+    const snapshot = await getDocs(collection(db, 'encadrement_requests'));
+    const requests = snapshot.docs.map(doc => doc.data() as EncadrementRequest);
+    
+    return {
+      total: requests.length,
+      pending: requests.filter(r => r.status === 'pending').length,
+      approved: requests.filter(r => r.status === 'approved').length,
+      rejected: requests.filter(r => r.status === 'rejected').length,
+      cancelled: requests.filter(r => r.status === 'cancelled').length,
+    };
+  } catch (error) {
+    console.error('Error fetching requests stats:', error);
+    throw error;
+  }
+};

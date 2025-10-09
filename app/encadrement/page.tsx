@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,18 +8,160 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle, Star } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { CheckCircle, Star, Loader2 } from "lucide-react"
 import { motion } from "framer-motion"
+import { useAuth } from "@/lib/auth-context"
+import { createEncadrementRequest } from "@/lib/services/encadrement-requests-service"
+import { collection, query, where, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { toast } from "sonner"
+
+interface Teacher {
+  id: string
+  name: string
+  role: string
+  speciality: string
+  rating: number
+}
 
 export default function EncadrementPage() {
+  const { user } = useAuth()
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [teachers, setTeachers] = useState<Teacher[]>([])
+  const [loadingTeachers, setLoadingTeachers] = useState(true)
+  const [formData, setFormData] = useState({
+    studentName: "",
+    studentEmail: "",
+    studentClass: "",
+    studentLevel: "",
+    studentSchool: "",
+    teacherId: "",
+    teacherName: "",
+    formule: "",
+    subject: "Mathématiques",
+    objectives: "",
+    availability: [] as string[],
+    message: "",
+  })
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    fetchTeachers()
+  }, [])
+
+  const fetchTeachers = async () => {
+    try {
+      setLoadingTeachers(true)
+      const usersRef = collection(db, "users")
+      const q = query(usersRef, where("role", "==", "teacher"))
+      const snapshot = await getDocs(q)
+      
+      const teachersList: Teacher[] = []
+      snapshot.forEach((doc) => {
+        const data = doc.data()
+        teachersList.push({
+          id: doc.id,
+          name: data.name || data.displayName || data.email,
+          role: data.title || "Professeur de mathématiques",
+          speciality: data.speciality || "Mathématiques",
+          rating: data.rating || 4.8,
+        })
+      })
+      
+      setTeachers(teachersList)
+    } catch (error) {
+      console.error("Error fetching teachers:", error)
+      toast.error("Erreur lors du chargement des professeurs")
+    } finally {
+      setLoadingTeachers(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Simulate form submission
-    setTimeout(() => {
+    
+    if (!formData.teacherId) {
+      toast.error("Veuillez sélectionner un professeur")
+      return
+    }
+
+    if (!formData.formule) {
+      toast.error("Veuillez sélectionner une formule")
+      return
+    }
+
+    if (formData.availability.length === 0) {
+      toast.error("Veuillez sélectionner au moins une disponibilité")
+      return
+    }
+
+    try {
+      setLoading(true)
+      
+      // Si l'utilisateur est connecté, on prend ses infos, sinon on utilise le formulaire
+      const requestData = {
+        studentId: user?.uid || "",
+        studentName: formData.studentName,
+        studentEmail: formData.studentEmail,
+        studentClass: formData.studentClass,
+        studentLevel: formData.studentLevel,
+        studentSchool: formData.studentSchool,
+        teacherId: formData.teacherId,
+        teacherName: formData.teacherName,
+        formule: formData.formule,
+        subject: formData.subject,
+        objectives: formData.objectives,
+        availability: formData.availability,
+        message: formData.message,
+      }
+
+      await createEncadrementRequest(requestData)
+      
+      toast.success("Votre demande a été envoyée avec succès !")
       setSubmitted(true)
-    }, 1000)
+      
+      // Reset form
+      setFormData({
+        studentName: "",
+        studentEmail: "",
+        studentClass: "",
+        studentLevel: "",
+        studentSchool: "",
+        teacherId: "",
+        teacherName: "",
+        formule: "",
+        subject: "Mathématiques",
+        objectives: "",
+        availability: [],
+        message: "",
+      })
+    } catch (error) {
+      console.error("Error submitting request:", error)
+      toast.error("Erreur lors de l'envoi de la demande")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTeacherSelect = (teacherId: string) => {
+    const teacher = teachers.find((t) => t.id === teacherId)
+    if (teacher) {
+      setFormData({
+        ...formData,
+        teacherId: teacher.id,
+        teacherName: teacher.name,
+      })
+    }
+  }
+
+  const handleAvailabilityToggle = (slot: string) => {
+    setFormData({
+      ...formData,
+      availability: formData.availability.includes(slot)
+        ? formData.availability.filter((s) => s !== slot)
+        : [...formData.availability, slot],
+    })
   }
 
   const fadeIn = {
@@ -143,39 +285,47 @@ export default function EncadrementPage() {
 
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Nos enseignants</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                {
-                  name: "Thomas Martin",
-                  role: "Professeur agrégé de mathématiques",
-                  image: "/placeholder.svg?height=100&width=100",
-                  rating: 4.9,
-                  speciality: "Préparation aux concours",
-                },
-                {
-                  name: "Sophie Leclerc",
-                  role: "Docteure en mathématiques",
-                  image: "/placeholder.svg?height=100&width=100",
-                  rating: 4.8,
-                  speciality: "Analyse et algèbre",
-                },
-              ].map((teacher, index) => (
-                <Card key={index} className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4">
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden">
-                    <Image src={teacher.image || "/placeholder.svg"} alt={teacher.name} fill className="object-cover" />
-                  </div>
-                  <div className="text-center sm:text-left">
-                    <h3 className="font-bold">{teacher.name}</h3>
-                    <p className="text-sm text-muted-foreground">{teacher.role}</p>
-                    <div className="flex items-center justify-center sm:justify-start mt-1">
-                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                      <span className="text-sm ml-1">{teacher.rating}/5</span>
+            {loadingTeachers ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : teachers.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">
+                Aucun professeur disponible pour le moment
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {teachers.map((teacher) => (
+                  <Card
+                    key={teacher.id}
+                    className={`flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 cursor-pointer transition-all ${
+                      formData.teacherId === teacher.id
+                        ? "border-primary border-2 bg-primary/5"
+                        : "hover:border-primary/50"
+                    }`}
+                    onClick={() => handleTeacherSelect(teacher.id)}
+                  >
+                    <div className="relative w-16 h-16 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-primary">{teacher.name.charAt(0)}</span>
                     </div>
-                    <p className="text-xs mt-1">Spécialité: {teacher.speciality}</p>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                    <div className="text-center sm:text-left flex-1">
+                      <h3 className="font-bold">{teacher.name}</h3>
+                      <p className="text-sm text-muted-foreground">{teacher.role}</p>
+                      <div className="flex items-center justify-center sm:justify-start mt-1">
+                        <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                        <span className="text-sm ml-1">{teacher.rating}/5</span>
+                      </div>
+                      <p className="text-xs mt-1">Spécialité: {teacher.speciality}</p>
+                    </div>
+                    {formData.teacherId === teacher.id && (
+                      <div className="absolute top-2 right-2">
+                        <CheckCircle className="h-5 w-5 text-primary" />
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </motion.div>
 
@@ -193,69 +343,168 @@ export default function EncadrementPage() {
                   </div>
                   <h3 className="text-xl font-medium">Demande envoyée !</h3>
                   <p className="text-muted-foreground">
-                    Merci pour votre demande d'encadrement personnalisé. Un membre de notre équipe vous contactera dans
-                    les 24 heures pour discuter de vos besoins.
+                    Merci pour votre demande d'encadrement personnalisé. Le professeur sélectionné sera notifié et vous
+                    recevrez une réponse dans les 24-48 heures.
                   </p>
                   <Button onClick={() => setSubmitted(false)}>Faire une nouvelle demande</Button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">Prénom</Label>
-                      <Input id="firstName" placeholder="Votre prénom" required />
+                      <Label htmlFor="studentName">Nom complet *</Label>
+                      <Input
+                        id="studentName"
+                        placeholder="Prénom et nom"
+                        value={formData.studentName}
+                        onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
+                        required
+                      />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lastName">Nom</Label>
-                      <Input id="lastName" placeholder="Votre nom" required />
+                      <Label htmlFor="studentEmail">Email *</Label>
+                      <Input
+                        id="studentEmail"
+                        type="email"
+                        placeholder="votre.email@exemple.com"
+                        value={formData.studentEmail}
+                        onChange={(e) => setFormData({ ...formData, studentEmail: e.target.value })}
+                        required
+                      />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="votre.email@exemple.com" required />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="studentClass">Classe *</Label>
+                      <Input
+                        id="studentClass"
+                        placeholder="Ex: Terminale S, 3ème, Licence 1..."
+                        value={formData.studentClass}
+                        onChange={(e) => setFormData({ ...formData, studentClass: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="studentLevel">Niveau scolaire *</Label>
+                      <Select value={formData.studentLevel} onValueChange={(value) => setFormData({ ...formData, studentLevel: value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez votre niveau" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Collège">Collège</SelectItem>
+                          <SelectItem value="Lycée">Lycée</SelectItem>
+                          <SelectItem value="Enseignement supérieur">Enseignement supérieur</SelectItem>
+                          <SelectItem value="Formation adulte">Formation adulte</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Téléphone</Label>
-                    <Input id="phone" placeholder="Votre numéro de téléphone" />
+                    <Label htmlFor="studentSchool">École/Établissement</Label>
+                    <Input
+                      id="studentSchool"
+                      placeholder="Nom de votre école ou établissement"
+                      value={formData.studentSchool}
+                      onChange={(e) => setFormData({ ...formData, studentSchool: e.target.value })}
+                    />
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="level">Niveau scolaire</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez votre niveau" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="college">Collège</SelectItem>
-                        <SelectItem value="lycee">Lycée</SelectItem>
-                        <SelectItem value="superieur">Enseignement supérieur</SelectItem>
-                        <SelectItem value="adulte">Formation adulte</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="formula">Formule souhaitée</Label>
-                    <Select>
+                    <Label htmlFor="formule">Formule souhaitée *</Label>
+                    <Select value={formData.formule} onValueChange={(value) => setFormData({ ...formData, formule: value })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez une formule" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="standard">Formule Standard (2h/mois)</SelectItem>
-                        <SelectItem value="intensive">Formule Intensive (4h/mois)</SelectItem>
-                        <SelectItem value="custom">Formule sur mesure</SelectItem>
+                        <SelectItem value="Formule Standard (2h/mois - 49€)">Formule Standard (2h/mois - 49€)</SelectItem>
+                        <SelectItem value="Formule Intensive (4h/mois - 89€)">Formule Intensive (4h/mois - 89€)</SelectItem>
+                        <SelectItem value="Formule sur mesure">Formule sur mesure</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="needs">Vos besoins spécifiques</Label>
-                    <Textarea
-                      id="needs"
-                      placeholder="Décrivez vos objectifs, difficultés ou attentes..."
-                      rows={5}
+                    <Label htmlFor="subject">Matière *</Label>
+                    <Input
+                      id="subject"
+                      value={formData.subject}
+                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      placeholder="Ex: Mathématiques, Algèbre, Analyse..."
                       required
                     />
                   </div>
-                  <Button type="submit" className="w-full">
-                    Envoyer ma demande
+
+                  <div className="space-y-2">
+                    <Label htmlFor="objectives">Vos objectifs *</Label>
+                    <Textarea
+                      id="objectives"
+                      placeholder="Décrivez vos objectifs, difficultés ou attentes..."
+                      rows={4}
+                      value={formData.objectives}
+                      onChange={(e) => setFormData({ ...formData, objectives: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label>Disponibilités * (sélectionnez au moins une)</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {[
+                        "Lundi matin",
+                        "Lundi après-midi",
+                        "Mardi matin",
+                        "Mardi après-midi",
+                        "Mercredi matin",
+                        "Mercredi après-midi",
+                        "Jeudi matin",
+                        "Jeudi après-midi",
+                        "Vendredi matin",
+                        "Vendredi après-midi",
+                        "Samedi matin",
+                        "Samedi après-midi",
+                      ].map((slot) => (
+                        <div key={slot} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={slot}
+                            checked={formData.availability.includes(slot)}
+                            onCheckedChange={() => handleAvailabilityToggle(slot)}
+                          />
+                          <Label htmlFor={slot} className="text-sm font-normal cursor-pointer">
+                            {slot}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="message">Message (optionnel)</Label>
+                    <Textarea
+                      id="message"
+                      placeholder="Informations complémentaires..."
+                      rows={3}
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    />
+                  </div>
+
+                  {!formData.teacherId && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-md p-4 text-sm text-orange-800">
+                      ⚠️ Veuillez sélectionner un professeur ci-dessus avant d'envoyer votre demande.
+                    </div>
+                  )}
+
+                  <Button type="submit" className="w-full" disabled={loading || !formData.teacherId}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      "Envoyer ma demande"
+                    )}
                   </Button>
                 </form>
               )}

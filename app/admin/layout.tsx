@@ -7,7 +7,7 @@ import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { SidebarProvider } from "@/components/ui/sidebar"
 
-export default function AdminLayout({ children }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userRole, setUserRole] = useState("")
@@ -42,11 +42,11 @@ export default function AdminLayout({ children }) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen w-full">
         <AdminSidebar userRole={userRole} />
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 w-full">
           <AdminHeader userRole={userRole} />
-          <main className="flex-1 p-6 overflow-auto bg-gray-50 dark:bg-gray-900">{children}</main>
+          <main className="flex-1 p-6 overflow-auto bg-background">{children}</main>
         </div>
       </div>
       <Toaster />

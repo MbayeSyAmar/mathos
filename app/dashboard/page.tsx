@@ -1,9 +1,12 @@
 "use client"
+
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { Badge } from "@/components/ui/badge"
 import {
   BookOpen,
   PenTool,
@@ -14,11 +17,105 @@ import {
   Clock,
   CheckCircle,
   Trophy,
+  MessageSquare,
+  Loader2,
+  TrendingUp,
+  Target,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
+import {
+  getStudentProgress,
+  getCourseProgress,
+  getExerciseProgress,
+  getQuizProgress,
+  getRecentActivities,
+  type StudentProgress,
+  type CourseProgress,
+  type ExerciseProgress,
+  type QuizProgress,
+  type Activity,
+} from "@/lib/services/student-progress-service"
+import {
+  getStudentConversations,
+  getUnreadMessageCount,
+  type Conversation,
+} from "@/lib/services/messaging-service"
+import { format } from "date-fns"
+import { fr } from "date-fns/locale"
 
 export default function DashboardPage() {
+  const { user, userData } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [progress, setProgress] = useState<StudentProgress | null>(null)
+  const [courses, setCourses] = useState<CourseProgress[]>([])
+  const [exercises, setExercises] = useState<ExerciseProgress[]>([])
+  const [quizzes, setQuizzes] = useState<QuizProgress[]>([])
+  const [activities, setActivities] = useState<Activity[]>([])
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [unreadMessages, setUnreadMessages] = useState(0)
+
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData()
+    }
+  }, [user])
+
+  const fetchDashboardData = async () => {
+    if (!user) return
+
+    try {
+      setLoading(true)
+      const [
+        progressData,
+        coursesData,
+        exercisesData,
+        quizzesData,
+        activitiesData,
+        conversationsData,
+        unreadCount,
+      ] = await Promise.all([
+        getStudentProgress(user.uid),
+        getCourseProgress(user.uid),
+        getExerciseProgress(user.uid),
+        getQuizProgress(user.uid),
+        getRecentActivities(user.uid, 10),
+        getStudentConversations(user.uid),
+        getUnreadMessageCount(user.uid, "student"),
+      ])
+
+      setProgress(progressData)
+      setCourses(coursesData)
+      setExercises(exercisesData)
+      setQuizzes(quizzesData)
+      setActivities(activitiesData)
+      setConversations(conversationsData)
+      setUnreadMessages(unreadCount)
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return ""
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    return format(date, "d MMM yyyy", { locale: fr })
+  }
+
+  if (loading) {
+    return (
+      <div className="container py-10 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Chargement de votre tableau de bord...</p>
+        </div>
+      </div>
+    )
+  }
+
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -48,14 +145,24 @@ export default function DashboardPage() {
       >
         <div>
           <h1 className="text-3xl font-bold tracking-tighter">Tableau de bord</h1>
-          <p className="text-muted-foreground">Bienvenue sur votre espace personnel, Marie Dupont</p>
+          <p className="text-muted-foreground">
+            Bienvenue sur votre espace personnel, {userData?.displayName || user?.email?.split('@')[0] || "Étudiant"}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
             <Link href="/dashboard/mon-profil">Mon profil</Link>
           </Button>
           <Button size="sm" asChild>
-            <Link href="/dashboard/encadrement">Encadrement personnalisé</Link>
+            <Link href="/dashboard/encadrement">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Encadrement
+              {unreadMessages > 0 && (
+                <Badge className="ml-2 bg-red-500" variant="secondary">
+                  {unreadMessages}
+                </Badge>
+              )}
+            </Link>
           </Button>
         </div>
       </motion.div>
@@ -72,23 +179,47 @@ export default function DashboardPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Cours suivis</span>
-                    <span className="text-sm text-muted-foreground">12/35</span>
+                    <span className="text-sm text-muted-foreground">
+                      {progress?.completedCourses || 0}/{progress?.totalCourses || 0}
+                    </span>
                   </div>
-                  <Progress value={34} />
+                  <Progress
+                    value={
+                      progress?.totalCourses
+                        ? (progress.completedCourses / progress.totalCourses) * 100
+                        : 0
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Exercices complétés</span>
-                    <span className="text-sm text-muted-foreground">45/120</span>
+                    <span className="text-sm text-muted-foreground">
+                      {progress?.completedExercises || 0}/{progress?.totalExercises || 0}
+                    </span>
                   </div>
-                  <Progress value={37} />
+                  <Progress
+                    value={
+                      progress?.totalExercises
+                        ? (progress.completedExercises / progress.totalExercises) * 100
+                        : 0
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Quiz réussis</span>
-                    <span className="text-sm text-muted-foreground">8/15</span>
+                    <span className="text-sm text-muted-foreground">
+                      {progress?.completedQuizzes || 0}/{progress?.totalQuizzes || 0}
+                    </span>
                   </div>
-                  <Progress value={53} />
+                  <Progress
+                    value={
+                      progress?.totalQuizzes
+                        ? (progress.completedQuizzes / progress.totalQuizzes) * 100
+                        : 0
+                    }
+                  />
                 </div>
               </div>
             </CardContent>
@@ -105,22 +236,24 @@ export default function DashboardPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
                   <Clock className="h-8 w-8 text-primary mb-2" />
-                  <span className="text-2xl font-bold">24h</span>
+                  <span className="text-2xl font-bold">
+                    {Math.floor((progress?.totalStudyTimeMinutes || 0) / 60)}h
+                  </span>
                   <span className="text-xs text-muted-foreground text-center">Temps d'étude total</span>
                 </div>
                 <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
                   <CheckCircle className="h-8 w-8 text-green-500 mb-2" />
-                  <span className="text-2xl font-bold">85%</span>
+                  <span className="text-2xl font-bold">{progress?.successRate || 0}%</span>
                   <span className="text-xs text-muted-foreground text-center">Taux de réussite</span>
                 </div>
                 <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
                   <Trophy className="h-8 w-8 text-yellow-500 mb-2" />
-                  <span className="text-2xl font-bold">12</span>
+                  <span className="text-2xl font-bold">{progress?.badges.length || 0}</span>
                   <span className="text-xs text-muted-foreground text-center">Badges obtenus</span>
                 </div>
                 <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
                   <BookOpen className="h-8 w-8 text-blue-500 mb-2" />
-                  <span className="text-2xl font-bold">5</span>
+                  <span className="text-2xl font-bold">{progress?.inProgressCourses || 0}</span>
                   <span className="text-xs text-muted-foreground text-center">Cours en cours</span>
                 </div>
               </div>
@@ -131,48 +264,82 @@ export default function DashboardPage() {
         <motion.div initial="hidden" animate="visible" variants={fadeIn}>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Prochains objectifs</CardTitle>
-              <CardDescription>À compléter cette semaine</CardDescription>
+              <CardTitle className="text-lg">Activités récentes</CardTitle>
+              <CardDescription>Vos dernières actions</CardDescription>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
-                <li className="flex items-start gap-2">
-                  <div className="min-w-4 mt-0.5">
-                    <BookOpen className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Terminer le cours sur les intégrales</p>
-                    <p className="text-xs text-muted-foreground">Échéance: 3 jours</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-2">
-                  <div className="min-w-4 mt-0.5">
-                    <PenTool className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Compléter les exercices sur les suites</p>
-                    <p className="text-xs text-muted-foreground">Échéance: 5 jours</p>
-                  </div>
-                </li>
-                <li className="flex items-start gap-2">
-                  <div className="min-w-4 mt-0.5">
-                    <BrainCircuit className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Réussir le quiz sur les probabilités</p>
-                    <p className="text-xs text-muted-foreground">Échéance: 7 jours</p>
-                  </div>
-                </li>
+                {activities.length === 0 ? (
+                  <li className="text-sm text-muted-foreground text-center py-4">
+                    Aucune activité récente
+                  </li>
+                ) : (
+                  activities.slice(0, 3).map((activity) => (
+                    <li key={activity.id} className="flex items-start gap-2">
+                      <div className="min-w-4 mt-0.5">
+                        {activity.type === "course_started" || activity.type === "course_completed" ? (
+                          <BookOpen className="h-4 w-4 text-primary" />
+                        ) : activity.type === "exercise_completed" ? (
+                          <PenTool className="h-4 w-4 text-primary" />
+                        ) : activity.type === "quiz_completed" ? (
+                          <BrainCircuit className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Target className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{activity.title}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(activity.createdAt)}</p>
+                      </div>
+                    </li>
+                  ))
+                )}
               </ul>
             </CardContent>
             <CardFooter>
-              <Button variant="outline" size="sm" className="w-full">
-                Voir tous les objectifs
+              <Button variant="outline" size="sm" className="w-full" asChild>
+                <Link href="/dashboard/progression">Voir toutes les activités</Link>
               </Button>
             </CardFooter>
           </Card>
         </motion.div>
       </div>
+
+      {/* Messages non lus */}
+      {conversations.length > 0 && unreadMessages > 0 && (
+        <motion.div className="mb-8" initial="hidden" animate="visible" variants={fadeIn}>
+          <Card className="border-orange-200 bg-orange-50/50">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-orange-600" />
+                <CardTitle className="text-lg">Nouveaux messages</CardTitle>
+              </div>
+              <CardDescription>Vous avez {unreadMessages} message(s) non lu(s)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {conversations
+                  .filter((conv) => conv.unreadCountStudent > 0)
+                  .slice(0, 3)
+                  .map((conv) => (
+                    <div key={conv.id} className="flex items-center justify-between p-3 bg-white rounded-lg">
+                      <div>
+                        <p className="font-medium">{conv.teacherName}</p>
+                        <p className="text-sm text-muted-foreground">{conv.lastMessage}</p>
+                      </div>
+                      <Badge variant="secondary">{conv.unreadCountStudent}</Badge>
+                    </div>
+                  ))}
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button className="w-full" asChild>
+                <Link href="/dashboard/encadrement">Voir tous les messages</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        </motion.div>
+      )}
 
       <Tabs defaultValue="cours" className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
@@ -189,70 +356,59 @@ export default function DashboardPage() {
             initial="hidden"
             animate="visible"
           >
-            {[
-              {
-                id: 1,
-                title: "Nombres complexes",
-                description: "Opérations et applications géométriques",
-                image: "/placeholder.svg?height=200&width=400",
-                progress: 75,
-                level: "Terminale",
-              },
-              {
-                id: 2,
-                title: "Intégrales",
-                description: "Calcul d'intégrales et applications",
-                image: "/placeholder.svg?height=200&width=400",
-                progress: 30,
-                level: "Terminale",
-              },
-              {
-                id: 3,
-                title: "Suites numériques",
-                description: "Suites arithmétiques et géométriques",
-                image: "/placeholder.svg?height=200&width=400",
-                progress: 60,
-                level: "1ère",
-              },
-            ].map((course) => (
-              <motion.div key={course.id} variants={fadeIn}>
-                <Card className="overflow-hidden group h-full flex flex-col">
-                  <div className="relative h-40">
-                    <Image
-                      src={course.image || "/placeholder.svg"}
-                      alt={course.title}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                    <div className="absolute bottom-4 left-4">
-                      <h3 className="font-bold text-foreground text-lg">{course.title}</h3>
-                    </div>
-                    <div className="absolute top-4 right-4 bg-background/80 px-2 py-1 rounded text-xs">
-                      {course.level}
-                    </div>
-                  </div>
-                  <CardContent className="pt-4 flex-grow">
-                    <p className="text-sm text-muted-foreground">{course.description}</p>
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Progression</span>
-                        <span className="text-sm font-medium">{course.progress}%</span>
+            {courses.length === 0 ? (
+              <div className="col-span-full text-center py-10">
+                <BookOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">Aucun cours en cours</p>
+                <Button className="mt-4" asChild>
+                  <Link href="/cours">Découvrir les cours</Link>
+                </Button>
+              </div>
+            ) : (
+              courses.slice(0, 6).map((course) => (
+                <motion.div key={course.id} variants={fadeIn}>
+                  <Card className="overflow-hidden group h-full flex flex-col">
+                    <div className="relative h-40 bg-gradient-to-br from-primary/10 to-primary/5">
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                      <div className="absolute bottom-4 left-4">
+                        <h3 className="font-bold text-foreground text-lg">{course.courseTitle}</h3>
                       </div>
-                      <Progress value={course.progress} />
+                      <div className="absolute top-4 right-4 bg-background/80 px-2 py-1 rounded text-xs">
+                        En cours
+                      </div>
                     </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      variant="outline"
-                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
-                    >
-                      Continuer <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))}
+                    <CardContent className="pt-4 flex-grow">
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Progression</span>
+                            <span className="text-sm font-medium">{Math.round(course.progress)}%</span>
+                          </div>
+                          <Progress value={course.progress} />
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>
+                            {course.completedLessons}/{course.totalLessons} leçons
+                          </span>
+                          <span>Dernier accès: {formatDate(course.lastAccessedAt)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button
+                        variant="outline"
+                        className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
+                        asChild
+                      >
+                        <Link href={`/cours/${course.courseId}`}>
+                          Continuer <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              ))
+            )}
           </motion.div>
         </TabsContent>
 
@@ -263,75 +419,58 @@ export default function DashboardPage() {
             initial="hidden"
             animate="visible"
           >
-            {[
-              {
-                id: 1,
-                title: "Dérivation",
-                description: "Exercices sur le calcul de dérivées",
-                image: "/placeholder.svg?height=200&width=400",
-                completed: 8,
-                total: 15,
-                level: "1ère",
-              },
-              {
-                id: 2,
-                title: "Probabilités",
-                description: "Exercices sur les variables aléatoires",
-                image: "/placeholder.svg?height=200&width=400",
-                completed: 5,
-                total: 12,
-                level: "Terminale",
-              },
-              {
-                id: 3,
-                title: "Géométrie dans l'espace",
-                description: "Exercices sur les vecteurs et plans",
-                image: "/placeholder.svg?height=200&width=400",
-                completed: 10,
-                total: 18,
-                level: "Terminale",
-              },
-            ].map((exercise) => (
-              <motion.div key={exercise.id} variants={fadeIn}>
-                <Card className="overflow-hidden group h-full flex flex-col">
-                  <div className="relative h-40">
-                    <Image
-                      src={exercise.image || "/placeholder.svg"}
-                      alt={exercise.title}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                    <div className="absolute bottom-4 left-4">
-                      <h3 className="font-bold text-foreground text-lg">{exercise.title}</h3>
-                    </div>
-                    <div className="absolute top-4 right-4 bg-background/80 px-2 py-1 rounded text-xs">
-                      {exercise.level}
-                    </div>
-                  </div>
-                  <CardContent className="pt-4 flex-grow">
-                    <p className="text-sm text-muted-foreground">{exercise.description}</p>
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Progression</span>
-                        <span className="text-sm font-medium">
-                          {exercise.completed}/{exercise.total} exercices
-                        </span>
+            {exercises.length === 0 ? (
+              <div className="col-span-full text-center py-10">
+                <PenTool className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">Aucun exercice commencé</p>
+                <Button className="mt-4" asChild>
+                  <Link href="/exercices">Découvrir les exercices</Link>
+                </Button>
+              </div>
+            ) : (
+              exercises.slice(0, 6).map((exercise) => (
+                <motion.div key={exercise.id} variants={fadeIn}>
+                  <Card className="overflow-hidden group h-full flex flex-col">
+                    <div className="relative h-40 bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                      <div className="absolute bottom-4 left-4">
+                        <h3 className="font-bold text-foreground text-lg">{exercise.exerciseTitle}</h3>
                       </div>
-                      <Progress value={(exercise.completed / exercise.total) * 100} />
+                      {exercise.completed && (
+                        <div className="absolute top-4 right-4 bg-green-600 text-white px-2 py-1 rounded text-xs flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Terminé
+                        </div>
+                      )}
                     </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      variant="outline"
-                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
-                    >
-                      Continuer <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))}
+                    <CardContent className="pt-4 flex-grow">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span>Score:</span>
+                          <span className="font-medium">{exercise.score || 0}%</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Tentatives: {exercise.attempts}</span>
+                          <span>{formatDate(exercise.lastAttemptAt)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button
+                        variant="outline"
+                        className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
+                        asChild
+                      >
+                        <Link href={`/exercices/${exercise.exerciseId}`}>
+                          {exercise.completed ? "Refaire" : "Continuer"}{" "}
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              ))
+            )}
           </motion.div>
         </TabsContent>
 
@@ -342,77 +481,74 @@ export default function DashboardPage() {
             initial="hidden"
             animate="visible"
           >
-            {[
-              {
-                id: 1,
-                title: "Fonctions et dérivées",
-                description: "Quiz sur le calcul différentiel",
-                image: "/placeholder.svg?height=200&width=400",
-                score: 85,
-                questions: 15,
-                level: "1ère",
-              },
-              {
-                id: 2,
-                title: "Suites numériques",
-                description: "Quiz sur les suites arithmétiques et géométriques",
-                image: "/placeholder.svg?height=200&width=400",
-                score: 70,
-                questions: 10,
-                level: "1ère",
-              },
-              {
-                id: 3,
-                title: "Préparation Bac",
-                description: "Quiz complet pour préparer le Baccalauréat",
-                image: "/placeholder.svg?height=200&width=400",
-                score: 65,
-                questions: 30,
-                level: "Terminale",
-              },
-            ].map((quiz) => (
-              <motion.div key={quiz.id} variants={fadeIn}>
-                <Card className="overflow-hidden group h-full flex flex-col">
-                  <div className="relative h-40">
-                    <Image
-                      src={quiz.image || "/placeholder.svg"}
-                      alt={quiz.title}
-                      fill
-                      className="object-cover transition-transform group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                    <div className="absolute bottom-4 left-4">
-                      <h3 className="font-bold text-foreground text-lg">{quiz.title}</h3>
-                    </div>
-                    <div className="absolute top-4 right-4 bg-background/80 px-2 py-1 rounded text-xs">
-                      {quiz.level}
-                    </div>
-                  </div>
-                  <CardContent className="pt-4 flex-grow">
-                    <p className="text-sm text-muted-foreground">{quiz.description}</p>
-                    <div className="mt-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Score</span>
-                        <span className="text-sm font-medium">{quiz.score}%</span>
+            {quizzes.length === 0 ? (
+              <div className="col-span-full text-center py-10">
+                <BrainCircuit className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">Aucun quiz tenté</p>
+                <Button className="mt-4" asChild>
+                  <Link href="/quiz">Découvrir les quiz</Link>
+                </Button>
+              </div>
+            ) : (
+              quizzes.slice(0, 6).map((quiz) => (
+                <motion.div key={quiz.id} variants={fadeIn}>
+                  <Card className="overflow-hidden group h-full flex flex-col">
+                    <div className="relative h-40 bg-gradient-to-br from-purple-500/10 to-purple-500/5">
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                      <div className="absolute bottom-4 left-4">
+                        <h3 className="font-bold text-foreground text-lg">{quiz.quizTitle}</h3>
                       </div>
-                      <Progress
-                        value={quiz.score}
-                        className={`${quiz.score >= 80 ? "bg-green-500" : quiz.score >= 60 ? "bg-yellow-500" : "bg-red-500"}`}
-                      />
-                      <p className="text-xs text-muted-foreground">{quiz.questions} questions</p>
+                      <div
+                        className={`absolute top-4 right-4 px-2 py-1 rounded text-xs font-medium ${
+                          quiz.bestScore >= 80
+                            ? "bg-green-600 text-white"
+                            : quiz.bestScore >= 60
+                              ? "bg-yellow-600 text-white"
+                              : "bg-red-600 text-white"
+                        }`}
+                      >
+                        {quiz.bestScore}%
+                      </div>
                     </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button
-                      variant="outline"
-                      className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
-                    >
-                      Refaire le quiz <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))}
+                    <CardContent className="pt-4 flex-grow">
+                      <div className="space-y-2">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Meilleur score</span>
+                            <span className="text-sm font-medium">{quiz.bestScore}%</span>
+                          </div>
+                          <Progress
+                            value={quiz.bestScore}
+                            className={
+                              quiz.bestScore >= 80
+                                ? "[&>div]:bg-green-600"
+                                : quiz.bestScore >= 60
+                                  ? "[&>div]:bg-yellow-600"
+                                  : "[&>div]:bg-red-600"
+                            }
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Tentatives: {quiz.attempts}</span>
+                          <span>{formatDate(quiz.lastAttemptAt)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button
+                        variant="outline"
+                        className="w-full group-hover:bg-primary group-hover:text-primary-foreground"
+                        asChild
+                      >
+                        <Link href={`/quiz/${quiz.quizId}`}>
+                          Refaire le quiz <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              ))
+            )}
           </motion.div>
         </TabsContent>
 
