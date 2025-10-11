@@ -38,29 +38,31 @@ import {
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
 import {
-  getDemandesByStatus,
-  getDemandesStats,
-  updateDemandeStatus,
-  type DemandeEncadrement,
-} from "@/lib/services/demande-service"
+  getTeacherRequests,
+  getPendingTeacherRequests,
+  approveRequest,
+  rejectRequest,
+  type EncadrementRequest,
+} from "@/lib/services/encadrement-requests-service"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { toast } from "sonner"
 
 export default function AdminDemandesPage() {
   const router = useRouter()
   const { user, userData } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [demandes, setDemandes] = useState<DemandeEncadrement[]>([])
-  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0, contacted: 0 })
-  const [selectedTab, setSelectedTab] = useState<"all" | "pending" | "approved" | "rejected" | "contacted">("pending")
-  const [selectedDemande, setSelectedDemande] = useState<DemandeEncadrement | null>(null)
+  const [demandes, setDemandes] = useState<EncadrementRequest[]>([])
+  const [stats, setStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 })
+  const [selectedTab, setSelectedTab] = useState<"all" | "pending" | "approved" | "rejected">("pending")
+  const [selectedDemande, setSelectedDemande] = useState<EncadrementRequest | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [actionType, setActionType] = useState<"approve" | "reject" | "contact" | null>(null)
-  const [adminNotes, setAdminNotes] = useState("")
+  const [actionType, setActionType] = useState<"approve" | "reject" | null>(null)
+  const [rejectionReason, setRejectionReason] = useState("")
   const [processing, setProcessing] = useState(false)
 
-  // Vérifier si l'utilisateur est admin
+  // Vérifier si l'utilisateur est prof
   useEffect(() => {
     if (userData && !['super_admin', 'teacher', 'tutor'].includes(userData.role)) {
       router.push('/dashboard')
@@ -68,25 +70,36 @@ export default function AdminDemandesPage() {
   }, [userData, router])
 
   const fetchDemandes = async () => {
+    if (!user) return
+    
     try {
       setLoading(true)
       
-      // Récupérer les statistiques
-      const statsData = await getDemandesStats()
+      // Récupérer toutes les demandes du professeur
+      const allRequests = await getTeacherRequests(user.uid)
+      
+      // Calculer les stats
+      const statsData = {
+        total: allRequests.length,
+        pending: allRequests.filter(d => d.status === 'pending').length,
+        approved: allRequests.filter(d => d.status === 'approved').length,
+        rejected: allRequests.filter(d => d.status === 'rejected').length,
+      }
       setStats(statsData)
       
-      // Récupérer les demandes selon l'onglet sélectionné
-      let demandesData: DemandeEncadrement[]
+      // Filtrer selon l'onglet sélectionné
+      let filteredDemandes: EncadrementRequest[]
       
       if (selectedTab === "all") {
-        demandesData = await getDemandesByStatus()
+        filteredDemandes = allRequests
       } else {
-        demandesData = await getDemandesByStatus(selectedTab)
+        filteredDemandes = allRequests.filter(d => d.status === selectedTab)
       }
       
-      setDemandes(demandesData)
+      setDemandes(filteredDemandes)
     } catch (error) {
       console.error("Error fetching demandes:", error)
+      toast.error("Erreur lors du chargement des demandes")
     } finally {
       setLoading(false)
     }
@@ -98,10 +111,10 @@ export default function AdminDemandesPage() {
     }
   }, [user, userData, selectedTab])
 
-  const handleAction = (demande: DemandeEncadrement, action: "approve" | "reject" | "contact") => {
+  const handleAction = (demande: EncadrementRequest, action: "approve" | "reject") => {
     setSelectedDemande(demande)
     setActionType(action)
-    setAdminNotes("")
+    setRejectionReason("")
     setDialogOpen(true)
   }
 
@@ -111,18 +124,17 @@ export default function AdminDemandesPage() {
     try {
       setProcessing(true)
       
-      const statusMap = {
-        approve: 'approved' as const,
-        reject: 'rejected' as const,
-        contact: 'contacted' as const,
+      if (actionType === 'approve') {
+        await approveRequest(selectedDemande.id, user.uid)
+        toast.success("Demande approuvée avec succès !")
+      } else if (actionType === 'reject') {
+        if (!rejectionReason.trim()) {
+          toast.error("Veuillez indiquer une raison de refus")
+          return
+        }
+        await rejectRequest(selectedDemande.id, user.uid, rejectionReason)
+        toast.success("Demande refusée")
       }
-      
-      await updateDemandeStatus(
-        selectedDemande.id,
-        statusMap[actionType],
-        user.uid,
-        adminNotes || undefined
-      )
       
       // Recharger les demandes
       await fetchDemandes()
@@ -130,10 +142,10 @@ export default function AdminDemandesPage() {
       setDialogOpen(false)
       setSelectedDemande(null)
       setActionType(null)
-      setAdminNotes("")
+      setRejectionReason("")
     } catch (error) {
       console.error("Error processing demande:", error)
-      alert("Erreur lors du traitement de la demande")
+      toast.error("Erreur lors du traitement de la demande")
     } finally {
       setProcessing(false)
     }
@@ -150,7 +162,7 @@ export default function AdminDemandesPage() {
       pending: { label: "En attente", className: "bg-orange-500", icon: Clock },
       approved: { label: "Approuvée", className: "bg-green-600", icon: CheckCircle },
       rejected: { label: "Refusée", className: "bg-red-600", icon: XCircle },
-      contacted: { label: "Contacté", className: "bg-blue-600", icon: UserCheck },
+      cancelled: { label: "Annulée", className: "bg-gray-600", icon: XCircle },
     }
     const { label, className, icon: Icon } = config[status as keyof typeof config] || { 
       label: status, 
@@ -165,7 +177,6 @@ export default function AdminDemandesPage() {
       </Badge>
     )
   }
-
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
@@ -201,7 +212,7 @@ export default function AdminDemandesPage() {
       </motion.div>
 
       {/* Statistiques */}
-      <motion.div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6" initial="hidden" animate="visible" variants={fadeIn}>
+      <motion.div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" initial="hidden" animate="visible" variants={fadeIn}>
         <Card>
           <CardContent className="pt-6">
             <div className="text-2xl font-bold">{stats.total}</div>
@@ -212,12 +223,6 @@ export default function AdminDemandesPage() {
           <CardContent className="pt-6">
             <div className="text-2xl font-bold text-orange-500">{stats.pending}</div>
             <p className="text-xs text-muted-foreground">En attente</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">{stats.contacted}</div>
-            <p className="text-xs text-muted-foreground">Contactés</p>
           </CardContent>
         </Card>
         <Card>
@@ -243,10 +248,9 @@ export default function AdminDemandesPage() {
           </CardHeader>
           <CardContent>
             <Tabs value={selectedTab} onValueChange={(v: any) => setSelectedTab(v)}>
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="all">Toutes ({stats.total})</TabsTrigger>
                 <TabsTrigger value="pending">En attente ({stats.pending})</TabsTrigger>
-                <TabsTrigger value="contacted">Contactés ({stats.contacted})</TabsTrigger>
                 <TabsTrigger value="approved">Approuvées ({stats.approved})</TabsTrigger>
                 <TabsTrigger value="rejected">Refusées ({stats.rejected})</TabsTrigger>
               </TabsList>
@@ -279,7 +283,7 @@ export default function AdminDemandesPage() {
                                 <div className="text-sm text-muted-foreground">{demande.studentEmail}</div>
                               </div>
                             </TableCell>
-                            <TableCell>{demande.level}</TableCell>
+                            <TableCell>{demande.studentLevel}</TableCell>
                             <TableCell>
                               <Badge variant="outline">{demande.formule}</Badge>
                             </TableCell>
@@ -300,14 +304,6 @@ export default function AdminDemandesPage() {
                                 </Button>
                                 {demande.status === 'pending' && (
                                   <>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleAction(demande, 'contact')}
-                                    >
-                                      <UserCheck className="h-4 w-4 mr-1" />
-                                      Contacter
-                                    </Button>
                                     <Button
                                       variant="outline"
                                       size="sm"
@@ -348,7 +344,7 @@ export default function AdminDemandesPage() {
           <DialogHeader>
             <DialogTitle>
               {actionType ? 
-                `${actionType === 'approve' ? 'Approuver' : actionType === 'reject' ? 'Refuser' : 'Contacter'} la demande` 
+                `${actionType === 'approve' ? 'Approuver' : 'Refuser'} la demande` 
                 : 'Détails de la demande'}
             </DialogTitle>
             <DialogDescription>
@@ -361,7 +357,15 @@ export default function AdminDemandesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm text-muted-foreground">Niveau</Label>
-                  <p className="font-medium">{selectedDemande.level}</p>
+                  <p className="font-medium">{selectedDemande.studentLevel}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">Classe</Label>
+                  <p className="font-medium">{selectedDemande.studentClass}</p>
+                </div>
+                <div>
+                  <Label className="text-sm text-muted-foreground">École</Label>
+                  <p className="font-medium">{selectedDemande.studentSchool}</p>
                 </div>
                 <div>
                   <Label className="text-sm text-muted-foreground">Matière</Label>
@@ -371,30 +375,37 @@ export default function AdminDemandesPage() {
                   <Label className="text-sm text-muted-foreground">Formule</Label>
                   <p className="font-medium">{selectedDemande.formule}</p>
                 </div>
-                <div>
-                  <Label className="text-sm text-muted-foreground">Téléphone</Label>
-                  <p className="font-medium">{selectedDemande.studentPhone || 'Non renseigné'}</p>
-                </div>
               </div>
 
               <div>
                 <Label className="text-sm text-muted-foreground">Objectifs</Label>
-                <p className="text-sm mt-1">{selectedDemande.objectifs}</p>
+                <p className="text-sm mt-1">{selectedDemande.objectives}</p>
               </div>
 
               <div>
                 <Label className="text-sm text-muted-foreground">Disponibilités</Label>
-                <p className="text-sm mt-1">{selectedDemande.disponibilites}</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {selectedDemande.availability.map((slot, index) => (
+                    <Badge key={index} variant="outline">{slot}</Badge>
+                  ))}
+                </div>
               </div>
 
-              {actionType && (
+              {selectedDemande.message && (
                 <div>
-                  <Label htmlFor="notes">Notes administratives (optionnel)</Label>
+                  <Label className="text-sm text-muted-foreground">Message</Label>
+                  <p className="text-sm mt-1">{selectedDemande.message}</p>
+                </div>
+              )}
+
+              {actionType === 'reject' && (
+                <div>
+                  <Label htmlFor="notes">Raison du refus *</Label>
                   <Textarea
                     id="notes"
-                    placeholder="Ajoutez des notes sur cette demande..."
-                    value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="Expliquez pourquoi cette demande est refusée..."
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
                     rows={4}
                   />
                 </div>
@@ -414,7 +425,7 @@ export default function AdminDemandesPage() {
                     Traitement...
                   </>
                 ) : (
-                  `Confirmer ${actionType === 'approve' ? "l'approbation" : actionType === 'reject' ? 'le refus' : 'le contact'}`
+                  `Confirmer ${actionType === 'approve' ? "l'approbation" : 'le refus'}`
                 )}
               </Button>
             </DialogFooter>
