@@ -127,7 +127,7 @@ const quizData = [
   },
 ]
 
-const getDifficultyColor = (difficulty) => {
+const getDifficultyColor = (difficulty: string) => {
   switch (difficulty) {
     case "Facile":
       return "bg-green-500/10 text-green-500 hover:bg-green-500/20"
@@ -142,7 +142,7 @@ const getDifficultyColor = (difficulty) => {
   }
 }
 
-const getLevelColor = (level) => {
+const getLevelColor = (level: string) => {
   switch (level) {
     case "Collège":
       return "bg-blue-500/10 text-blue-500"
