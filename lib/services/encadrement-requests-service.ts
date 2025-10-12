@@ -11,7 +11,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   Timestamp,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -68,12 +67,20 @@ export const getStudentRequests = async (studentId: string): Promise<Encadrement
   try {
     const q = query(
       collection(db, 'encadrement_requests'),
-      where('studentId', '==', studentId),
-      orderBy('createdAt', 'desc')
+      where('studentId', '==', studentId)
     );
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+    const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+    
+    // Tri manuel par date décroissante
+    requests.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+    
+    return requests;
   } catch (error) {
     console.error('Error fetching student requests:', error);
     throw error;
@@ -83,16 +90,33 @@ export const getStudentRequests = async (studentId: string): Promise<Encadrement
 // Demandes pour un professeur
 export const getTeacherRequests = async (teacherId: string): Promise<EncadrementRequest[]> => {
   try {
+    console.log('🔍 getTeacherRequests called with teacherId:', teacherId);
+    
     const q = query(
       collection(db, 'encadrement_requests'),
-      where('teacherId', '==', teacherId),
-      orderBy('createdAt', 'desc')
+      where('teacherId', '==', teacherId)
     );
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+    console.log('📦 Found', snapshot.size, 'documents');
+    
+    // Trier manuellement par date au lieu d'utiliser orderBy (évite le besoin d'index composite)
+    const requests = snapshot.docs.map(doc => {
+      console.log('📄 Document:', doc.id, doc.data());
+      return { id: doc.id, ...doc.data() } as EncadrementRequest;
+    });
+    
+    // Tri manuel par date décroissante
+    requests.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+    
+    console.log('✅ Returning', requests.length, 'sorted requests');
+    return requests;
   } catch (error) {
-    console.error('Error fetching teacher requests:', error);
+    console.error('❌ Error fetching teacher requests:', error);
     throw error;
   }
 };
@@ -100,18 +124,23 @@ export const getTeacherRequests = async (teacherId: string): Promise<Encadrement
 // Toutes les demandes (pour super admin)
 export const getAllRequests = async (): Promise<EncadrementRequest[]> => {
   try {
-    const q = query(
-      collection(db, 'encadrement_requests'),
-      orderBy('createdAt', 'desc')
-    );
+    const snapshot = await getDocs(collection(db, 'encadrement_requests'));
     
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+    const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+    
+    // Tri manuel par date décroissante
+    requests.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+    
+    return requests;
   } catch (error) {
     console.error('Error fetching all requests:', error);
     throw error;
   }
-};
+};;
 
 // Demandes en attente pour un professeur
 export const getPendingTeacherRequests = async (teacherId: string): Promise<EncadrementRequest[]> => {
@@ -119,12 +148,20 @@ export const getPendingTeacherRequests = async (teacherId: string): Promise<Enca
     const q = query(
       collection(db, 'encadrement_requests'),
       where('teacherId', '==', teacherId),
-      where('status', '==', 'pending'),
-      orderBy('createdAt', 'desc')
+      where('status', '==', 'pending')
     );
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+    const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+    
+    // Tri manuel par date décroissante
+    requests.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+    
+    return requests;
   } catch (error) {
     console.error('Error fetching pending teacher requests:', error);
     throw error;
@@ -136,12 +173,20 @@ export const getAllPendingRequests = async (): Promise<EncadrementRequest[]> => 
   try {
     const q = query(
       collection(db, 'encadrement_requests'),
-      where('status', '==', 'pending'),
-      orderBy('createdAt', 'desc')
+      where('status', '==', 'pending')
     );
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+    const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as EncadrementRequest));
+    
+    // Tri manuel par date décroissante
+    requests.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0;
+      const bTime = b.createdAt?.seconds || 0;
+      return bTime - aTime;
+    });
+    
+    return requests;
   } catch (error) {
     console.error('Error fetching all pending requests:', error);
     throw error;
