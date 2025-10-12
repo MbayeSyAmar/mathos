@@ -151,6 +151,9 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
+            <Link href="/dashboard/mes-demandes">Mes Demandes</Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
             <Link href="/dashboard/mon-profil">Mon profil</Link>
           </Button>
           <Button size="sm" asChild>
