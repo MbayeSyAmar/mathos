@@ -202,13 +202,19 @@ export const approveRequest = async (
   adminNotes?: string
 ): Promise<void> => {
   try {
-    await updateDoc(doc(db, 'encadrement_requests', requestId), {
+    const updateData: any = {
       status: 'approved',
       processedBy,
       processedAt: serverTimestamp(),
-      adminNotes,
       updatedAt: serverTimestamp(),
-    });
+    };
+    
+    // N'inclure adminNotes que s'il est défini
+    if (adminNotes) {
+      updateData.adminNotes = adminNotes;
+    }
+    
+    await updateDoc(doc(db, 'encadrement_requests', requestId), updateData);
   } catch (error) {
     console.error('Error approving request:', error);
     throw error;
@@ -223,14 +229,20 @@ export const rejectRequest = async (
   adminNotes?: string
 ): Promise<void> => {
   try {
-    await updateDoc(doc(db, 'encadrement_requests', requestId), {
+    const updateData: any = {
       status: 'rejected',
       processedBy,
       processedAt: serverTimestamp(),
       rejectionReason,
-      adminNotes,
       updatedAt: serverTimestamp(),
-    });
+    };
+    
+    // N'inclure adminNotes que s'il est défini
+    if (adminNotes) {
+      updateData.adminNotes = adminNotes;
+    }
+    
+    await updateDoc(doc(db, 'encadrement_requests', requestId), updateData);
   } catch (error) {
     console.error('Error rejecting request:', error);
     throw error;
