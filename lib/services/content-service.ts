@@ -13,7 +13,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   Timestamp,
   serverTimestamp,
 } from "firebase/firestore"
@@ -168,15 +167,23 @@ export async function getCoursesByTeacher(teacherId: string): Promise<Course[]> 
   try {
     const q = query(
       collection(db, "courses"),
-      where("teacherId", "==", teacherId),
-      orderBy("createdAt", "desc")
+      where("teacherId", "==", teacherId)
     )
     
     const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
+    const courses = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Course[]
+    
+    // Tri manuel par date décroissante
+    courses.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0
+      const bTime = b.createdAt?.seconds || 0
+      return bTime - aTime
+    })
+    
+    return courses
   } catch (error) {
     console.error("Error getting courses by teacher:", error)
     return []
@@ -187,15 +194,23 @@ export async function getAllCourses(): Promise<Course[]> {
   try {
     const q = query(
       collection(db, "courses"),
-      where("status", "==", "published"),
-      orderBy("createdAt", "desc")
+      where("status", "==", "published")
     )
     
     const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
+    const courses = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Course[]
+    
+    // Tri manuel par date décroissante
+    courses.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0
+      const bTime = b.createdAt?.seconds || 0
+      return bTime - aTime
+    })
+    
+    return courses
   } catch (error) {
     console.error("Error getting all courses:", error)
     return []
@@ -259,15 +274,23 @@ export async function getExercisesByTeacher(teacherId: string): Promise<Exercise
   try {
     const q = query(
       collection(db, "exercises"),
-      where("teacherId", "==", teacherId),
-      orderBy("createdAt", "desc")
+      where("teacherId", "==", teacherId)
     )
     
     const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
+    const exercises = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Exercise[]
+    
+    // Tri manuel par date décroissante
+    exercises.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0
+      const bTime = b.createdAt?.seconds || 0
+      return bTime - aTime
+    })
+    
+    return exercises
   } catch (error) {
     console.error("Error getting exercises by teacher:", error)
     return []
@@ -331,15 +354,23 @@ export async function getQuizzesByTeacher(teacherId: string): Promise<Quiz[]> {
   try {
     const q = query(
       collection(db, "quizzes"),
-      where("teacherId", "==", teacherId),
-      orderBy("createdAt", "desc")
+      where("teacherId", "==", teacherId)
     )
     
     const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
+    const quizzes = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Quiz[]
+    
+    // Tri manuel par date décroissante
+    quizzes.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0
+      const bTime = b.createdAt?.seconds || 0
+      return bTime - aTime
+    })
+    
+    return quizzes
   } catch (error) {
     console.error("Error getting quizzes by teacher:", error)
     return []
@@ -403,15 +434,23 @@ export async function getVideosByTeacher(teacherId: string): Promise<Video[]> {
   try {
     const q = query(
       collection(db, "videos"),
-      where("teacherId", "==", teacherId),
-      orderBy("createdAt", "desc")
+      where("teacherId", "==", teacherId)
     )
     
     const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
+    const videos = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Video[]
+    
+    // Tri manuel par date décroissante
+    videos.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0
+      const bTime = b.createdAt?.seconds || 0
+      return bTime - aTime
+    })
+    
+    return videos
   } catch (error) {
     console.error("Error getting videos by teacher:", error)
     return []
