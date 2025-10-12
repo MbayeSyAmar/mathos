@@ -5,6 +5,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   addDoc,
   updateDoc,
@@ -15,6 +16,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { grantStudentAccess } from './student-access-service';
 
 export interface EncadrementRequest {
   id: string;
@@ -202,6 +204,18 @@ export const approveRequest = async (
   adminNotes?: string
 ): Promise<void> => {
   try {
+    // Récupérer d'abord les détails de la demande
+    const requestDoc = await getDocs(
+      query(collection(db, 'encadrement_requests'), where('__name__', '==', requestId))
+    );
+    
+    if (requestDoc.empty) {
+      throw new Error('Request not found');
+    }
+    
+    const requestData = { id: requestDoc.docs[0].id, ...requestDoc.docs[0].data() } as EncadrementRequest;
+    
+    // Mettre à jour le statut de la demande
     const updateData: any = {
       status: 'approved',
       processedBy,
@@ -215,6 +229,20 @@ export const approveRequest = async (
     }
     
     await updateDoc(doc(db, 'encadrement_requests', requestId), updateData);
+    
+    // Créer automatiquement l'accès pour l'étudiant au contenu du professeur
+    await grantStudentAccess(
+      requestData.studentId,
+      requestData.studentName,
+      requestData.studentEmail,
+      requestData.teacherId,
+      requestData.teacherName,
+      requestData.formule,
+      requestData.subject,
+      requestId
+    );
+    
+    console.log('✅ Request approved and student access granted');
   } catch (error) {
     console.error('Error approving request:', error);
     throw error;

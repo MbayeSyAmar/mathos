@@ -521,3 +521,128 @@ export const STATUSES = [
   { value: "published", label: "Publié" },
   { value: "archived", label: "Archivé" },
 ]
+
+// ============================================================================
+// ACCÈS ÉTUDIANT AU CONTENU DU PROFESSEUR
+// ============================================================================
+
+/**
+ * Obtenir tous les cours publiés d'un professeur spécifique
+ * Pour les étudiants qui ont accès au contenu de ce professeur
+ */
+export async function getPublishedCoursesByTeacher(teacherId: string): Promise<Course[]> {
+  try {
+    const q = query(
+      collection(db, "courses"),
+      where("teacherId", "==", teacherId),
+      where("status", "==", "published")
+    )
+    
+    const snapshot = await getDocs(q)
+    const courses = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Course[]
+    
+    courses.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0
+      const bTime = b.createdAt?.seconds || 0
+      return bTime - aTime
+    })
+    
+    return courses
+  } catch (error) {
+    console.error("Error getting published courses by teacher:", error)
+    return []
+  }
+}
+
+/**
+ * Obtenir tous les exercices publiés d'un professeur spécifique
+ */
+export async function getPublishedExercisesByTeacher(teacherId: string): Promise<Exercise[]> {
+  try {
+    const q = query(
+      collection(db, "exercises"),
+      where("teacherId", "==", teacherId),
+      where("status", "==", "published")
+    )
+    
+    const snapshot = await getDocs(q)
+    const exercises = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Exercise[]
+    
+    exercises.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0
+      const bTime = b.createdAt?.seconds || 0
+      return bTime - aTime
+    })
+    
+    return exercises
+  } catch (error) {
+    console.error("Error getting published exercises by teacher:", error)
+    return []
+  }
+}
+
+/**
+ * Obtenir tous les quiz publiés d'un professeur spécifique
+ */
+export async function getPublishedQuizzesByTeacher(teacherId: string): Promise<Quiz[]> {
+  try {
+    const q = query(
+      collection(db, "quizzes"),
+      where("teacherId", "==", teacherId),
+      where("status", "==", "published")
+    )
+    
+    const snapshot = await getDocs(q)
+    const quizzes = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Quiz[]
+    
+    quizzes.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0
+      const bTime = b.createdAt?.seconds || 0
+      return bTime - aTime
+    })
+    
+    return quizzes
+  } catch (error) {
+    console.error("Error getting published quizzes by teacher:", error)
+    return []
+  }
+}
+
+/**
+ * Obtenir toutes les vidéos publiées d'un professeur spécifique
+ */
+export async function getPublishedVideosByTeacher(teacherId: string): Promise<Video[]> {
+  try {
+    const q = query(
+      collection(db, "videos"),
+      where("teacherId", "==", teacherId),
+      where("status", "==", "published")
+    )
+    
+    const snapshot = await getDocs(q)
+    const videos = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Video[]
+    
+    videos.sort((a, b) => {
+      const aTime = a.createdAt?.seconds || 0
+      const bTime = b.createdAt?.seconds || 0
+      return bTime - aTime
+    })
+    
+    return videos
+  } catch (error) {
+    console.error("Error getting published videos by teacher:", error)
+    return []
+  }
+}
