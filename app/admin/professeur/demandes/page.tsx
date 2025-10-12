@@ -75,8 +75,12 @@ export default function AdminDemandesPage() {
     try {
       setLoading(true)
       
+      console.log("🔍 Fetching requests for teacher ID:", user.uid)
+      
       // Récupérer toutes les demandes du professeur
       const allRequests = await getTeacherRequests(user.uid)
+      
+      console.log("📊 Requests fetched:", allRequests.length, allRequests)
       
       // Calculer les stats
       const statsData = {

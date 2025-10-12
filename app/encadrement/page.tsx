@@ -99,6 +99,8 @@ export default function EncadrementPage() {
     try {
       setLoading(true)
       
+      console.log("📤 Submitting request with teacherId:", formData.teacherId)
+      
       // Si l'utilisateur est connecté, on prend ses infos, sinon on utilise le formulaire
       const requestData = {
         studentId: user?.uid || "",
@@ -115,6 +117,8 @@ export default function EncadrementPage() {
         availability: formData.availability,
         message: formData.message,
       }
+
+      console.log("📝 Full request data:", requestData)
 
       await createEncadrementRequest(requestData)
       
