@@ -297,6 +297,19 @@ export async function getExercisesByTeacher(teacherId: string): Promise<Exercise
   }
 }
 
+export async function getExerciseById(exerciseId: string): Promise<Exercise | null> {
+  try {
+    const exerciseDoc = await getDoc(doc(db, "exercises", exerciseId))
+    if (!exerciseDoc.exists()) {
+      return null
+    }
+    return { id: exerciseDoc.id, ...exerciseDoc.data() } as Exercise
+  } catch (error) {
+    console.error("Error getting exercise:", error)
+    return null
+  }
+}
+
 export async function updateExercise(
   exerciseId: string,
   updates: Partial<Omit<Exercise, "id" | "teacherId" | "createdAt">>
@@ -377,6 +390,19 @@ export async function getQuizzesByTeacher(teacherId: string): Promise<Quiz[]> {
   }
 }
 
+export async function getQuizById(quizId: string): Promise<Quiz | null> {
+  try {
+    const quizDoc = await getDoc(doc(db, "quizzes", quizId))
+    if (!quizDoc.exists()) {
+      return null
+    }
+    return { id: quizDoc.id, ...quizDoc.data() } as Quiz
+  } catch (error) {
+    console.error("Error getting quiz:", error)
+    return null
+  }
+}
+
 export async function updateQuiz(
   quizId: string,
   updates: Partial<Omit<Quiz, "id" | "teacherId" | "createdAt">>
@@ -454,6 +480,19 @@ export async function getVideosByTeacher(teacherId: string): Promise<Video[]> {
   } catch (error) {
     console.error("Error getting videos by teacher:", error)
     return []
+  }
+}
+
+export async function getVideoById(videoId: string): Promise<Video | null> {
+  try {
+    const videoDoc = await getDoc(doc(db, "videos", videoId))
+    if (!videoDoc.exists()) {
+      return null
+    }
+    return { id: videoDoc.id, ...videoDoc.data() } as Video
+  } catch (error) {
+    console.error("Error getting video:", error)
+    return null
   }
 }
 

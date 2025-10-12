@@ -1,17 +1,30 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
+import { useParams, useRouter } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { ArrowLeft, ArrowRight, Clock, CheckCircle, AlertCircle, Trophy } from "lucide-react"
-import { motion } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import {
+  BrainCircuit,
+  Clock,
+  ArrowLeft,
+  ArrowRight,
+  User,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Trophy,
+} from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
+import { getQuizById, type Quiz, type QuizQuestion } from "@/lib/services/content-service"
+import { hasAccessToTeacher } from "@/lib/services/student-access-service"
+import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "sonner"
 
 // Données simulées pour le quiz
 const quizData = {
