@@ -84,14 +84,24 @@ export default function Home() {
               <Button 
                 size="lg" 
                 className="gap-1"
-                onClick={() => router.push(user ? "/dashboard" : "/inscription")}
+                onClick={() => {
+                  console.log("Commencer maintenant clicked, user:", user)
+                  if (user) {
+                    router.push("/dashboard")
+                  } else {
+                    router.push("/inscription")
+                  }
+                }}
               >
                 Commencer maintenant <ArrowRight className="h-4 w-4" />
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
-                onClick={() => router.push("/cours")}
+                onClick={() => {
+                  console.log("Découvrir nos cours clicked")
+                  router.push("/cours")
+                }}
               >
                 Découvrir nos cours
               </Button>
