@@ -85,7 +85,6 @@ export default function Home() {
                 size="lg" 
                 className="gap-1"
                 onClick={() => {
-                  console.log("Commencer maintenant clicked, user:", user)
                   if (user) {
                     router.push("/dashboard")
                   } else {
@@ -98,10 +97,7 @@ export default function Home() {
               <Button 
                 size="lg" 
                 variant="outline"
-                onClick={() => {
-                  console.log("Découvrir nos cours clicked")
-                  router.push("/cours")
-                }}
+                onClick={() => router.push("/cours")}
               >
                 Découvrir nos cours
               </Button>

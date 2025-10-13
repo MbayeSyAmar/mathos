@@ -74,13 +74,18 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/groupe" className="text-muted-foreground hover:text-primary">
+                <a 
+                  href="https://chat.whatsapp.com/FhVX5a3kGfv3PN0uTIna8E?mode=wwt" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary"
+                >
                   Groupe Mathosphère
-                </Link>
+                </a>
               </li>
               <li>
-                <Link href="/faq" className="text-muted-foreground hover:text-primary">
-                  FAQ
+                <Link href="/forum" className="text-muted-foreground hover:text-primary">
+                  Forum
                 </Link>
               </li>
               <li>
@@ -94,17 +99,17 @@ export default function Footer() {
             <h3 className="text-lg font-medium">Légal</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/conditions" className="text-muted-foreground hover:text-primary">
+                <Link href="/contact" className="text-muted-foreground hover:text-primary">
                   Conditions d'utilisation
                 </Link>
               </li>
               <li>
-                <Link href="/confidentialite" className="text-muted-foreground hover:text-primary">
+                <Link href="/contact" className="text-muted-foreground hover:text-primary">
                   Politique de confidentialité
                 </Link>
               </li>
               <li>
-                <Link href="/cookies" className="text-muted-foreground hover:text-primary">
+                <Link href="/contact" className="text-muted-foreground hover:text-primary">
                   Politique de cookies
                 </Link>
               </li>
