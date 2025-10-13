@@ -26,10 +26,10 @@ import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/components/ui/use-toast"
 
 // Fonction pour formater la date relative
-const formatRelativeTime = (timestamp) => {
+const formatRelativeTime = (timestamp: any): string => {
   if (!timestamp) return "Date inconnue"
 
-  let date
+  let date: Date
 
   // Vérifier le type de timestamp et le convertir en Date si nécessaire
   if (timestamp instanceof Date) {
@@ -51,7 +51,7 @@ const formatRelativeTime = (timestamp) => {
   }
 
   const now = new Date()
-  const diffInSeconds = Math.floor((now - date) / 1000)
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
   if (diffInSeconds < 60) return "À l'instant"
   if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)} minutes`
@@ -62,13 +62,19 @@ const formatRelativeTime = (timestamp) => {
 }
 
 export default function DiscussionPage() {
-  const [discussion, setDiscussion] = useState(null)
-  const [replies, setReplies] = useState([])
-  const [similarDiscussions, setSimilarDiscussions] = useState([])
+  const [discussion, setDiscussion] = useState<any>(null)
+  const [replies, setReplies] = useState<any[]>([])
+  const [similarDiscussions, setSimilarDiscussions] = useState<any[]>([])
   const [replyContent, setReplyContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
+  
+  // États pour éviter les actions répétées
+  const [hasLikedDiscussion, setHasLikedDiscussion] = useState(false)
+  const [hasReportedDiscussion, setHasReportedDiscussion] = useState(false)
+  const [likedReplies, setLikedReplies] = useState(new Set<string>())
+  const [reportedReplies, setReportedReplies] = useState(new Set<string>())
 
   const params = useParams()
   const router = useRouter()
@@ -83,7 +89,7 @@ export default function DiscussionPage() {
         setError(null)
 
         // Récupérer la discussion
-        const discussionRef = firestoreDoc(db, "forum_discussions", params.id)
+        const discussionRef = firestoreDoc(db, "forum_discussions", params.id as string)
         const discussionSnap = await getDoc(discussionRef)
 
         if (!discussionSnap.exists()) {
@@ -101,7 +107,7 @@ export default function DiscussionPage() {
 
         // Récupérer les réponses
         const repliesRef = collection(db, "forum_reponses")
-        const repliesQuery = query(repliesRef, where("discussionId", "==", params.id))
+        const repliesQuery = query(repliesRef, where("discussionId", "==", params.id as string))
         const repliesSnap = await getDocs(repliesQuery)
 
         const repliesData = repliesSnap.docs.map((docSnapshot) => ({
@@ -110,7 +116,7 @@ export default function DiscussionPage() {
         }))
 
         // Trier les réponses par date (plus anciennes d'abord)
-        repliesData.sort((a, b) => {
+        repliesData.sort((a: any, b: any) => {
           if (!a.dateCreation || !b.dateCreation) return 0
 
           // Extraire les secondes pour la comparaison
@@ -153,7 +159,7 @@ export default function DiscussionPage() {
   }, [params.id])
 
   // Soumettre une réponse
-  const handleSubmitReply = async (e) => {
+  const handleSubmitReply = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!user) {
@@ -187,7 +193,7 @@ export default function DiscussionPage() {
       })
 
       // Mettre à jour le compteur de réponses et la date de dernière réponse
-      await updateDoc(firestoreDoc(db, "forum_discussions", params.id), {
+      await updateDoc(firestoreDoc(db, "forum_discussions", params.id as string), {
         reponses: increment(1),
         derniereReponse: serverTimestamp(),
       })
@@ -237,11 +243,14 @@ export default function DiscussionPage() {
   // Handlers pour aimer, partager, signaler
   const handleLikeDiscussion = async () => {
     if (!user) return toast({ title: "Connexion requise", description: "Connectez-vous pour aimer." })
+    if (hasLikedDiscussion) return toast({ title: "Déjà aimé", description: "Vous avez déjà aimé cette discussion." })
     try {
-      await updateDoc(firestoreDoc(db, "forum_discussions", params.id), { likes: increment(1) })
-      setDiscussion((prev) => prev && { ...prev, likes: (prev.likes || 0) + 1 })
+      await updateDoc(firestoreDoc(db, "forum_discussions", params.id as string), { likes: increment(1) })
+      setDiscussion((prev: any) => prev && { ...prev, likes: (prev.likes || 0) + 1 })
+      setHasLikedDiscussion(true)
+      toast({ title: "J'aime ajouté !", description: "Vous avez aimé cette discussion." })
     } catch (e) {
-      toast({ title: "Erreur", description: "Impossible d'aimer la discussion." })
+      toast({ title: "Erreur", description: "Impossible d'aimer la discussion.", variant: "destructive" })
     }
   }
 
@@ -255,50 +264,57 @@ export default function DiscussionPage() {
   }
 
   const handleReportDiscussion = async () => {
+    if (hasReportedDiscussion) return toast({ title: "Déjà signalé", description: "Vous avez déjà signalé cette discussion." })
     try {
       await addDoc(collection(db, "forum_signals"), {
         type: "discussion",
-        discussionId: params.id,
+        discussionId: params.id as string,
         userId: user ? user.uid : null,
         date: serverTimestamp(),
       })
+      setHasReportedDiscussion(true)
       toast({ title: "Signalement envoyé", description: "Merci pour votre signalement." })
     } catch {
-      toast({ title: "Erreur", description: "Impossible de signaler." })
+      toast({ title: "Erreur", description: "Impossible de signaler.", variant: "destructive" })
     }
   }
 
-  const handleLikeReply = async (replyId) => {
+  const handleLikeReply = async (replyId: string) => {
     if (!user) return toast({ title: "Connexion requise", description: "Connectez-vous pour aimer." })
+    if (likedReplies.has(replyId)) return toast({ title: "Déjà aimé", description: "Vous avez déjà aimé cette réponse." })
     try {
       await updateDoc(firestoreDoc(db, "forum_reponses", replyId), { likes: increment(1) })
       setReplies((prev) => prev.map(r => r.id === replyId ? { ...r, likes: (r.likes || 0) + 1 } : r))
+      setLikedReplies(new Set([...likedReplies, replyId]))
+      toast({ title: "J'aime ajouté !", description: "Vous avez aimé cette réponse." })
     } catch (e) {
-      toast({ title: "Erreur", description: "Impossible d'aimer la réponse." })
+      toast({ title: "Erreur", description: "Impossible d'aimer la réponse.", variant: "destructive" })
     }
   }
 
-  const handleReportReply = async (replyId) => {
+  const handleReportReply = async (replyId: string) => {
+    if (reportedReplies.has(replyId)) return toast({ title: "Déjà signalé", description: "Vous avez déjà signalé cette réponse." })
     try {
       await addDoc(collection(db, "forum_signals"), {
         type: "reply",
         replyId,
-        discussionId: params.id,
+        discussionId: params.id as string,
         userId: user ? user.uid : null,
         date: serverTimestamp(),
       })
+      setReportedReplies(new Set([...reportedReplies, replyId]))
       toast({ title: "Signalement envoyé", description: "Merci pour votre signalement." })
     } catch {
-      toast({ title: "Erreur", description: "Impossible de signaler." })
+      toast({ title: "Erreur", description: "Impossible de signaler.", variant: "destructive" })
     }
   }
 
-  const handleShareReply = async (replyId) => {
+  const handleShareReply = async (replyId: string) => {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/forum/${params.id}#reply-${replyId}`)
+      await navigator.clipboard.writeText(`${window.location.origin}/forum/${params.id as string}#reply-${replyId}`)
       toast({ title: "Lien copié !", description: "Le lien de la réponse a été copié." })
     } catch {
-      toast({ title: "Erreur", description: "Impossible de copier le lien." })
+      toast({ title: "Erreur", description: "Impossible de copier le lien.", variant: "destructive" })
     }
   }
 
@@ -385,15 +401,25 @@ export default function DiscussionPage() {
 
             <div className="flex justify-between items-center pt-4 border-t border-gray-300">
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={handleLikeDiscussion}>
-                  <ThumbsUp className="h-4 w-4 mr-2" /> J'aime {discussion.likes || 0}
+                <Button 
+                  variant={hasLikedDiscussion ? "default" : "ghost"} 
+                  size="sm" 
+                  onClick={handleLikeDiscussion}
+                  disabled={hasLikedDiscussion}
+                >
+                  <ThumbsUp className="h-4 w-4 mr-2" /> {hasLikedDiscussion ? "Aimé" : "J'aime"} {discussion.likes || 0}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleShareDiscussion}>
                   <Share2 className="h-4 w-4 mr-2" /> Partager
                 </Button>
               </div>
-              <Button variant="ghost" size="sm" onClick={handleReportDiscussion}>
-                <Flag className="h-4 w-4 mr-2" /> Signaler
+              <Button 
+                variant={hasReportedDiscussion ? "destructive" : "ghost"} 
+                size="sm" 
+                onClick={handleReportDiscussion}
+                disabled={hasReportedDiscussion}
+              >
+                <Flag className="h-4 w-4 mr-2" /> {hasReportedDiscussion ? "Signalé" : "Signaler"}
               </Button>
             </div>
           </CardContent>
@@ -441,14 +467,24 @@ export default function DiscussionPage() {
                     />
 
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleLikeReply(reply.id)}>
-                        <ThumbsUp className="h-3 w-3 mr-1" /> {reply.likes || 0}
+                      <Button 
+                        variant={likedReplies.has(reply.id) ? "default" : "ghost"} 
+                        size="sm" 
+                        onClick={() => handleLikeReply(reply.id)}
+                        disabled={likedReplies.has(reply.id)}
+                      >
+                        <ThumbsUp className="h-3 w-3 mr-1" /> {likedReplies.has(reply.id) ? "Aimé" : "J'aime"} {reply.likes || 0}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleShareReply(reply.id)}>
                         <Share2 className="h-3 w-3 mr-1" /> Partager
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleReportReply(reply.id)}>
-                        <Flag className="h-3 w-3 mr-1" /> Signaler
+                      <Button 
+                        variant={reportedReplies.has(reply.id) ? "destructive" : "ghost"} 
+                        size="sm" 
+                        onClick={() => handleReportReply(reply.id)}
+                        disabled={reportedReplies.has(reply.id)}
+                      >
+                        <Flag className="h-3 w-3 mr-1" /> {reportedReplies.has(reply.id) ? "Signalé" : "Signaler"}
                       </Button>
                     </div>
                   </motion.div>
