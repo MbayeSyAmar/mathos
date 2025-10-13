@@ -234,6 +234,74 @@ export default function DiscussionPage() {
     }
   }
 
+  // Handlers pour aimer, partager, signaler
+  const handleLikeDiscussion = async () => {
+    if (!user) return toast({ title: "Connexion requise", description: "Connectez-vous pour aimer." })
+    try {
+      await updateDoc(firestoreDoc(db, "forum_discussions", params.id), { likes: increment(1) })
+      setDiscussion((prev) => prev && { ...prev, likes: (prev.likes || 0) + 1 })
+    } catch (e) {
+      toast({ title: "Erreur", description: "Impossible d'aimer la discussion." })
+    }
+  }
+
+  const handleShareDiscussion = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast({ title: "Lien copié !", description: "Le lien de la discussion a été copié." })
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de copier le lien." })
+    }
+  }
+
+  const handleReportDiscussion = async () => {
+    try {
+      await addDoc(collection(db, "forum_signals"), {
+        type: "discussion",
+        discussionId: params.id,
+        userId: user ? user.uid : null,
+        date: serverTimestamp(),
+      })
+      toast({ title: "Signalement envoyé", description: "Merci pour votre signalement." })
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de signaler." })
+    }
+  }
+
+  const handleLikeReply = async (replyId) => {
+    if (!user) return toast({ title: "Connexion requise", description: "Connectez-vous pour aimer." })
+    try {
+      await updateDoc(firestoreDoc(db, "forum_reponses", replyId), { likes: increment(1) })
+      setReplies((prev) => prev.map(r => r.id === replyId ? { ...r, likes: (r.likes || 0) + 1 } : r))
+    } catch (e) {
+      toast({ title: "Erreur", description: "Impossible d'aimer la réponse." })
+    }
+  }
+
+  const handleReportReply = async (replyId) => {
+    try {
+      await addDoc(collection(db, "forum_signals"), {
+        type: "reply",
+        replyId,
+        discussionId: params.id,
+        userId: user ? user.uid : null,
+        date: serverTimestamp(),
+      })
+      toast({ title: "Signalement envoyé", description: "Merci pour votre signalement." })
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de signaler." })
+    }
+  }
+
+  const handleShareReply = async (replyId) => {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}/forum/${params.id}#reply-${replyId}`)
+      toast({ title: "Lien copié !", description: "Le lien de la réponse a été copié." })
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de copier le lien." })
+    }
+  }
+
   if (loading) {
     return (
       <div className="container py-10">
@@ -317,14 +385,14 @@ export default function DiscussionPage() {
 
             <div className="flex justify-between items-center pt-4 border-t border-gray-300">
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm">
-                  <ThumbsUp className="h-4 w-4 mr-2" /> J'aime
+                <Button variant="ghost" size="sm" onClick={handleLikeDiscussion}>
+                  <ThumbsUp className="h-4 w-4 mr-2" /> J'aime {discussion.likes || 0}
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={handleShareDiscussion}>
                   <Share2 className="h-4 w-4 mr-2" /> Partager
                 </Button>
               </div>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={handleReportDiscussion}>
                 <Flag className="h-4 w-4 mr-2" /> Signaler
               </Button>
             </div>
@@ -373,10 +441,13 @@ export default function DiscussionPage() {
                     />
 
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleLikeReply(reply.id)}>
                         <ThumbsUp className="h-3 w-3 mr-1" /> {reply.likes || 0}
                       </Button>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" onClick={() => handleShareReply(reply.id)}>
+                        <Share2 className="h-3 w-3 mr-1" /> Partager
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleReportReply(reply.id)}>
                         <Flag className="h-3 w-3 mr-1" /> Signaler
                       </Button>
                     </div>
