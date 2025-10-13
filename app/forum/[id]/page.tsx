@@ -147,6 +147,65 @@ export default function DiscussionPage() {
         })
         setReplies(repliesData)
         setSimilarDiscussions(similarData)
+
+        // Charger les likes et signalements de l'utilisateur connecté
+        if (user) {
+          // Vérifier si l'utilisateur a aimé la discussion
+          const discussionLikeQuery = query(
+            collection(db, "forum_likes"),
+            where("userId", "==", user.uid),
+            where("discussionId", "==", params.id as string)
+          )
+          const discussionLikeSnap = await getDocs(discussionLikeQuery)
+          if (!discussionLikeSnap.empty) {
+            setHasLikedDiscussion(true)
+          }
+
+          // Vérifier si l'utilisateur a signalé la discussion
+          const discussionReportQuery = query(
+            collection(db, "forum_signals"),
+            where("userId", "==", user.uid),
+            where("discussionId", "==", params.id as string),
+            where("type", "==", "discussion")
+          )
+          const discussionReportSnap = await getDocs(discussionReportQuery)
+          if (!discussionReportSnap.empty) {
+            setHasReportedDiscussion(true)
+          }
+
+          // Vérifier les likes des réponses
+          const repliesLikeQuery = query(
+            collection(db, "forum_likes"),
+            where("userId", "==", user.uid),
+            where("discussionId", "==", params.id as string)
+          )
+          const repliesLikeSnap = await getDocs(repliesLikeQuery)
+          const likedReplyIds = new Set<string>()
+          repliesLikeSnap.docs.forEach((doc) => {
+            const data = doc.data()
+            if (data.replyId) {
+              likedReplyIds.add(data.replyId)
+            }
+          })
+          setLikedReplies(likedReplyIds)
+
+          // Vérifier les signalements des réponses
+          const repliesReportQuery = query(
+            collection(db, "forum_signals"),
+            where("userId", "==", user.uid),
+            where("discussionId", "==", params.id as string),
+            where("type", "==", "reply")
+          )
+          const repliesReportSnap = await getDocs(repliesReportQuery)
+          const reportedReplyIds = new Set<string>()
+          repliesReportSnap.docs.forEach((doc) => {
+            const data = doc.data()
+            if (data.replyId) {
+              reportedReplyIds.add(data.replyId)
+            }
+          })
+          setReportedReplies(reportedReplyIds)
+        }
       } catch (error) {
         console.error("Erreur lors de la récupération de la discussion:", error)
         setError("Une erreur s'est produite lors du chargement de la discussion")
@@ -156,7 +215,7 @@ export default function DiscussionPage() {
     }
 
     fetchDiscussion()
-  }, [params.id])
+  }, [params.id, user])
 
   // Soumettre une réponse
   const handleSubmitReply = async (e: React.FormEvent) => {
@@ -245,11 +304,21 @@ export default function DiscussionPage() {
     if (!user) return toast({ title: "Connexion requise", description: "Connectez-vous pour aimer." })
     if (hasLikedDiscussion) return toast({ title: "Déjà aimé", description: "Vous avez déjà aimé cette discussion." })
     try {
+      // Enregistrer le like dans Firestore
+      await addDoc(collection(db, "forum_likes"), {
+        userId: user.uid,
+        discussionId: params.id as string,
+        type: "discussion",
+        date: serverTimestamp(),
+      })
+      
+      // Incrémenter le compteur de likes
       await updateDoc(firestoreDoc(db, "forum_discussions", params.id as string), { likes: increment(1) })
       setDiscussion((prev: any) => prev && { ...prev, likes: (prev.likes || 0) + 1 })
       setHasLikedDiscussion(true)
       toast({ title: "J'aime ajouté !", description: "Vous avez aimé cette discussion." })
     } catch (e) {
+      console.error("Erreur lors du like:", e)
       toast({ title: "Erreur", description: "Impossible d'aimer la discussion.", variant: "destructive" })
     }
   }
@@ -283,11 +352,22 @@ export default function DiscussionPage() {
     if (!user) return toast({ title: "Connexion requise", description: "Connectez-vous pour aimer." })
     if (likedReplies.has(replyId)) return toast({ title: "Déjà aimé", description: "Vous avez déjà aimé cette réponse." })
     try {
+      // Enregistrer le like dans Firestore
+      await addDoc(collection(db, "forum_likes"), {
+        userId: user.uid,
+        discussionId: params.id as string,
+        replyId: replyId,
+        type: "reply",
+        date: serverTimestamp(),
+      })
+      
+      // Incrémenter le compteur de likes
       await updateDoc(firestoreDoc(db, "forum_reponses", replyId), { likes: increment(1) })
       setReplies((prev) => prev.map(r => r.id === replyId ? { ...r, likes: (r.likes || 0) + 1 } : r))
       setLikedReplies(new Set([...likedReplies, replyId]))
       toast({ title: "J'aime ajouté !", description: "Vous avez aimé cette réponse." })
     } catch (e) {
+      console.error("Erreur lors du like:", e)
       toast({ title: "Erreur", description: "Impossible d'aimer la réponse.", variant: "destructive" })
     }
   }
