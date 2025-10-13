@@ -2,12 +2,16 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { BookOpen, PenTool, BrainCircuit, BookText, Youtube, Mail, ArrowRight, CheckCircle } from "lucide-react"
 import { motion } from "framer-motion"
+import { useAuth } from "@/lib/auth-context"
 
 export default function Home() {
+  const router = useRouter()
+  const { user } = useAuth()
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -77,10 +81,18 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.8 }}
             >
-              <Button size="lg" className="gap-1">
+              <Button 
+                size="lg" 
+                className="gap-1"
+                onClick={() => router.push(user ? "/dashboard" : "/inscription")}
+              >
                 Commencer maintenant <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline">
+              <Button 
+                size="lg" 
+                variant="outline"
+                onClick={() => router.push("/cours")}
+              >
                 Découvrir nos cours
               </Button>
             </motion.div>
@@ -250,8 +262,17 @@ export default function Home() {
                 ))}
               </ul>
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Button size="lg">Demander un encadrement</Button>
-                <Button size="lg" variant="outline">
+                <Button 
+                  size="lg"
+                  onClick={() => router.push(user ? "/dashboard/encadrement" : "/connexion?redirect=/dashboard/encadrement")}
+                >
+                  Demander un encadrement
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => router.push("/encadrement")}
+                >
                   En savoir plus
                 </Button>
               </div>
@@ -301,8 +322,17 @@ export default function Home() {
                 ))}
               </ul>
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <Button size="lg">Rejoindre le groupe</Button>
-                <Button size="lg" variant="outline">
+                <Button 
+                  size="lg"
+                  onClick={() => router.push("/forum")}
+                >
+                  Rejoindre le groupe
+                </Button>
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  onClick={() => router.push("/forum")}
+                >
                   En savoir plus
                 </Button>
               </div>
@@ -324,10 +354,19 @@ export default function Home() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 min-w-[200px]">
-              <Button size="lg" variant="secondary">
+              <Button 
+                size="lg" 
+                variant="secondary"
+                onClick={() => router.push("/inscription")}
+              >
                 S'inscrire gratuitement
               </Button>
-              <Button size="lg" variant="outline" className="bg-transparent">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="bg-transparent"
+                onClick={() => router.push("/contact")}
+              >
                 En savoir plus
               </Button>
             </div>
