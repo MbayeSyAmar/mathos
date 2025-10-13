@@ -334,7 +334,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <Button 
                   size="lg"
-                  onClick={() => router.push("/forum")}
+                  onClick={() => window.open("https://chat.whatsapp.com/FhVX5a3kGfv3PN0uTIna8E?mode=wwt", "_blank")}
                 >
                   Rejoindre le groupe
                 </Button>
