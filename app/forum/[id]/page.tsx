@@ -157,7 +157,9 @@ export default function DiscussionPage() {
             where("discussionId", "==", params.id as string)
           )
           const discussionLikeSnap = await getDocs(discussionLikeQuery)
-          if (!discussionLikeSnap.empty) {
+          // Vérifier qu'il existe au moins un like non supprimé
+          const hasActiveLike = discussionLikeSnap.docs.some(doc => !doc.data().deleted)
+          if (hasActiveLike) {
             setHasLikedDiscussion(true)
           }
 
@@ -169,7 +171,9 @@ export default function DiscussionPage() {
             where("type", "==", "discussion")
           )
           const discussionReportSnap = await getDocs(discussionReportQuery)
-          if (!discussionReportSnap.empty) {
+          // Vérifier qu'il existe au moins un signalement non supprimé
+          const hasActiveReport = discussionReportSnap.docs.some(doc => !doc.data().deleted)
+          if (hasActiveReport) {
             setHasReportedDiscussion(true)
           }
 
@@ -183,7 +187,7 @@ export default function DiscussionPage() {
           const likedReplyIds = new Set<string>()
           repliesLikeSnap.docs.forEach((doc) => {
             const data = doc.data()
-            if (data.replyId) {
+            if (data.replyId && !data.deleted) {
               likedReplyIds.add(data.replyId)
             }
           })
@@ -200,7 +204,7 @@ export default function DiscussionPage() {
           const reportedReplyIds = new Set<string>()
           repliesReportSnap.docs.forEach((doc) => {
             const data = doc.data()
-            if (data.replyId) {
+            if (data.replyId && !data.deleted) {
               reportedReplyIds.add(data.replyId)
             }
           })
@@ -302,24 +306,46 @@ export default function DiscussionPage() {
   // Handlers pour aimer, partager, signaler
   const handleLikeDiscussion = async () => {
     if (!user) return toast({ title: "Connexion requise", description: "Connectez-vous pour aimer." })
-    if (hasLikedDiscussion) return toast({ title: "Déjà aimé", description: "Vous avez déjà aimé cette discussion." })
+    
     try {
-      // Enregistrer le like dans Firestore
-      await addDoc(collection(db, "forum_likes"), {
-        userId: user.uid,
-        discussionId: params.id as string,
-        type: "discussion",
-        date: serverTimestamp(),
-      })
-      
-      // Incrémenter le compteur de likes
-      await updateDoc(firestoreDoc(db, "forum_discussions", params.id as string), { likes: increment(1) })
-      setDiscussion((prev: any) => prev && { ...prev, likes: (prev.likes || 0) + 1 })
-      setHasLikedDiscussion(true)
-      toast({ title: "J'aime ajouté !", description: "Vous avez aimé cette discussion." })
+      if (hasLikedDiscussion) {
+        // Retirer le like
+        const likesQuery = query(
+          collection(db, "forum_likes"),
+          where("userId", "==", user.uid),
+          where("discussionId", "==", params.id as string),
+          where("type", "==", "discussion")
+        )
+        const likesSnap = await getDocs(likesQuery)
+        
+        // Supprimer le document de like
+        const deletePromises = likesSnap.docs.map(doc => 
+          updateDoc(firestoreDoc(db, "forum_likes", doc.id), { deleted: true })
+        )
+        await Promise.all(deletePromises)
+        
+        // Décrémenter le compteur de likes
+        await updateDoc(firestoreDoc(db, "forum_discussions", params.id as string), { likes: increment(-1) })
+        setDiscussion((prev: any) => prev && { ...prev, likes: Math.max(0, (prev.likes || 1) - 1) })
+        setHasLikedDiscussion(false)
+        toast({ title: "J'aime retiré", description: "Vous avez retiré votre like." })
+      } else {
+        // Ajouter le like
+        await addDoc(collection(db, "forum_likes"), {
+          userId: user.uid,
+          discussionId: params.id as string,
+          type: "discussion",
+          date: serverTimestamp(),
+        })
+        
+        await updateDoc(firestoreDoc(db, "forum_discussions", params.id as string), { likes: increment(1) })
+        setDiscussion((prev: any) => prev && { ...prev, likes: (prev.likes || 0) + 1 })
+        setHasLikedDiscussion(true)
+        toast({ title: "J'aime ajouté !", description: "Vous avez aimé cette discussion." })
+      }
     } catch (e) {
       console.error("Erreur lors du like:", e)
-      toast({ title: "Erreur", description: "Impossible d'aimer la discussion.", variant: "destructive" })
+      toast({ title: "Erreur", description: "Impossible de modifier le like.", variant: "destructive" })
     }
   }
 
@@ -333,59 +359,130 @@ export default function DiscussionPage() {
   }
 
   const handleReportDiscussion = async () => {
-    if (hasReportedDiscussion) return toast({ title: "Déjà signalé", description: "Vous avez déjà signalé cette discussion." })
     try {
-      await addDoc(collection(db, "forum_signals"), {
-        type: "discussion",
-        discussionId: params.id as string,
-        userId: user ? user.uid : null,
-        date: serverTimestamp(),
-      })
-      setHasReportedDiscussion(true)
-      toast({ title: "Signalement envoyé", description: "Merci pour votre signalement." })
-    } catch {
-      toast({ title: "Erreur", description: "Impossible de signaler.", variant: "destructive" })
+      if (hasReportedDiscussion) {
+        // Annuler le signalement
+        const reportsQuery = query(
+          collection(db, "forum_signals"),
+          where("userId", "==", user?.uid),
+          where("discussionId", "==", params.id as string),
+          where("type", "==", "discussion")
+        )
+        const reportsSnap = await getDocs(reportsQuery)
+        
+        // Supprimer les documents de signalement
+        const deletePromises = reportsSnap.docs.map(doc => 
+          updateDoc(firestoreDoc(db, "forum_signals", doc.id), { deleted: true })
+        )
+        await Promise.all(deletePromises)
+        
+        setHasReportedDiscussion(false)
+        toast({ title: "Signalement annulé", description: "Vous avez annulé votre signalement." })
+      } else {
+        // Ajouter le signalement
+        await addDoc(collection(db, "forum_signals"), {
+          type: "discussion",
+          discussionId: params.id as string,
+          userId: user ? user.uid : null,
+          date: serverTimestamp(),
+        })
+        setHasReportedDiscussion(true)
+        toast({ title: "Signalement envoyé", description: "Merci pour votre signalement." })
+      }
+    } catch (e) {
+      console.error("Erreur lors du signalement:", e)
+      toast({ title: "Erreur", description: "Impossible de modifier le signalement.", variant: "destructive" })
     }
   }
 
   const handleLikeReply = async (replyId: string) => {
     if (!user) return toast({ title: "Connexion requise", description: "Connectez-vous pour aimer." })
-    if (likedReplies.has(replyId)) return toast({ title: "Déjà aimé", description: "Vous avez déjà aimé cette réponse." })
+    
     try {
-      // Enregistrer le like dans Firestore
-      await addDoc(collection(db, "forum_likes"), {
-        userId: user.uid,
-        discussionId: params.id as string,
-        replyId: replyId,
-        type: "reply",
-        date: serverTimestamp(),
-      })
-      
-      // Incrémenter le compteur de likes
-      await updateDoc(firestoreDoc(db, "forum_reponses", replyId), { likes: increment(1) })
-      setReplies((prev) => prev.map(r => r.id === replyId ? { ...r, likes: (r.likes || 0) + 1 } : r))
-      setLikedReplies(new Set([...likedReplies, replyId]))
-      toast({ title: "J'aime ajouté !", description: "Vous avez aimé cette réponse." })
+      if (likedReplies.has(replyId)) {
+        // Retirer le like
+        const likesQuery = query(
+          collection(db, "forum_likes"),
+          where("userId", "==", user.uid),
+          where("replyId", "==", replyId),
+          where("type", "==", "reply")
+        )
+        const likesSnap = await getDocs(likesQuery)
+        
+        // Supprimer le document de like
+        const deletePromises = likesSnap.docs.map(doc => 
+          updateDoc(firestoreDoc(db, "forum_likes", doc.id), { deleted: true })
+        )
+        await Promise.all(deletePromises)
+        
+        // Décrémenter le compteur de likes
+        await updateDoc(firestoreDoc(db, "forum_reponses", replyId), { likes: increment(-1) })
+        setReplies((prev) => prev.map(r => r.id === replyId ? { ...r, likes: Math.max(0, (r.likes || 1) - 1) } : r))
+        
+        const newLikedReplies = new Set(likedReplies)
+        newLikedReplies.delete(replyId)
+        setLikedReplies(newLikedReplies)
+        
+        toast({ title: "J'aime retiré", description: "Vous avez retiré votre like." })
+      } else {
+        // Ajouter le like
+        await addDoc(collection(db, "forum_likes"), {
+          userId: user.uid,
+          discussionId: params.id as string,
+          replyId: replyId,
+          type: "reply",
+          date: serverTimestamp(),
+        })
+        
+        await updateDoc(firestoreDoc(db, "forum_reponses", replyId), { likes: increment(1) })
+        setReplies((prev) => prev.map(r => r.id === replyId ? { ...r, likes: (r.likes || 0) + 1 } : r))
+        setLikedReplies(new Set([...likedReplies, replyId]))
+        toast({ title: "J'aime ajouté !", description: "Vous avez aimé cette réponse." })
+      }
     } catch (e) {
       console.error("Erreur lors du like:", e)
-      toast({ title: "Erreur", description: "Impossible d'aimer la réponse.", variant: "destructive" })
+      toast({ title: "Erreur", description: "Impossible de modifier le like.", variant: "destructive" })
     }
   }
 
   const handleReportReply = async (replyId: string) => {
-    if (reportedReplies.has(replyId)) return toast({ title: "Déjà signalé", description: "Vous avez déjà signalé cette réponse." })
     try {
-      await addDoc(collection(db, "forum_signals"), {
-        type: "reply",
-        replyId,
-        discussionId: params.id as string,
-        userId: user ? user.uid : null,
-        date: serverTimestamp(),
-      })
-      setReportedReplies(new Set([...reportedReplies, replyId]))
-      toast({ title: "Signalement envoyé", description: "Merci pour votre signalement." })
-    } catch {
-      toast({ title: "Erreur", description: "Impossible de signaler.", variant: "destructive" })
+      if (reportedReplies.has(replyId)) {
+        // Annuler le signalement
+        const reportsQuery = query(
+          collection(db, "forum_signals"),
+          where("userId", "==", user?.uid),
+          where("replyId", "==", replyId),
+          where("type", "==", "reply")
+        )
+        const reportsSnap = await getDocs(reportsQuery)
+        
+        // Supprimer les documents de signalement
+        const deletePromises = reportsSnap.docs.map(doc => 
+          updateDoc(firestoreDoc(db, "forum_signals", doc.id), { deleted: true })
+        )
+        await Promise.all(deletePromises)
+        
+        const newReportedReplies = new Set(reportedReplies)
+        newReportedReplies.delete(replyId)
+        setReportedReplies(newReportedReplies)
+        
+        toast({ title: "Signalement annulé", description: "Vous avez annulé votre signalement." })
+      } else {
+        // Ajouter le signalement
+        await addDoc(collection(db, "forum_signals"), {
+          type: "reply",
+          replyId,
+          discussionId: params.id as string,
+          userId: user ? user.uid : null,
+          date: serverTimestamp(),
+        })
+        setReportedReplies(new Set([...reportedReplies, replyId]))
+        toast({ title: "Signalement envoyé", description: "Merci pour votre signalement." })
+      }
+    } catch (e) {
+      console.error("Erreur lors du signalement:", e)
+      toast({ title: "Erreur", description: "Impossible de modifier le signalement.", variant: "destructive" })
     }
   }
 
@@ -485,9 +582,9 @@ export default function DiscussionPage() {
                   variant={hasLikedDiscussion ? "default" : "ghost"} 
                   size="sm" 
                   onClick={handleLikeDiscussion}
-                  disabled={hasLikedDiscussion}
                 >
-                  <ThumbsUp className="h-4 w-4 mr-2" /> {hasLikedDiscussion ? "Aimé" : "J'aime"} {discussion.likes || 0}
+                  <ThumbsUp className="h-4 w-4 mr-2" /> 
+                  {hasLikedDiscussion ? "Ne plus aimer" : "J'aime"} {discussion.likes || 0}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleShareDiscussion}>
                   <Share2 className="h-4 w-4 mr-2" /> Partager
@@ -497,9 +594,9 @@ export default function DiscussionPage() {
                 variant={hasReportedDiscussion ? "destructive" : "ghost"} 
                 size="sm" 
                 onClick={handleReportDiscussion}
-                disabled={hasReportedDiscussion}
               >
-                <Flag className="h-4 w-4 mr-2" /> {hasReportedDiscussion ? "Signalé" : "Signaler"}
+                <Flag className="h-4 w-4 mr-2" /> 
+                {hasReportedDiscussion ? "Annuler le signalement" : "Signaler"}
               </Button>
             </div>
           </CardContent>
@@ -551,9 +648,9 @@ export default function DiscussionPage() {
                         variant={likedReplies.has(reply.id) ? "default" : "ghost"} 
                         size="sm" 
                         onClick={() => handleLikeReply(reply.id)}
-                        disabled={likedReplies.has(reply.id)}
                       >
-                        <ThumbsUp className="h-3 w-3 mr-1" /> {likedReplies.has(reply.id) ? "Aimé" : "J'aime"} {reply.likes || 0}
+                        <ThumbsUp className="h-3 w-3 mr-1" /> 
+                        {likedReplies.has(reply.id) ? "Ne plus aimer" : "J'aime"} {reply.likes || 0}
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => handleShareReply(reply.id)}>
                         <Share2 className="h-3 w-3 mr-1" /> Partager
@@ -562,9 +659,9 @@ export default function DiscussionPage() {
                         variant={reportedReplies.has(reply.id) ? "destructive" : "ghost"} 
                         size="sm" 
                         onClick={() => handleReportReply(reply.id)}
-                        disabled={reportedReplies.has(reply.id)}
                       >
-                        <Flag className="h-3 w-3 mr-1" /> {reportedReplies.has(reply.id) ? "Signalé" : "Signaler"}
+                        <Flag className="h-3 w-3 mr-1" /> 
+                        {reportedReplies.has(reply.id) ? "Annuler" : "Signaler"}
                       </Button>
                     </div>
                   </motion.div>
