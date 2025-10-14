@@ -262,6 +262,23 @@ export default function DiscussionPage() {
     try {
       setIsSubmitting(true)
 
+      // Récupérer les informations complètes de l'utilisateur depuis Firestore
+      let userDateInscription = null
+      let userStats = { discussions: 0, reponses: 0 }
+      
+      try {
+        const userDocRef = firestoreDoc(db, "users", user.uid)
+        const userDoc = await getDoc(userDocRef)
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data()
+          userDateInscription = userData.dateInscription || null
+          userStats = userData.stats || { discussions: 0, reponses: 0 }
+        }
+      } catch (userError) {
+        console.warn("Impossible de récupérer les infos utilisateur:", userError)
+      }
+
       // Ajouter la réponse
       const replyRef = await addDoc(collection(db, "forum_reponses"), {
         contenu: replyContent.trim(),
@@ -269,6 +286,8 @@ export default function DiscussionPage() {
           id: user.uid,
           nom: user.displayName || "Utilisateur anonyme",
           avatar: user.photoURL || "",
+          dateInscription: userDateInscription,
+          stats: userStats,
         },
         dateCreation: serverTimestamp(),
         discussionId: params.id,
@@ -298,6 +317,8 @@ export default function DiscussionPage() {
           id: user.uid,
           nom: user.displayName || "Utilisateur anonyme",
           avatar: user.photoURL || "",
+          dateInscription: userDateInscription,
+          stats: userStats,
         },
         dateCreation: new Date(),
         discussionId: params.id,

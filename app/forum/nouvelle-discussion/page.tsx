@@ -11,7 +11,7 @@ import { ArrowLeft, Send } from "lucide-react"
 
 // AJOUTS
 import { useRouter } from "next/navigation"
-import { collection, addDoc, serverTimestamp, updateDoc, doc as firestoreDoc, increment } from "firebase/firestore"
+import { collection, addDoc, serverTimestamp, updateDoc, doc as firestoreDoc, increment, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/components/ui/use-toast"
@@ -37,6 +37,23 @@ export default function NouvelleDiscussionPage() {
 
     setIsSubmitting(true)
     try {
+      // Récupérer les informations complètes de l'utilisateur depuis Firestore
+      let userDateInscription = null
+      let userStats = { discussions: 0, reponses: 0 }
+      
+      try {
+        const userDocRef = firestoreDoc(db, "users", user.uid)
+        const userDoc = await getDoc(userDocRef)
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data()
+          userDateInscription = userData.dateInscription || null
+          userStats = userData.stats || { discussions: 0, reponses: 0 }
+        }
+      } catch (userError) {
+        console.warn("Impossible de récupérer les infos utilisateur:", userError)
+      }
+
       // Écrit dans la même collection que lister/afficher: "forum_discussions"
       const docRef = await addDoc(collection(db, "forum_discussions"), {
         titre: titre.trim(),
@@ -45,12 +62,15 @@ export default function NouvelleDiscussionPage() {
           id: user.uid,
           nom: user.displayName || "Utilisateur anonyme",
           avatar: user.photoURL || "",
+          dateInscription: userDateInscription,
+          stats: userStats,
         },
         categorie: "general", // ajustez si vous ajoutez un champ de sélection
         dateCreation: serverTimestamp(),
         derniereReponse: serverTimestamp(),
         reponses: 0,
         vues: 0,
+        likes: 0,
       })
 
       // Optionnel: maj stats utilisateur (ignorer erreurs)
