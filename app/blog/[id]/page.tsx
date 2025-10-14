@@ -248,13 +248,24 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
   const [comments, setComments] = useState(articleData.comments)
   const [likedComments, setLikedComments] = useState(new Set<number>())
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [articleLikesCount, setArticleLikesCount] = useState(0)
 
   // Charger les états des likes et bookmarks
   useEffect(() => {
     const loadUserInteractions = async () => {
-      if (!user) return
-
       try {
+        // Compter le nombre total de likes de l'article
+        const allLikesQuery = query(
+          collection(db, "blog_likes"),
+          where("articleId", "==", params.id),
+          where("type", "==", "article")
+        )
+        const allLikesSnap = await getDocs(allLikesQuery)
+        const activeLikes = allLikesSnap.docs.filter(doc => !doc.data().deleted)
+        setArticleLikesCount(activeLikes.length)
+
+        if (!user) return
+
         // Vérifier si l'utilisateur a aimé l'article
         const articleLikesQuery = query(
           collection(db, "blog_likes"),
@@ -325,6 +336,7 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
         await Promise.all(deletePromises)
         
         setIsLiked(false)
+        setArticleLikesCount(prev => Math.max(0, prev - 1))
         toast({ title: "J'aime retiré", description: "Vous avez retiré votre like" })
       } else {
         // Ajouter le like
@@ -336,6 +348,7 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
         })
         
         setIsLiked(true)
+        setArticleLikesCount(prev => prev + 1)
         toast({ title: "J'aime ajouté", description: "Vous avez aimé cet article" })
       }
     } catch (error) {
@@ -637,7 +650,8 @@ export default function ArticlePage({ params }: { params: { id: string } }) {
                   className={isLiked ? "text-primary" : "text-muted-foreground"}
                   onClick={handleLike}
                 >
-                  <ThumbsUp className="h-4 w-4 mr-1" /> J'aime
+                  <ThumbsUp className="h-4 w-4 mr-1" /> 
+                  {isLiked ? "Ne plus aimer" : "J'aime"} ({articleLikesCount})
                 </Button>
                 <Button
                   variant="ghost"
