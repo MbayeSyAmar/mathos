@@ -46,6 +46,7 @@ export default function ProfesseurMessagesPage() {
 
       if (querySnapshot.empty) {
         toast.error("Aucun administrateur trouvé")
+        setLoading(false)
         return
       }
 
@@ -53,16 +54,16 @@ export default function ProfesseurMessagesPage() {
       const adminData = adminDoc.data()
       const adminInfo = {
         uid: adminDoc.id,
-        displayName: adminData.displayName || "Super Admin",
+        displayName: adminData.displayName || adminData.name || "Super Admin",
       }
       setSuperAdmin(adminInfo)
 
-      // Chercher ou créer la conversation
+      // Pour le professeur, on utilise son ID comme studentId dans la conversation avec admin
       let conv = await getConversationByParticipants(user.uid, adminInfo.uid)
 
       if (!conv) {
         // Créer une nouvelle conversation
-        await createConversation(
+        const conversationId = await createConversation(
           user.uid,
           userData.displayName || user.email?.split("@")[0] || "Professeur",
           adminInfo.uid,
@@ -71,7 +72,11 @@ export default function ProfesseurMessagesPage() {
         conv = await getConversationByParticipants(user.uid, adminInfo.uid)
       }
 
-      setConversation(conv)
+      if (conv) {
+        setConversation(conv)
+      } else {
+        toast.error("Impossible de créer la conversation")
+      }
     } catch (error) {
       console.error("Error initializing conversation:", error)
       toast.error("Erreur lors de l'initialisation du chat")

@@ -13,6 +13,7 @@ import {
   Users,
   Video,
   ClipboardCheck,
+  Bell,
 } from "lucide-react"
 import {
   Sidebar,
@@ -46,6 +47,7 @@ const navigation = {
     { name: "Soumissions", href: "/admin/professeur/soumissions", icon: ClipboardCheck },
     { name: "Quiz", href: "/admin/professeur/quiz", icon: FileText },
     { name: "Vidéos", href: "/admin/professeur/videos", icon: Video },
+    { name: "Notifications", href: "/admin/professeur/notifications", icon: Bell },
     { name: "Paramètres", href: "/admin/professeur/parametres", icon: Settings },
   ],
   tutor: [

@@ -197,7 +197,7 @@ export default function EncadrementPage() {
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
-        <motion.div initial="hidden" animate="visible" variants={fadeIn} className="space-y-8">
+        <motion.div id="info-section" initial="hidden" animate="visible" variants={fadeIn} className="space-y-8">
           <div className="space-y-4">
             <h2 className="text-2xl font-bold">Pourquoi choisir un encadrement personnalisé ?</h2>
             <ul className="space-y-3">
@@ -248,7 +248,19 @@ export default function EncadrementPage() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full">Choisir cette formule</Button>
+                  <Button 
+                    className="w-full"
+                    onClick={() => {
+                      setFormData({ ...formData, formule: "Formule Standard (2h/mois - 49€)" })
+                      const formSection = document.getElementById('demande-form')
+                      if (formSection) {
+                        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }
+                      toast.success("Formule Standard sélectionnée")
+                    }}
+                  >
+                    Choisir cette formule
+                  </Button>
                 </CardFooter>
               </Card>
 
@@ -281,7 +293,19 @@ export default function EncadrementPage() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button className="w-full">Choisir cette formule</Button>
+                  <Button 
+                    className="w-full"
+                    onClick={() => {
+                      setFormData({ ...formData, formule: "Formule Intensive (4h/mois - 89€)" })
+                      const formSection = document.getElementById('demande-form')
+                      if (formSection) {
+                        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }
+                      toast.success("Formule Intensive sélectionnée")
+                    }}
+                  >
+                    Choisir cette formule
+                  </Button>
                 </CardFooter>
               </Card>
             </div>
@@ -333,7 +357,7 @@ export default function EncadrementPage() {
           </div>
         </motion.div>
 
-        <motion.div initial="hidden" animate="visible" variants={fadeIn}>
+        <motion.div id="demande-form" initial="hidden" animate="visible" variants={fadeIn}>
           <Card>
             <CardHeader>
               <CardTitle>Demande d'encadrement personnalisé</CardTitle>
@@ -593,8 +617,27 @@ export default function EncadrementPage() {
             encadrement personnalisé.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
-            <Button size="lg">Demander un encadrement</Button>
-            <Button size="lg" variant="outline">
+            <Button 
+              size="lg"
+              onClick={() => {
+                const formSection = document.getElementById('demande-form')
+                if (formSection) {
+                  formSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              }}
+            >
+              Demander un encadrement
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline"
+              onClick={() => {
+                const infoSection = document.getElementById('info-section')
+                if (infoSection) {
+                  infoSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              }}
+            >
               En savoir plus
             </Button>
           </div>
