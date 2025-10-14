@@ -27,38 +27,58 @@ import { useToast } from "@/components/ui/use-toast"
 
 // Fonction pour formater la date relative
 const formatRelativeTime = (timestamp: any): string => {
-  if (!timestamp) return "Date inconnue"
-
-  let date: Date
-
-  // Vérifier le type de timestamp et le convertir en Date si nécessaire
-  if (timestamp instanceof Date) {
-    date = timestamp
-  } else if (timestamp.toDate && typeof timestamp.toDate === "function") {
-    // C'est un timestamp Firestore
-    date = timestamp.toDate()
-  } else if (timestamp.seconds && timestamp.nanoseconds) {
-    // C'est un objet timestamp Firestore sérialisé
-    date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000)
-  } else if (typeof timestamp === "number") {
-    // C'est un timestamp en millisecondes
-    date = new Date(timestamp)
-  } else if (typeof timestamp === "string") {
-    // C'est une date sous forme de chaîne
-    date = new Date(timestamp)
-  } else {
+  if (!timestamp) {
+    console.warn("⚠️ Timestamp manquant:", timestamp)
     return "Date inconnue"
   }
 
-  const now = new Date()
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+  let date: Date
 
-  if (diffInSeconds < 60) return "À l'instant"
-  if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)} minutes`
-  if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)} heures`
-  if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)} jours`
+  try {
+    // Vérifier le type de timestamp et le convertir en Date si nécessaire
+    if (timestamp instanceof Date) {
+      date = timestamp
+    } else if (timestamp.toDate && typeof timestamp.toDate === "function") {
+      // C'est un timestamp Firestore
+      date = timestamp.toDate()
+    } else if (timestamp.seconds !== undefined && timestamp.nanoseconds !== undefined) {
+      // C'est un objet timestamp Firestore sérialisé
+      date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000)
+    } else if (typeof timestamp === "number") {
+      // C'est un timestamp en millisecondes
+      date = new Date(timestamp)
+    } else if (typeof timestamp === "string") {
+      // C'est une date sous forme de chaîne
+      date = new Date(timestamp)
+    } else {
+      console.warn("⚠️ Format de timestamp non reconnu:", typeof timestamp, timestamp)
+      return "Date inconnue"
+    }
 
-  return `Le ${date.toLocaleDateString()}`
+    // Vérifier que la date est valide
+    if (isNaN(date.getTime())) {
+      console.warn("⚠️ Date invalide après conversion:", date)
+      return "Date inconnue"
+    }
+
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+    // Gérer les dates dans le futur (problèmes d'horloge)
+    if (diffInSeconds < 0) {
+      return "À l'instant"
+    }
+
+    if (diffInSeconds < 60) return "À l'instant"
+    if (diffInSeconds < 3600) return `Il y a ${Math.floor(diffInSeconds / 60)} minutes`
+    if (diffInSeconds < 86400) return `Il y a ${Math.floor(diffInSeconds / 3600)} heures`
+    if (diffInSeconds < 604800) return `Il y a ${Math.floor(diffInSeconds / 86400)} jours`
+
+    return `Le ${date.toLocaleDateString('fr-FR')}`
+  } catch (error) {
+    console.error("❌ Erreur lors du formatage de la date:", error, timestamp)
+    return "Date inconnue"
+  }
 }
 
 export default function DiscussionPage() {
