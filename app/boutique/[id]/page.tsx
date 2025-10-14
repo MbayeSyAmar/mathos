@@ -13,14 +13,45 @@ import { motion } from "framer-motion"
 import { useCart } from "@/components/cart-provider"
 import { getProduitById, getProduitsByCategorie, type Produit } from "@/lib/services/produit-service"
 import { Skeleton } from "@/components/ui/skeleton"
+import { 
+  collection, 
+  doc as firestoreDoc, 
+  addDoc, 
+  getDocs,
+  updateDoc, 
+  query,
+  where,
+  serverTimestamp
+} from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { useAuth } from "@/lib/auth-context"
+import { useToast } from "@/components/ui/use-toast"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 
-export default function ProductPage({ params }) {
+export default function ProductPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { user } = useAuth()
+  const { toast } = useToast()
   const productId = params.id
   const [product, setProduct] = useState<Produit | null>(null)
   const [similarProducts, setSimilarProducts] = useState<Produit[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
+  const [isFavorite, setIsFavorite] = useState(false)
+  const [showReviewDialog, setShowReviewDialog] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewTitle, setReviewTitle] = useState("")
+  const [reviewComment, setReviewComment] = useState("")
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false)
   const { addToCart } = useCart()
 
   useEffect(() => {
@@ -36,6 +67,17 @@ export default function ProductPage({ params }) {
             setSimilarProducts(similar.filter((p) => p.id !== productId))
           }
         }
+
+        // Vérifier si le produit est dans les favoris
+        if (user) {
+          const favoritesQuery = query(
+            collection(db, "boutique_favorites"),
+            where("userId", "==", user.uid),
+            where("productId", "==", productId)
+          )
+          const favoritesSnap = await getDocs(favoritesQuery)
+          setIsFavorite(favoritesSnap.docs.some(doc => !doc.data().deleted))
+        }
       } catch (error) {
         console.error("Erreur lors du chargement du produit:", error)
       } finally {
@@ -44,9 +86,9 @@ export default function ProductPage({ params }) {
     }
 
     loadProduct()
-  }, [productId])
+  }, [productId, user])
 
-  const handleQuantityChange = (amount) => {
+  const handleQuantityChange = (amount: number) => {
     const newQuantity = quantity + amount
     if (product && newQuantity >= 1 && newQuantity <= product.stock) {
       setQuantity(newQuantity)
@@ -55,7 +97,137 @@ export default function ProductPage({ params }) {
 
   const handleAddToCart = () => {
     if (product) {
-      addToCart(product, quantity)
+      addToCart({ 
+        ...product, 
+        name: product.nom,
+        price: product.prix,
+        image: product.imageUrl,
+        quantity 
+      })
+    }
+  }
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Connectez-vous pour ajouter aux favoris",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      if (isFavorite) {
+        // Retirer des favoris
+        const favoritesQuery = query(
+          collection(db, "boutique_favorites"),
+          where("userId", "==", user.uid),
+          where("productId", "==", productId)
+        )
+        const favoritesSnap = await getDocs(favoritesQuery)
+        
+        const deletePromises = favoritesSnap.docs.map(doc => 
+          updateDoc(firestoreDoc(db, "boutique_favorites", doc.id), { deleted: true })
+        )
+        await Promise.all(deletePromises)
+        
+        setIsFavorite(false)
+        toast({ title: "Retiré des favoris", description: "Produit retiré de vos favoris" })
+      } else {
+        // Ajouter aux favoris
+        await addDoc(collection(db, "boutique_favorites"), {
+          userId: user.uid,
+          productId: productId,
+          productName: product?.nom || "",
+          date: serverTimestamp(),
+        })
+        
+        setIsFavorite(true)
+        toast({ title: "Ajouté aux favoris", description: "Produit ajouté à vos favoris" })
+      }
+    } catch (error) {
+      console.error("Erreur lors de la gestion des favoris:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier les favoris",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      toast({ 
+        title: "Lien copié", 
+        description: "Le lien du produit a été copié dans le presse-papiers" 
+      })
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de copier le lien",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleOpenReviewDialog = () => {
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Connectez-vous pour écrire un avis",
+        variant: "destructive",
+      })
+      router.push(`/connexion?redirect=/boutique/${productId}`)
+      return
+    }
+    setShowReviewDialog(true)
+  }
+
+  const handleSubmitReview = async () => {
+    if (!user) return
+
+    if (!reviewTitle.trim() || !reviewComment.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmittingReview(true)
+    try {
+      await addDoc(collection(db, "boutique_reviews"), {
+        productId: productId,
+        userId: user.uid,
+        userName: user.displayName || "Utilisateur anonyme",
+        rating: reviewRating,
+        title: reviewTitle.trim(),
+        comment: reviewComment.trim(),
+        date: serverTimestamp(),
+      })
+
+      toast({
+        title: "Avis publié",
+        description: "Votre avis a été ajouté avec succès",
+      })
+
+      // Réinitialiser le formulaire
+      setReviewRating(5)
+      setReviewTitle("")
+      setReviewComment("")
+      setShowReviewDialog(false)
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de l'avis:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de publier l'avis",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmittingReview(false)
     }
   }
 
@@ -220,10 +392,15 @@ export default function ProductPage({ params }) {
               >
                 <ShoppingBag className="h-4 w-4 mr-2" /> Ajouter au panier
               </Button>
-              <Button variant="outline" size="icon" className="h-10 w-10">
-                <Heart className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className={`h-10 w-10 ${isFavorite ? "text-red-500 border-red-500" : ""}`}
+                onClick={handleToggleFavorite}
+              >
+                <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500" : ""}`} />
               </Button>
-              <Button variant="outline" size="icon" className="h-10 w-10">
+              <Button variant="outline" size="icon" className="h-10 w-10" onClick={handleShare}>
                 <Share className="h-4 w-4" />
               </Button>
             </div>
@@ -312,7 +489,9 @@ export default function ProductPage({ params }) {
                     </div>
                     <p className="text-sm text-muted-foreground">Basé sur 24 avis</p>
                   </div>
-                  <Button className="bg-gray-900 hover:bg-gray-800">Écrire un avis</Button>
+                  <Button className="bg-gray-900 hover:bg-gray-800" onClick={handleOpenReviewDialog}>
+                    Écrire un avis
+                  </Button>
                 </div>
 
                 <div className="space-y-4">
@@ -420,6 +599,82 @@ export default function ProductPage({ params }) {
           </div>
         </div>
       )}
+
+      {/* Dialogue pour écrire un avis */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Écrire un avis</DialogTitle>
+            <DialogDescription>
+              Partagez votre expérience avec ce produit
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Note</Label>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((rating) => (
+                  <button
+                    key={rating}
+                    type="button"
+                    onClick={() => setReviewRating(rating)}
+                    className="focus:outline-none"
+                  >
+                    <Star
+                      className={`h-6 w-6 ${
+                        rating <= reviewRating
+                          ? "text-yellow-500 fill-yellow-500"
+                          : "text-muted-foreground"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="review-title">Titre</Label>
+              <input
+                id="review-title"
+                type="text"
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="Résumez votre avis"
+                value={reviewTitle}
+                onChange={(e) => setReviewTitle(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="review-comment">Commentaire</Label>
+              <Textarea
+                id="review-comment"
+                placeholder="Décrivez votre expérience..."
+                rows={5}
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowReviewDialog(false)}
+              disabled={isSubmittingReview}
+            >
+              Annuler
+            </Button>
+            <Button
+              onClick={handleSubmitReview}
+              disabled={isSubmittingReview || !reviewTitle.trim() || !reviewComment.trim()}
+              className="bg-gray-900 hover:bg-gray-800"
+            >
+              {isSubmittingReview ? "Publication..." : "Publier l'avis"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
