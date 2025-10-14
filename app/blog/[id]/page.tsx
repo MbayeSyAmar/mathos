@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -23,6 +23,22 @@ import {
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { Textarea } from "@/components/ui/textarea"
+import { 
+  collection, 
+  doc as firestoreDoc, 
+  getDoc, 
+  getDocs,
+  addDoc, 
+  updateDoc, 
+  increment, 
+  serverTimestamp,
+  query,
+  where,
+  orderBy
+} from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { useAuth } from "@/lib/auth-context"
+import { useToast } from "@/components/ui/use-toast"
 
 // Données simulées pour l'article
 const articleData = {
@@ -220,53 +236,328 @@ const articleData = {
   ],
 }
 
-export default function ArticlePage({ params }) {
+export default function ArticlePage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { user } = useAuth()
+  const { toast } = useToast()
+  
   const [isLiked, setIsLiked] = useState(false)
   const [isBookmarked, setIsBookmarked] = useState(false)
   const [showShareOptions, setShowShareOptions] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [comments, setComments] = useState(articleData.comments)
+  const [likedComments, setLikedComments] = useState(new Set<number>())
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleLike = () => {
-    setIsLiked(!isLiked)
-  }
+  // Charger les états des likes et bookmarks
+  useEffect(() => {
+    const loadUserInteractions = async () => {
+      if (!user) return
 
-  const handleBookmark = () => {
-    setIsBookmarked(!isBookmarked)
-  }
+      try {
+        // Vérifier si l'utilisateur a aimé l'article
+        const articleLikesQuery = query(
+          collection(db, "blog_likes"),
+          where("userId", "==", user.uid),
+          where("articleId", "==", params.id),
+          where("type", "==", "article")
+        )
+        const articleLikesSnap = await getDocs(articleLikesQuery)
+        setIsLiked(articleLikesSnap.docs.some(doc => !doc.data().deleted))
 
-  const handleShare = () => {
-    setShowShareOptions(!showShareOptions)
-  }
+        // Vérifier si l'utilisateur a enregistré l'article
+        const bookmarksQuery = query(
+          collection(db, "blog_bookmarks"),
+          where("userId", "==", user.uid),
+          where("articleId", "==", params.id)
+        )
+        const bookmarksSnap = await getDocs(bookmarksQuery)
+        setIsBookmarked(bookmarksSnap.docs.some(doc => !doc.data().deleted))
 
-  const handleSubmitComment = (e) => {
-    e.preventDefault()
-
-    if (commentText.trim()) {
-      const newComment = {
-        id: comments.length + 1,
-        author: "Vous",
-        authorAvatar: "/placeholder.svg?height=40&width=40",
-        date: "À l'instant",
-        content: commentText,
-        likes: 0,
+        // Vérifier quels commentaires l'utilisateur a aimés
+        const commentLikesQuery = query(
+          collection(db, "blog_likes"),
+          where("userId", "==", user.uid),
+          where("articleId", "==", params.id),
+          where("type", "==", "comment")
+        )
+        const commentLikesSnap = await getDocs(commentLikesQuery)
+        const likedCommentIds = new Set<number>()
+        commentLikesSnap.docs.forEach(doc => {
+          const data = doc.data()
+          if (data.commentId && !data.deleted) {
+            likedCommentIds.add(data.commentId)
+          }
+        })
+        setLikedComments(likedCommentIds)
+      } catch (error) {
+        console.error("Erreur lors du chargement des interactions:", error)
       }
+    }
 
-      setComments([...comments, newComment])
-      setCommentText("")
+    loadUserInteractions()
+  }, [user, params.id])
+
+  const handleLike = async () => {
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Connectez-vous pour aimer cet article",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      if (isLiked) {
+        // Retirer le like
+        const likesQuery = query(
+          collection(db, "blog_likes"),
+          where("userId", "==", user.uid),
+          where("articleId", "==", params.id),
+          where("type", "==", "article")
+        )
+        const likesSnap = await getDocs(likesQuery)
+        
+        const deletePromises = likesSnap.docs.map(doc => 
+          updateDoc(firestoreDoc(db, "blog_likes", doc.id), { deleted: true })
+        )
+        await Promise.all(deletePromises)
+        
+        setIsLiked(false)
+        toast({ title: "J'aime retiré", description: "Vous avez retiré votre like" })
+      } else {
+        // Ajouter le like
+        await addDoc(collection(db, "blog_likes"), {
+          userId: user.uid,
+          articleId: params.id,
+          type: "article",
+          date: serverTimestamp(),
+        })
+        
+        setIsLiked(true)
+        toast({ title: "J'aime ajouté", description: "Vous avez aimé cet article" })
+      }
+    } catch (error) {
+      console.error("Erreur lors du like:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le like",
+        variant: "destructive",
+      })
     }
   }
 
-  const handleLikeComment = (commentId) => {
-    setComments(
-      comments.map((comment) => {
-        if (comment.id === commentId) {
-          return { ...comment, likes: comment.likes + 1 }
+  const handleBookmark = async () => {
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Connectez-vous pour enregistrer cet article",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      if (isBookmarked) {
+        // Retirer le bookmark
+        const bookmarksQuery = query(
+          collection(db, "blog_bookmarks"),
+          where("userId", "==", user.uid),
+          where("articleId", "==", params.id)
+        )
+        const bookmarksSnap = await getDocs(bookmarksQuery)
+        
+        const deletePromises = bookmarksSnap.docs.map(doc => 
+          updateDoc(firestoreDoc(db, "blog_bookmarks", doc.id), { deleted: true })
+        )
+        await Promise.all(deletePromises)
+        
+        setIsBookmarked(false)
+        toast({ title: "Enregistrement retiré", description: "Article retiré de vos favoris" })
+      } else {
+        // Ajouter le bookmark
+        await addDoc(collection(db, "blog_bookmarks"), {
+          userId: user.uid,
+          articleId: params.id,
+          date: serverTimestamp(),
+        })
+        
+        setIsBookmarked(true)
+        toast({ title: "Article enregistré", description: "Article ajouté à vos favoris" })
+      }
+    } catch (error) {
+      console.error("Erreur lors du bookmark:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer l'article",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setShowShareOptions(!showShareOptions)
+      toast({ 
+        title: "Lien copié", 
+        description: "Le lien de l'article a été copié dans le presse-papiers" 
+      })
+    } catch (error) {
+      setShowShareOptions(!showShareOptions)
+    }
+  }
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Connectez-vous pour commenter",
+        variant: "destructive",
+      })
+      router.push(`/connexion?redirect=/blog/${params.id}`)
+      return
+    }
+
+    if (!commentText.trim()) return
+
+    setIsSubmitting(true)
+    try {
+      // Récupérer les infos utilisateur depuis Firestore
+      let userDateInscription = null
+      let userName = user.displayName || "Utilisateur anonyme"
+      let userAvatar = user.photoURL || ""
+      
+      try {
+        const userDocRef = firestoreDoc(db, "users", user.uid)
+        const userDoc = await getDoc(userDocRef)
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data()
+          userDateInscription = userData.dateInscription || null
+          if (userData.nom) userName = userData.nom
+          if (userData.avatar) userAvatar = userData.avatar
         }
-        return comment
-      }),
-    )
+      } catch (userError) {
+        console.warn("Impossible de récupérer les infos utilisateur:", userError)
+      }
+
+      const newComment = {
+        id: comments.length + 1,
+        author: userName,
+        authorAvatar: userAvatar,
+        authorId: user.uid,
+        date: "À l'instant",
+        content: commentText.trim(),
+        likes: 0,
+      }
+
+      // Ajouter le commentaire à Firestore
+      await addDoc(collection(db, "blog_comments"), {
+        articleId: params.id,
+        auteur: {
+          id: user.uid,
+          nom: userName,
+          avatar: userAvatar,
+          dateInscription: userDateInscription,
+        },
+        contenu: commentText.trim(),
+        dateCreation: serverTimestamp(),
+        likes: 0,
+      })
+
+      setComments([...comments, newComment])
+      setCommentText("")
+      
+      toast({
+        title: "Commentaire publié",
+        description: "Votre commentaire a été ajouté avec succès",
+      })
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du commentaire:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de publier le commentaire",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleLikeComment = async (commentId: number) => {
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Connectez-vous pour aimer un commentaire",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      if (likedComments.has(commentId)) {
+        // Retirer le like
+        const likesQuery = query(
+          collection(db, "blog_likes"),
+          where("userId", "==", user.uid),
+          where("commentId", "==", commentId),
+          where("type", "==", "comment")
+        )
+        const likesSnap = await getDocs(likesQuery)
+        
+        const deletePromises = likesSnap.docs.map(doc => 
+          updateDoc(firestoreDoc(db, "blog_likes", doc.id), { deleted: true })
+        )
+        await Promise.all(deletePromises)
+        
+        setComments(
+          comments.map((comment) => {
+            if (comment.id === commentId) {
+              return { ...comment, likes: Math.max(0, comment.likes - 1) }
+            }
+            return comment
+          })
+        )
+        
+        const newLikedComments = new Set(likedComments)
+        newLikedComments.delete(commentId)
+        setLikedComments(newLikedComments)
+        
+        toast({ title: "J'aime retiré", description: "Vous avez retiré votre like" })
+      } else {
+        // Ajouter le like
+        await addDoc(collection(db, "blog_likes"), {
+          userId: user.uid,
+          articleId: params.id,
+          commentId: commentId,
+          type: "comment",
+          date: serverTimestamp(),
+        })
+        
+        setComments(
+          comments.map((comment) => {
+            if (comment.id === commentId) {
+              return { ...comment, likes: comment.likes + 1 }
+            }
+            return comment
+          })
+        )
+        
+        setLikedComments(new Set([...likedComments, commentId]))
+        toast({ title: "J'aime ajouté", description: "Vous avez aimé ce commentaire" })
+      }
+    } catch (error) {
+      console.error("Erreur lors du like du commentaire:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le like",
+        variant: "destructive",
+      })
+    }
   }
 
   const fadeIn = {
@@ -352,7 +643,12 @@ export default function ArticlePage({ params }) {
                   variant="ghost"
                   size="sm"
                   className="text-muted-foreground"
-                  onClick={() => document.getElementById("comments").scrollIntoView({ behavior: "smooth" })}
+                  onClick={() => {
+                    const commentsSection = document.getElementById("comments")
+                    if (commentsSection) {
+                      commentsSection.scrollIntoView({ behavior: "smooth" })
+                    }
+                  }}
                 >
                   <MessageSquare className="h-4 w-4 mr-1" /> Commenter
                 </Button>
@@ -401,8 +697,8 @@ export default function ArticlePage({ params }) {
                 className="mb-2"
                 rows={3}
               />
-              <Button type="submit" className="bg-gray-900 hover:bg-gray-800 ml-auto" disabled={!commentText.trim()}>
-                Publier
+              <Button type="submit" className="bg-gray-900 hover:bg-gray-800 ml-auto" disabled={!commentText.trim() || isSubmitting}>
+                {isSubmitting ? "Publication..." : "Publier"}
               </Button>
             </form>
 
@@ -426,10 +722,11 @@ export default function ArticlePage({ params }) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-xs text-muted-foreground"
+                        className={`text-xs ${likedComments.has(comment.id) ? "text-primary" : "text-muted-foreground"}`}
                         onClick={() => handleLikeComment(comment.id)}
                       >
-                        <ThumbsUp className="h-3 w-3 mr-1" /> {comment.likes}
+                        <ThumbsUp className="h-3 w-3 mr-1" /> 
+                        {likedComments.has(comment.id) ? "Ne plus aimer" : "J'aime"} ({comment.likes})
                       </Button>
                     </div>
                   </div>

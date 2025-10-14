@@ -106,7 +106,7 @@ const blogData = [
   },
 ]
 
-const getCategoryColor = (category) => {
+const getCategoryColor = (category: string) => {
   switch (category) {
     case "methodes":
       return "bg-blue-500/10 text-blue-500"
