@@ -12,6 +12,7 @@ import {
   ShoppingCart,
   Users,
   Video,
+  ClipboardCheck,
 } from "lucide-react"
 import {
   Sidebar,
@@ -42,6 +43,7 @@ const navigation = {
     { name: "Messages", href: "/admin/professeur/messages", icon: MessageSquare },
     { name: "Cours", href: "/admin/professeur/cours", icon: BookOpen },
     { name: "Exercices", href: "/admin/professeur/exercices", icon: FileText },
+    { name: "Soumissions", href: "/admin/professeur/soumissions", icon: ClipboardCheck },
     { name: "Quiz", href: "/admin/professeur/quiz", icon: FileText },
     { name: "Vidéos", href: "/admin/professeur/videos", icon: Video },
     { name: "Paramètres", href: "/admin/professeur/parametres", icon: Settings },

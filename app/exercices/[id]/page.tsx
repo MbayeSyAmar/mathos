@@ -22,6 +22,9 @@ import { getExerciseById, type Exercise } from "@/lib/services/content-service"
 import { hasAccessToTeacher } from "@/lib/services/student-access-service"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc as firestoreDoc, getDoc } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { BackButton } from "@/components/back-button"
 
 export default function ExerciseDetailPage() {
   const params = useParams()
@@ -33,12 +36,25 @@ export default function ExerciseDetailPage() {
   const [showSolution, setShowSolution] = useState(false)
   const [userAnswer, setUserAnswer] = useState("")
   const [hasAccess, setHasAccess] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+  const [submissionFeedback, setSubmissionFeedback] = useState<{
+    feedback: string | null
+    score: number | null
+    status: string
+  } | null>(null)
 
   useEffect(() => {
     if (params.id) {
       fetchExercise(params.id as string)
     }
   }, [params.id])
+
+  useEffect(() => {
+    if (user && params.id) {
+      checkExistingSubmission(user.uid, params.id as string)
+    }
+  }, [user, params.id])
 
   const fetchExercise = async (exerciseId: string) => {
     try {
@@ -63,6 +79,88 @@ export default function ExerciseDetailPage() {
       toast.error("Erreur lors du chargement de l'exercice")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkExistingSubmission = async (userId: string, exerciseId: string) => {
+    try {
+      const submissionsRef = collection(db, "exercise_submissions")
+      const q = query(
+        submissionsRef,
+        where("userId", "==", userId),
+        where("exerciseId", "==", exerciseId)
+      )
+      const querySnapshot = await getDocs(q)
+
+      if (!querySnapshot.empty) {
+        const submissionData = querySnapshot.docs[0].data()
+        setUserAnswer(submissionData.answer || "")
+        setHasSubmitted(true)
+        
+        // Charger le feedback si disponible
+        if (submissionData.status === "reviewed") {
+          setSubmissionFeedback({
+            feedback: submissionData.feedback,
+            score: submissionData.score,
+            status: submissionData.status,
+          })
+        }
+      }
+    } catch (error) {
+      console.error("Error checking submission:", error)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!user) {
+      toast.error("Vous devez être connecté pour soumettre une réponse")
+      return
+    }
+
+    if (!userAnswer.trim()) {
+      toast.error("Veuillez écrire une réponse avant de soumettre")
+      return
+    }
+
+    if (!exercise) {
+      toast.error("Erreur: exercice introuvable")
+      return
+    }
+
+    try {
+      setSubmitting(true)
+
+      // Récupérer les infos de l'utilisateur
+      const userDoc = await getDoc(firestoreDoc(db, "users", user.uid))
+      const userData = userDoc.exists() ? userDoc.data() : {}
+
+      // Créer la soumission
+      const submissionData = {
+        exerciseId: exercise.id,
+        exerciseTitle: exercise.title,
+        userId: user.uid,
+        userName: userData.nom && userData.prenom 
+          ? `${userData.prenom} ${userData.nom}` 
+          : user.email,
+        teacherId: exercise.teacherId,
+        teacherName: exercise.teacherName,
+        answer: userAnswer,
+        submittedAt: serverTimestamp(),
+        status: "pending", // pending, reviewed
+        feedback: null,
+        score: null,
+      }
+
+      await addDoc(collection(db, "exercise_submissions"), submissionData)
+
+      setHasSubmitted(true)
+      toast.success("Réponse soumise avec succès !")
+      toast.info("Votre professeur recevra une notification")
+    } catch (error) {
+      console.error("Error submitting answer:", error)
+      toast.error("Erreur lors de la soumission de votre réponse")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -118,14 +216,9 @@ export default function ExerciseDetailPage() {
   return (
     <div className="container py-10">
       <motion.div initial="hidden" animate="visible" variants={fadeIn}>
-        <Button
-          variant="ghost"
-          onClick={() => router.back()}
-          className="mb-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
-        </Button>
+        <div className="mb-6">
+          <BackButton />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Contenu principal */}
@@ -171,9 +264,47 @@ export default function ExerciseDetailPage() {
                   value={userAnswer}
                   onChange={(e) => setUserAnswer(e.target.value)}
                   rows={10}
+                  disabled={submitting || (hasSubmitted && submissionFeedback?.status === "reviewed")}
                 />
+                {hasSubmitted && !submissionFeedback && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                    <Clock className="h-4 w-4" />
+                    <span>Réponse soumise - En attente de correction par votre professeur</span>
+                  </div>
+                )}
+                {submissionFeedback && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Corrigé par votre professeur</span>
+                      {submissionFeedback.score !== null && (
+                        <span className="ml-auto font-bold">
+                          Note : {submissionFeedback.score}/20
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                      <h4 className="font-semibold mb-2">Correction du professeur :</h4>
+                      <p className="text-sm whitespace-pre-wrap">{submissionFeedback.feedback}</p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-2">
-                  <Button>Soumettre</Button>
+                  <Button 
+                    onClick={handleSubmit} 
+                    disabled={submitting || !userAnswer.trim() || (hasSubmitted && submissionFeedback?.status === "reviewed")}
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Envoi en cours...
+                      </>
+                    ) : hasSubmitted ? (
+                      "Modifier ma réponse"
+                    ) : (
+                      "Soumettre"
+                    )}
+                  </Button>
                   <Button variant="outline" onClick={() => setShowHints(!showHints)}>
                     <Lightbulb className="h-4 w-4 mr-2" />
                     {showHints ? "Masquer les indices" : "Voir les indices"}

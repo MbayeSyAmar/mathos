@@ -31,6 +31,7 @@ import {
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { toast } from "sonner"
+import { BackButton } from "@/components/back-button"
 
 export default function MesProfesseursPage() {
   const router = useRouter()
@@ -140,6 +141,10 @@ export default function MesProfesseursPage() {
 
   return (
     <div className="container py-10">
+      <div className="mb-6">
+        <BackButton href="/dashboard" label="Retour au dashboard" />
+      </div>
+
       <motion.div className="mb-6" initial="hidden" animate="visible" variants={fadeIn}>
         <h1 className="text-3xl font-bold tracking-tighter mb-2">Mes Professeurs</h1>
         <p className="text-muted-foreground">Accédez au contenu de vos professeurs</p>

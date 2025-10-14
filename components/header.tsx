@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation"
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isAboutMenuOpen, setIsAboutMenuOpen] = useState(false)
   const { items, toggleCart } = useCart()
   const { user, userData, logout } = useAuth()
   const router = useRouter()
@@ -61,18 +62,32 @@ export default function Header() {
           <Link href="/boutique" className="text-sm font-medium hover:text-primary">
             Boutique
           </Link>
-          <div className="relative group">
+          <div 
+            className="relative"
+            onMouseEnter={() => setIsAboutMenuOpen(true)}
+            onMouseLeave={() => setIsAboutMenuOpen(false)}
+          >
             <button className="text-sm font-medium hover:text-primary flex items-center gap-1">
               À propos <ChevronDown className="h-4 w-4" />
             </button>
-            <div className="absolute top-full left-0 mt-2 w-48 bg-background border rounded-md shadow-lg hidden group-hover:block">
-              <Link href="/encadrement" className="block px-4 py-2 text-sm hover:bg-muted">
-                Encadrement personnalisé
-              </Link>
-              <Link href="/contact" className="block px-4 py-2 text-sm hover:bg-muted">
-                Contact
-              </Link>
-            </div>
+            {isAboutMenuOpen && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-background border rounded-md shadow-lg">
+                <Link 
+                  href="/encadrement" 
+                  className="block px-4 py-2 text-sm hover:bg-muted"
+                  onClick={() => setIsAboutMenuOpen(false)}
+                >
+                  Encadrement personnalisé
+                </Link>
+                <Link 
+                  href="/contact" 
+                  className="block px-4 py-2 text-sm hover:bg-muted"
+                  onClick={() => setIsAboutMenuOpen(false)}
+                >
+                  Contact
+                </Link>
+              </div>
+            )}
           </div>
         </nav>
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -15,11 +15,77 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, CreditCard, Truck, ShieldCheck } from "lucide-react"
 import { motion } from "framer-motion"
 import { useCart } from "@/components/cart-provider"
+import { 
+  collection, 
+  addDoc, 
+  serverTimestamp,
+  doc as firestoreDoc,
+  getDoc
+} from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { useAuth } from "@/lib/auth-context"
+import { useToast } from "@/components/ui/use-toast"
+import { BackButton } from "@/components/back-button"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { cart, total, clearCart } = useCart()
+  const { user } = useAuth()
+  const { toast } = useToast()
+  const { items: cart, totalPrice: total, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [deliveryMode, setDeliveryMode] = useState("standard")
+  
+  // Informations de livraison
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [address, setAddress] = useState("")
+  const [postalCode, setPostalCode] = useState("")
+  const [city, setCity] = useState("")
+  const [country, setCountry] = useState("Sénégal")
+  const [paymentMethod, setPaymentMethod] = useState("card")
+
+  // Charger les informations de l'utilisateur connecté
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(firestoreDoc(db, "users", user.uid))
+          if (userDoc.exists()) {
+            const userData = userDoc.data()
+            setEmail(user.email || userData.email || "")
+            setFirstName(userData.prenom || "")
+            setLastName(userData.nom || "")
+            setPhone(userData.telephone || "")
+            setAddress(userData.adresse || "")
+            setCity(userData.ville || "")
+            setPostalCode(userData.codePostal || "")
+          } else {
+            setEmail(user.email || "")
+          }
+        } catch (error) {
+          console.error("Erreur lors du chargement des infos utilisateur:", error)
+          setEmail(user.email || "")
+        }
+      }
+    }
+
+    loadUserInfo()
+  }, [user])
+
+  // Vérifier si l'utilisateur est connecté
+  useEffect(() => {
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Vous devez être connecté pour passer une commande",
+        variant: "destructive",
+      })
+      router.push(`/connexion?redirect=/boutique/checkout`)
+    }
+  }, [user, router, toast])
 
   // Vérifier si le panier est vide
   if (!cart || cart.length === 0) {
@@ -34,15 +100,97 @@ export default function CheckoutPage() {
     )
   }
 
-  const handleSubmitOrder = (e) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    const handleSubmitOrder = async () => {
+    if (!user) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour passer une commande",
+        variant: "destructive",
+      })
+      return
+    }
 
-    // Simuler le traitement de la commande
-    setTimeout(() => {
-      clearCart()
-      router.push("/boutique/confirmation")
-    }, 2000)
+    // Vérification des champs requis
+    if (!firstName || !lastName || !email || !phone || !address || !city || !postalCode) {
+      toast({
+        title: "Champs manquants",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!termsAccepted) {
+      toast({
+        title: "Conditions non acceptées",
+        description: "Veuillez accepter les conditions générales de vente",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      // Générer un numéro de commande unique
+      const timestamp = Date.now()
+      const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
+      const orderNumber = `CMD-${timestamp}-${random}`
+
+      // Calculer les frais de livraison
+      const deliveryCost = deliveryMode === "express" ? 5000 : 2000
+
+      // Préparer les données de la commande
+      const orderData = {
+        orderNumber,
+        userId: user.uid,
+        userInfo: {
+          firstName,
+          lastName,
+          email,
+          phone,
+          address,
+          city,
+          postalCode,
+          country,
+        },
+        items: cart.map((item: any) => ({
+          id: item.id,
+          title: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image || "",
+          category: item.category || "",
+        })),
+        total: total + deliveryCost,
+        subtotal: total,
+        deliveryMode,
+        deliveryCost,
+        status: "pending", // En attente de validation
+        paymentMethod: paymentMethod,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }
+
+      // Sauvegarder la commande dans Firestore
+      await addDoc(collection(db, "orders"), orderData)
+
+      toast({
+        title: "Commande enregistrée",
+        description: `Votre commande ${orderNumber} a été enregistrée avec succès`,
+      })
+
+      // Vider le panier et rediriger
+      setTimeout(() => {
+        clearCart()
+        router.push(`/boutique/confirmation?orderNumber=${orderNumber}`)
+      }, 2000)
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement de la commande:", error)
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'enregistrement de votre commande",
+        variant: "destructive",
+      })
+    }
   }
 
   const fadeIn = {
@@ -56,16 +204,8 @@ export default function CheckoutPage() {
 
   return (
     <div className="container py-10">
-      <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/boutique")}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <span className="text-sm text-muted-foreground">
-          <Link href="/boutique" className="hover:underline">
-            Boutique
-          </Link>{" "}
-          / Paiement
-        </span>
+      <div className="mb-6">
+        <BackButton href="/boutique" label="Retour à la boutique" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -240,13 +380,13 @@ export default function CheckoutPage() {
             <CardContent className="space-y-4">
               <div className="max-h-[300px] overflow-y-auto space-y-4 pr-2">
                 {cart &&
-                  cart.map((item) => (
+                  cart.map((item: any) => (
                     <div key={item.id} className="flex gap-3">
                       <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
-                        <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
+                        <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
                       </div>
                       <div className="flex-grow min-w-0">
-                        <div className="font-medium text-sm line-clamp-1">{item.title}</div>
+                        <div className="font-medium text-sm line-clamp-1">{item.name}</div>
                         <div className="text-xs text-muted-foreground">Quantité: {item.quantity}</div>
                       </div>
                       <div className="text-right font-medium">{(item.price * item.quantity).toFixed(2)} FCFA</div>
