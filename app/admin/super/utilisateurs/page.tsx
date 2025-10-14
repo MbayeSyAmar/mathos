@@ -1,144 +1,181 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DataTable } from "@/components/admin/data-table"
-import { PlusCircle, UserCog } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { PlusCircle, UserCog, Users, Activity, UserPlus, TrendingUp, Loader2, Search, Mail, Calendar } from "lucide-react"
+import { collection, getDocs, query, orderBy, limit, where, Timestamp } from "firebase/firestore"
+import { db } from "@/lib/firebase"
+import { toast } from "sonner"
 
-// Données de démonstration pour les tableaux
-const recentUsers = [
-  {
-    id: "USR-001",
-    name: "Jean Dupont",
-    email: "jean.dupont@example.com",
-    date: "2023-07-15",
-    role: "Étudiant",
-  },
-  {
-    id: "USR-002",
-    name: "Marie Martin",
-    email: "marie.martin@example.com",
-    date: "2023-07-14",
-    role: "Étudiant",
-  },
-  {
-    id: "USR-003",
-    name: "Pierre Durand",
-    email: "pierre.durand@example.com",
-    date: "2023-07-13",
-    role: "Professeur",
-  },
-  {
-    id: "USR-004",
-    name: "Sophie Lefebvre",
-    email: "sophie.lefebvre@example.com",
-    date: "2023-07-12",
-    role: "Étudiant",
-  },
-  {
-    id: "USR-005",
-    name: "Lucas Bernard",
-    email: "lucas.bernard@example.com",
-    date: "2023-07-11",
-    role: "Tuteur",
-  },
-]
-
-const activeUsers = [
-  {
-    id: "USR-001",
-    name: "Jean Dupont",
-    email: "jean.dupont@example.com",
-    lastActive: "Il y a 5 minutes",
-    sessions: 28,
-    role: "Étudiant",
-  },
-  {
-    id: "USR-003",
-    name: "Pierre Durand",
-    email: "pierre.durand@example.com",
-    lastActive: "Il y a 15 minutes",
-    sessions: 42,
-    role: "Professeur",
-  },
-  {
-    id: "USR-006",
-    name: "Camille Roux",
-    email: "camille.roux@example.com",
-    lastActive: "Il y a 22 minutes",
-    sessions: 17,
-    role: "Étudiant",
-  },
-  {
-    id: "USR-008",
-    name: "Thomas Petit",
-    email: "thomas.petit@example.com",
-    lastActive: "Il y a 30 minutes",
-    sessions: 31,
-    role: "Étudiant",
-  },
-  {
-    id: "USR-005",
-    name: "Lucas Bernard",
-    email: "lucas.bernard@example.com",
-    lastActive: "Il y a 45 minutes",
-    sessions: 24,
-    role: "Tuteur",
-  },
-]
-
-// Colonnes pour les tableaux
-const recentColumns = [
-  {
-    accessorKey: "id",
-    header: "ID",
-  },
-  {
-    accessorKey: "name",
-    header: "Nom",
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "date",
-    header: "Date d'inscription",
-  },
-  {
-    accessorKey: "role",
-    header: "Rôle",
-  },
-]
-
-const activeColumns = [
-  {
-    accessorKey: "name",
-    header: "Nom",
-  },
-  {
-    accessorKey: "email",
-    header: "Email",
-  },
-  {
-    accessorKey: "lastActive",
-    header: "Dernière activité",
-  },
-  {
-    accessorKey: "sessions",
-    header: "Sessions",
-  },
-  {
-    accessorKey: "role",
-    header: "Rôle",
-  },
-]
+interface User {
+  id: string
+  displayName: string
+  email: string
+  role: string
+  createdAt: any
+  photoURL?: string
+}
 
 export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("recent")
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  
+  // Stats
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    newUsersThisMonth: 0,
+    studentCount: 0,
+    teacherCount: 0,
+  })
+  
+  // Listes d'utilisateurs
+  const [recentUsers, setRecentUsers] = useState<User[]>([])
+  const [allUsers, setAllUsers] = useState<User[]>([])
+
+  useEffect(() => {
+    fetchUsersData()
+  }, [])
+
+  const fetchUsersData = async () => {
+    try {
+      setLoading(true)
+      
+      // Récupérer tous les utilisateurs
+      const usersRef = collection(db, "users")
+      const usersSnapshot = await getDocs(usersRef)
+      const usersList = usersSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      } as User))
+      
+      setAllUsers(usersList)
+      
+      // Calculer les stats
+      const totalUsers = usersList.length
+      
+      // Compter les nouveaux utilisateurs ce mois
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      startOfMonth.setHours(0, 0, 0, 0)
+      
+      const newUsersThisMonth = usersList.filter((user) => {
+        if (!user.createdAt) return false
+        let date: Date
+        if (user.createdAt.toDate && typeof user.createdAt.toDate === "function") {
+          date = user.createdAt.toDate()
+        } else if (user.createdAt.seconds) {
+          date = new Date(user.createdAt.seconds * 1000)
+        } else {
+          date = new Date(user.createdAt)
+        }
+        return date >= startOfMonth
+      }).length
+      
+      // Compter par rôle
+      const studentCount = usersList.filter((u) => u.role === "student" || !u.role).length
+      const teacherCount = usersList.filter((u) => u.role === "teacher").length
+      
+      setStats({
+        totalUsers,
+        newUsersThisMonth,
+        studentCount,
+        teacherCount,
+      })
+      
+      // Récupérer les 10 utilisateurs les plus récents
+      const recentUsersQuery = query(
+        usersRef,
+        orderBy("createdAt", "desc"),
+        limit(10)
+      )
+      const recentSnapshot = await getDocs(recentUsersQuery)
+      const recentList = recentSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      } as User))
+      
+      setRecentUsers(recentList)
+      
+      console.log("✅ Données utilisateurs chargées:", {
+        total: totalUsers,
+        nouveaux: newUsersThisMonth,
+        étudiants: studentCount,
+        professeurs: teacherCount,
+      })
+    } catch (error) {
+      console.error("❌ Erreur lors du chargement des utilisateurs:", error)
+      toast.error("Impossible de charger les données des utilisateurs")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getRoleBadge = (role: string) => {
+    const config: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+      super_admin: { label: "Super Admin", variant: "destructive" },
+      teacher: { label: "Professeur", variant: "default" },
+      tutor: { label: "Tuteur", variant: "secondary" },
+      editor: { label: "Rédacteur", variant: "outline" },
+      student: { label: "Étudiant", variant: "secondary" },
+    }
+    return config[role] || { label: "Étudiant", variant: "secondary" }
+  }
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return "Date inconnue"
+    
+    let date: Date
+    if (timestamp.toDate && typeof timestamp.toDate === "function") {
+      date = timestamp.toDate()
+    } else if (timestamp.seconds) {
+      date = new Date(timestamp.seconds * 1000)
+    } else {
+      date = new Date(timestamp)
+    }
+
+    return new Intl.DateTimeFormat("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date)
+  }
+
+  const formatRelativeTime = (timestamp: any) => {
+    if (!timestamp) return "Date inconnue"
+    
+    let date: Date
+    if (timestamp.toDate && typeof timestamp.toDate === "function") {
+      date = timestamp.toDate()
+    } else if (timestamp.seconds) {
+      date = new Date(timestamp.seconds * 1000)
+    } else {
+      date = new Date(timestamp)
+    }
+
+    const now = new Date()
+    const diffInMs = now.getTime() - date.getTime()
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+
+    if (diffInDays === 0) return "Aujourd'hui"
+    if (diffInDays === 1) return "Hier"
+    if (diffInDays < 7) return `Il y a ${diffInDays} jours`
+    if (diffInDays < 30) return `Il y a ${Math.floor(diffInDays / 7)} semaines`
+    return `Il y a ${Math.floor(diffInDays / 30)} mois`
+  }
+
+  // Filtrer les utilisateurs par recherche
+  const filteredUsers = allUsers.filter(
+    (user) =>
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.role?.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className="space-y-6">
@@ -154,137 +191,181 @@ export default function UsersPage() {
               Gérer les rôles
             </Link>
           </Button>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Ajouter un utilisateur
+          <Button asChild>
+            <Link href="/admin/super/utilisateurs/gestion">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Ajouter un utilisateur
+            </Link>
           </Button>
         </div>
       </div>
 
+      {/* Statistiques */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Utilisateurs</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,254</div>
-            <p className="text-xs text-muted-foreground">+12% par rapport au mois dernier</p>
+            <div className="text-2xl font-bold">{loading ? "..." : stats.totalUsers}</div>
+            <p className="text-xs text-muted-foreground">Inscrits sur la plateforme</p>
           </CardContent>
         </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Utilisateurs actifs</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Nouveaux ce mois</CardTitle>
+            <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">624</div>
-            <p className="text-xs text-muted-foreground">+5% par rapport au mois dernier</p>
+            <div className="text-2xl font-bold">{loading ? "..." : stats.newUsersThisMonth}</div>
+            <p className="text-xs text-muted-foreground">Inscriptions ce mois-ci</p>
           </CardContent>
         </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Nouveaux utilisateurs</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <rect width="20" height="14" x="2" y="5" rx="2" />
-              <path d="M2 10h20" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Étudiants</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">78</div>
-            <p className="text-xs text-muted-foreground">+19% par rapport au mois dernier</p>
+            <div className="text-2xl font-bold">{loading ? "..." : stats.studentCount}</div>
+            <p className="text-xs text-muted-foreground">Comptes étudiants</p>
           </CardContent>
         </Card>
+        
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taux de conversion</CardTitle>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              className="h-4 w-4 text-muted-foreground"
-            >
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
+            <CardTitle className="text-sm font-medium">Professeurs</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8.2%</div>
-            <p className="text-xs text-muted-foreground">+2% par rapport au mois dernier</p>
+            <div className="text-2xl font-bold">{loading ? "..." : stats.teacherCount}</div>
+            <p className="text-xs text-muted-foreground">Enseignants actifs</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Onglets */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="recent">Utilisateurs récents</TabsTrigger>
-          <TabsTrigger value="active">Utilisateurs actifs</TabsTrigger>
+          <TabsTrigger value="all">Tous les utilisateurs</TabsTrigger>
         </TabsList>
+        
+        {/* Utilisateurs récents */}
         <TabsContent value="recent" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Utilisateurs récemment inscrits</CardTitle>
-              <CardDescription>Liste des derniers utilisateurs inscrits sur la plateforme</CardDescription>
+              <CardTitle>Derniers inscrits</CardTitle>
+              <CardDescription>Les 10 derniers utilisateurs inscrits sur la plateforme</CardDescription>
             </CardHeader>
             <CardContent>
-              <DataTable
-                columns={recentColumns}
-                data={recentUsers}
-                searchKey="name"
-                searchPlaceholder="Rechercher un utilisateur..."
-              />
+              {loading ? (
+                <div className="flex flex-col justify-center items-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                  <p className="text-muted-foreground">Chargement...</p>
+                </div>
+              ) : recentUsers.length === 0 ? (
+                <div className="flex flex-col justify-center items-center h-64">
+                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium mb-2">Aucun utilisateur</p>
+                  <p className="text-sm text-muted-foreground">Commencez par ajouter des utilisateurs</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium">{user.displayName || "Sans nom"}</p>
+                          <Badge variant={getRoleBadge(user.role).variant}>
+                            {getRoleBadge(user.role).label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {user.email}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {formatRelativeTime(user.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="active" className="space-y-4">
+        
+        {/* Tous les utilisateurs */}
+        <TabsContent value="all" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Utilisateurs actifs</CardTitle>
-              <CardDescription>Liste des utilisateurs actuellement actifs sur la plateforme</CardDescription>
+              <CardTitle>Tous les utilisateurs ({allUsers.length})</CardTitle>
+              <CardDescription>Liste complète de tous les utilisateurs inscrits</CardDescription>
+              <div className="relative mt-4">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder="Rechercher par nom, email ou rôle..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </CardHeader>
             <CardContent>
-              <DataTable
-                columns={activeColumns}
-                data={activeUsers}
-                searchKey="name"
-                searchPlaceholder="Rechercher un utilisateur..."
-              />
+              {loading ? (
+                <div className="flex flex-col justify-center items-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                  <p className="text-muted-foreground">Chargement...</p>
+                </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="flex flex-col justify-center items-center h-64">
+                  <Users className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-lg font-medium mb-2">Aucun utilisateur trouvé</p>
+                  <p className="text-sm text-muted-foreground">
+                    {searchTerm ? "Essayez de modifier votre recherche" : "Commencez par ajouter des utilisateurs"}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                  {filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-medium">{user.displayName || "Sans nom"}</p>
+                          <Badge variant={getRoleBadge(user.role).variant}>
+                            {getRoleBadge(user.role).label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {user.email}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Inscrit le {formatDate(user.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

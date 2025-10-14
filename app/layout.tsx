@@ -32,9 +32,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Toaster />
                 </>
               ) : isDashboardPage ? (
-                // Layout pour le dashboard étudiant (pas de Header/Footer)
+                // Layout pour le dashboard étudiant (avec Header)
                 <div className="flex flex-col min-h-screen">
+                  <Header />
                   <main className="flex-1">{children}</main>
+                  <Footer />
+                  <Cart />
+                  <MathChatbot />
                   <Toaster />
                 </div>
               ) : (

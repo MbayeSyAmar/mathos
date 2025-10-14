@@ -242,7 +242,37 @@ export const approveRequest = async (
       requestId
     );
     
-    console.log('✅ Request approved and student access granted');
+    // Créer l'encadrement actif pour l'étudiant
+    const now = new Date();
+    const nextMonth = new Date(now);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    
+    // Déterminer le nombre de sessions et le montant selon la formule
+    let sessionsPerMonth = 4;
+    let monthlyAmount = 20000;
+    
+    if (requestData.formule.toLowerCase().includes('intensive')) {
+      sessionsPerMonth = 8;
+      monthlyAmount = 35000;
+    } else if (requestData.formule.toLowerCase().includes('premium')) {
+      sessionsPerMonth = 12;
+      monthlyAmount = 50000;
+    }
+    
+    await addDoc(collection(db, 'encadrements'), {
+      userId: requestData.studentId,
+      teacherId: requestData.teacherId,
+      formule: requestData.formule,
+      status: 'active',
+      startDate: Timestamp.fromDate(now),
+      nextBillingDate: Timestamp.fromDate(nextMonth),
+      monthlyAmount: monthlyAmount,
+      sessionsPerMonth: sessionsPerMonth,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    console.log('✅ Request approved, student access granted, and encadrement created');
   } catch (error) {
     console.error('Error approving request:', error);
     throw error;

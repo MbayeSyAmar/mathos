@@ -55,6 +55,29 @@ Lister tous les admins :
 listAdmins();
 ```
 
+### `fix-existing-approvals.js`
+Script pour créer automatiquement les encadrements manquants pour les demandes déjà approuvées.
+
+**Utilisation :**
+```bash
+node scripts/fix-existing-approvals.js
+```
+
+**Fonctionnalité :**
+- ✅ Recherche toutes les demandes approuvées
+- ✅ Vérifie si un encadrement existe déjà
+- ✅ Crée les encadrements manquants avec les bonnes formules
+- ✅ Affiche un rapport détaillé
+
+**Note :** À exécuter une seule fois après la mise à jour du système d'encadrement.
+
+### Autres Scripts
+
+- `check-firebase-config.js` - Vérifier la configuration Firebase
+- `init-encadrement-data.js` - Initialiser les données d'encadrement
+- `init-teachers.js` - Initialiser les professeurs
+- `init-test-data.js` - Créer des données de test
+
 ## 🔒 Sécurité
 
 - ⚠️ Ne JAMAIS commiter `serviceAccountKey.json`
