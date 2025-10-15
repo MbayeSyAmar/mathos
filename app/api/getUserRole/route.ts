@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase"; // ton fichier est déjà prêt
 import { doc, getDoc } from "firebase/firestore";
+export const dynamic = "force-dynamic"; // <-- Important pour Firebase
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
