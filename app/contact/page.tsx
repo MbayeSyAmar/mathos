@@ -117,7 +117,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-medium">Email</h3>
-                  <p className="text-muted-foreground">contact@mathosphere.fr</p>
+                  <p className="text-muted-foreground">mathosphere.contact@gmail.com</p>
                 </div>
               </div>
               <div className="flex items-start space-x-4">
@@ -126,7 +126,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <h3 className="font-medium">Téléphone</h3>
-                  <p className="text-muted-foreground">+33 1 23 45 67 89</p>
+                  <p className="text-muted-foreground">+221 76 321 14 95</p>
                 </div>
               </div>
               <div className="flex items-start space-x-4">
@@ -136,9 +136,9 @@ export default function ContactPage() {
                 <div>
                   <h3 className="font-medium">Adresse</h3>
                   <p className="text-muted-foreground">
-                    123 Avenue des Mathématiques
+                    École Polytechnique de Thiès
                     <br />
-                    75001 Paris, France
+                    Thiès, Sénégal
                   </p>
                 </div>
               </div>
@@ -154,7 +154,7 @@ export default function ContactPage() {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span>Lundi - Vendredi</span>
-                  <span>9h00 - 18h00</span>
+                  <span>12h00 - 14h00</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Samedi</span>

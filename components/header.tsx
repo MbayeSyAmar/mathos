@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -13,12 +13,28 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isAboutMenuOpen, setIsAboutMenuOpen] = useState(false)
+  const closeTimer = useRef<number | null>(null)
   const { items, toggleCart } = useCart()
-  const { user, userData, logout } = useAuth()
+  const { user, userData, logout } = useAuth() 
   const router = useRouter()
+  const clearCloseTimer = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current)
+      closeTimer.current = null
+    }
+  }
+  const openAbout = () => {
+    clearCloseTimer()
+    setIsAboutMenuOpen(true)
+  }
+  const closeAboutWithDelay = () => {
+    clearCloseTimer()
+    closeTimer.current = window.setTimeout(() => setIsAboutMenuOpen(false), 180)
+  }
 
   // Vérifier que items existe et est un tableau avant d'utiliser reduce
-  const cartItemsCount = items && Array.isArray(items) ? items.reduce((acc, item) => acc + (item.quantity || 1), 0) : 0
+  const cartItemsCount =
+    items && Array.isArray(items) ? items.reduce((acc, item) => acc + (item.quantity || 1), 0) : 0
 
   const handleLogout = async () => {
     try {
@@ -62,25 +78,40 @@ export default function Header() {
           <Link href="/boutique" className="text-sm font-medium hover:text-primary">
             Boutique
           </Link>
-          <div 
-            className="relative"
-            onMouseEnter={() => setIsAboutMenuOpen(true)}
-            onMouseLeave={() => setIsAboutMenuOpen(false)}
+
+          {/* À propos (hover stable) */}
+          <div
+            className="relative before:absolute before:left-0 before:top-full before:h-2 before:w-full before:content-['']"
+            onMouseEnter={openAbout}
+            onMouseLeave={closeAboutWithDelay}
+            onFocus={openAbout}
+            onBlur={closeAboutWithDelay}
           >
-            <button className="text-sm font-medium hover:text-primary flex items-center gap-1">
+            <button
+              className="text-sm font-medium hover:text-primary flex items-center gap-1"
+              aria-haspopup="menu"
+              aria-expanded={isAboutMenuOpen}
+              type="button"
+              onClick={() => setIsAboutMenuOpen((v) => !v)}
+            >
               À propos <ChevronDown className="h-4 w-4" />
             </button>
+
             {isAboutMenuOpen && (
-              <div className="absolute top-full left-0 mt-2 w-48 bg-background border rounded-md shadow-lg">
-                <Link 
-                  href="/encadrement" 
+              <div
+                className="absolute top-full left-0 mt-2 w-48 bg-background border rounded-md shadow-lg z-50"
+                onMouseEnter={openAbout}
+                onMouseLeave={closeAboutWithDelay}
+              >
+                <Link
+                  href="/encadrement"
                   className="block px-4 py-2 text-sm hover:bg-muted"
                   onClick={() => setIsAboutMenuOpen(false)}
                 >
                   Encadrement personnalisé
                 </Link>
-                <Link 
-                  href="/contact" 
+                <Link
+                  href="/contact"
                   className="block px-4 py-2 text-sm hover:bg-muted"
                   onClick={() => setIsAboutMenuOpen(false)}
                 >

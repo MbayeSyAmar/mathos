@@ -285,7 +285,7 @@ export default function Home() {
             </div>
             <div className="relative h-[400px] rounded-xl overflow-hidden">
               <Image
-                src="/placeholder.svg?height=400&width=600"
+                src="https://i.imgur.com/nIV8Ghj.jpeg"
                 alt="Encadrement personnalisé"
                 fill
                 className="object-cover"
@@ -301,7 +301,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="relative h-[400px] rounded-xl overflow-hidden order-2 lg:order-1">
               <Image
-                src="/placeholder.svg?height=400&width=600"
+                src="https://i.imgur.com/3slvyw3.jpeg"
                 alt="Groupe Mathosphère"
                 fill
                 className="object-cover"

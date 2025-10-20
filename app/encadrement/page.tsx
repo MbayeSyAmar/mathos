@@ -226,12 +226,12 @@ export default function EncadrementPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    49€<span className="text-sm font-normal text-muted-foreground">/mois</span>
+                    20.000 F<span className="text-sm font-normal text-muted-foreground">/mois</span>
                   </div>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>2 séances de 1h par mois</span>
+                      <span>2 séances de 2h par semaine</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
@@ -251,7 +251,7 @@ export default function EncadrementPage() {
                   <Button 
                     className="w-full"
                     onClick={() => {
-                      setFormData({ ...formData, formule: "Formule Standard (2h/mois - 49€)" })
+                      setFormData({ ...formData, formule: "Formule Standard (4h/semaine - 20.000 F)" })
                       const formSection = document.getElementById('demande-form')
                       if (formSection) {
                         formSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -271,12 +271,12 @@ export default function EncadrementPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-3xl font-bold">
-                    89€<span className="text-sm font-normal text-muted-foreground">/mois</span>
+                    40.000 F<span className="text-sm font-normal text-muted-foreground">/mois</span>
                   </div>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
-                      <span>4 séances de 1h par mois</span>
+                      <span>4 séances de 2h par semaine</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-primary" />
@@ -296,7 +296,7 @@ export default function EncadrementPage() {
                   <Button 
                     className="w-full"
                     onClick={() => {
-                      setFormData({ ...formData, formule: "Formule Intensive (4h/mois - 89€)" })
+                      setFormData({ ...formData, formule: "Formule Intensive (8h/semaine - 40.000 F)" })
                       const formSection = document.getElementById('demande-form')
                       if (formSection) {
                         formSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -446,8 +446,8 @@ export default function EncadrementPage() {
                         <SelectValue placeholder="Sélectionnez une formule" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Formule Standard (2h/mois - 49€)">Formule Standard (2h/mois - 49€)</SelectItem>
-                        <SelectItem value="Formule Intensive (4h/mois - 89€)">Formule Intensive (4h/mois - 89€)</SelectItem>
+                        <SelectItem value="Formule Standard (4h/semaine - 20.000 F)">Formule Standard (4h/semaine - 20.000 F)</SelectItem>
+                        <SelectItem value="Formule Intensive (4h/mois - 89€)">Formule Intensive (8h/semaine - 40.000 F)</SelectItem>
                         <SelectItem value="Formule sur mesure">Formule sur mesure</SelectItem>
                       </SelectContent>
                     </Select>
@@ -552,21 +552,21 @@ export default function EncadrementPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
-              name: "Léa Dubois",
+              name: "Ilimane Dieye",
               level: "Terminale",
               image: "/placeholder.svg?height=100&width=100",
               text: "Grâce à l'encadrement personnalisé, j'ai pu surmonter mes difficultés en mathématiques et obtenir 18/20 au baccalauréat. Mon professeur a su adapter ses explications à mon rythme d'apprentissage.",
               rating: 5,
             },
             {
-              name: "Lucas Martin",
-              level: "Licence 1",
+              name: "Ami Fall",
+              level: "Première S",
               image: "/placeholder.svg?height=100&width=100",
               text: "J'avais des lacunes en analyse qui me bloquaient dans mes études supérieures. L'encadrement m'a permis de combler ces lacunes et de reprendre confiance en moi. Je recommande vivement !",
               rating: 4.5,
             },
             {
-              name: "Emma Petit",
+              name: "Aliou Kane",
               level: "3ème",
               image: "/placeholder.svg?height=100&width=100",
               text: "Les mathématiques étaient ma bête noire jusqu'à ce que je commence l'encadrement personnalisé. Mon professeur a su me faire aimer cette matière et j'ai progressé de façon spectaculaire.",

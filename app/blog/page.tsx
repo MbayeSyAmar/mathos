@@ -6,103 +6,117 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowRight, Calendar, User } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
+const year = new Date().getFullYear()
+const lastYear = year - 1
+const currentYear = year 
+
 const categories = [
   { id: "tous", name: "Tous les articles" },
   { id: "methodes", name: "Méthodes" },
   { id: "concours", name: "Concours" },
-  { id: "histoire", name: "Histoire des maths" },
+  { id: "college", name: "Collège" },
 ]
 
 const blogData = [
   {
-    id: 1,
-    title: "Comment réussir en mathématiques ?",
-    description: "Découvrez les meilleures méthodes pour progresser efficacement en mathématiques",
-    image: "/placeholder.svg?height=200&width=400",
+    slug: "reussir-en-maths",
+    title: "Comment réussir en mathématiques ? 10 habitudes qui marchent",
+    description: "Organisation, mémorisation active et entraînement ciblé: le trio gagnant.",
+    image: "images/reussirenmaths.jpg",
     category: "methodes",
-    date: "15 mars 2023",
-    author: "Marie Dupont",
-    readTime: "8 min",
-  },
-  {
-    id: 2,
-    title: "Préparer le Brevet des collèges",
-    description: "Guide complet pour réviser et réussir l'épreuve de mathématiques du Brevet",
-    image: "/placeholder.svg?height=200&width=400",
-    category: "concours",
-    date: "22 avril 2023",
-    author: "Thomas Martin",
-    readTime: "12 min",
-  },
-  {
-    id: 3,
-    title: "La vie d'Euler",
-    description: "Biographie du mathématicien Leonhard Euler et ses contributions majeures",
-    image: "/placeholder.svg?height=200&width=400",
-    category: "histoire",
-    date: "10 mai 2023",
-    author: "Sophie Leclerc",
-    readTime: "15 min",
-  },
-  {
-    id: 4,
-    title: "Mémoriser les formules mathématiques",
-    description: "Techniques de mémorisation efficaces pour retenir les formules complexes",
-    image: "/placeholder.svg?height=200&width=400",
-    category: "methodes",
-    date: "5 juin 2023",
-    author: "Paul Dubois",
-    readTime: "10 min",
-  },
-  {
-    id: 5,
-    title: "Préparer les Olympiades de mathématiques",
-    description: "Conseils et exercices pour se préparer aux compétitions mathématiques",
-    image: "/placeholder.svg?height=200&width=400",
-    category: "concours",
-    date: "18 juillet 2023",
-    author: "Émilie Rousseau",
-    readTime: "14 min",
-  },
-  {
-    id: 6,
-    title: "L'histoire des nombres complexes",
-    description: "De l'impossibilité apparente à l'outil mathématique indispensable",
-    image: "/placeholder.svg?height=200&width=400",
-    category: "histoire",
-    date: "3 août 2023",
-    author: "Marc Leroy",
-    readTime: "12 min",
-  },
-  {
-    id: 7,
-    title: "Gérer son temps pendant les examens",
-    description: "Stratégies pour optimiser son temps lors des épreuves de mathématiques",
-    image: "/placeholder.svg?height=200&width=400",
-    category: "methodes",
-    date: "12 septembre 2023",
-    author: "Julie Moreau",
+    date: `15 septembre ${currentYear}`,
+    author: "Mamadou Ndao",
     readTime: "9 min",
   },
   {
-    id: 8,
-    title: "Préparer le Baccalauréat",
-    description: "Guide complet pour réviser l'épreuve de mathématiques du Bac",
-    image: "/placeholder.svg?height=200&width=400",
+    slug: "brevet-maths-guide",
+    title: "Préparer le Brevet des collèges en mathématiques",
+    description: "Guide complet pour réviser et réussir l'épreuve de mathématiques du Brevet",
+    image: "/images/brevet.jpg",
     category: "concours",
-    date: "25 octobre 2023",
-    author: "Nicolas Petit",
-    readTime: "16 min",
+    date: `22 septembre ${currentYear}`,
+    author: "Pape Baba Sylla",
+    readTime: "12 min",
   },
   {
-    id: 9,
-    title: "Les femmes qui ont révolutionné les mathématiques",
-    description: "Portraits de mathématiciennes exceptionnelles à travers l'histoire",
-    image: "/placeholder.svg?height=200&width=400",
-    category: "histoire",
-    date: "8 novembre 2023",
-    author: "Camille Durand",
-    readTime: "18 min",
+    slug: "olympiades-maths",
+    title: "Préparer les Olympiades de mathématiques",
+    description: "Curiosité, rigueur et créativité: votre boîte à outils pour les problèmes ouverts.",
+    image: "/images/olymp.jpg",
+    category: "concours",
+    date: `13 septembre ${currentYear}`,
+    author: "Mame Goumba Amar",
+    readTime: "11 min",
+  },
+  {
+    slug: "bac-maths-guide",
+    title: "Réussir l'épreuve de mathématiques du Baccalauréat",
+    description: "Stratégies par type d'exercice et gestion du temps pour le jour J.",
+    image: "/images/bac.jpeg",
+    category: "concours",
+    date: `25 septembre ${currentYear}`,
+    author: "Serigne Lo",
+    readTime: "13 min",
+  },
+  {
+    slug: "calcul-mental-techniques",
+    title: "Calcul mental: techniques rapides et entraînement quotidien",
+    description: "Trucs et astuces pour gagner en vitesse et en précision.",
+    image: "/images/mental.jpg",
+    category: "college",
+    date: `10 septembre ${currentYear}`,
+    author: "Algassimou Bah",
+    readTime: "8 min",
+  },
+  {
+    slug: "probabilites-intro",
+    title: "Comprendre les probabilités: de l’intuition aux calculs",
+    description: "Expériences aléatoires, arbres, lois usuelles: les bases solides.",
+    image: "/images/prob.jpg",
+    category: "probas",
+    date: `12 septembre ${currentYear}`,
+    author: "Ibrahima Sow",
+    readTime: "10 min",
+  },
+  {
+    slug: "geometrie-analytique",
+    title: "Géométrie analytique: droites, cercles et stratégies",
+    description: "Tout pour maîtriser les équations de droites et de cercles en repère.",
+    image: "/images/geometrie.png",
+    category: "geometrie",
+    date: `06 septembre ${currentYear}`,
+    author: "Moustapha Diagne",
+    readTime: "9 min",
+  },
+  {
+    slug: "algorithmique-python-college",
+    title: "Initiation à l’algorithmique et à Python (Pour les Curieux)",
+    description: "Variables, boucles, conditions et premiers programmes utiles.",
+    image: "/images/python.jpg",
+    category: "programmation",
+    date: `10 septembre ${currentYear}`,
+    author: "Jonas John Athnase Senghor",
+    readTime: "10 min",
+  },
+  {
+    slug: "fonctions-lycee",
+    title: "Fonctions au lycée: ln, exp",
+    description: "Les réflexes pour analyser, calculer et justifier rapidement.",
+    image: "/images/ln.png",
+    category: "algebre",
+    date: `18 septembre ${currentYear}`,
+    author: "Boubacar Sidibe",
+    readTime: "12 min",
+  },
+  {
+    slug: "statistiques-lycee",
+    title: "Statistiques: moyenne, médiane, écart-type et interprétation",
+    description: "De la lecture d’un tableau à l’analyse critique de données.",
+    image: "/images/stat.png",
+    category: "statistiques",
+    date: `09 septembre ${currentYear}`,
+    author: "Mary Sadio Toure",
+    readTime: "9 min",
   },
 ]
 
@@ -112,8 +126,18 @@ const getCategoryColor = (category: string) => {
       return "bg-blue-500/10 text-blue-500"
     case "concours":
       return "bg-green-500/10 text-green-500"
-    case "histoire":
+    case "college":
+      return "bg-amber-500/10 text-amber-500"
+    case "programmation":
+      return "bg-teal-500/10 text-teal-500"
+    case "algebre":
+      return "bg-rose-500/10 text-rose-500"
+    case "geometrie":
       return "bg-purple-500/10 text-purple-500"
+    case "probas":
+      return "bg-indigo-500/10 text-indigo-500"
+    case "statistiques":
+      return "bg-emerald-500/10 text-emerald-500"
     default:
       return "bg-gray-500/10 text-gray-500"
   }
@@ -145,7 +169,7 @@ export default function BlogPage() {
                 .filter((blog) => category.id === "tous" || blog.category === category.id)
                 .map((blog) => (
                   <Card
-                    key={blog.id}
+                    key={blog.slug}
                     className="overflow-hidden group h-full flex flex-col border-gray-200 hover:border-gray-300 transition-colors"
                   >
                     <div className="relative h-48">
@@ -164,7 +188,7 @@ export default function BlogPage() {
                     </div>
                     <CardHeader className="pb-2 pt-5">
                       <CardTitle className="text-xl font-bold leading-tight text-foreground hover:text-primary transition-colors">
-                        <Link href={`/blog/${blog.id}`} className="hover:underline">
+                        <Link href={`/blog/${blog.slug}`} className="hover:underline">
                           {blog.title}
                         </Link>
                       </CardTitle>
@@ -186,7 +210,7 @@ export default function BlogPage() {
                       </div>
                     </CardContent>
                     <CardFooter className="pt-0">
-                      <Link href={`/blog/${blog.id}`} className="w-full">
+                      <Link href={`/blog/${blog.slug}`} className="w-full">
                         <Button
                           variant="outline"
                           className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
