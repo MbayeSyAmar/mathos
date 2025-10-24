@@ -453,22 +453,37 @@ const enrichedQuizData: { [key: number]: QuizQuestion[] } = {
 /**
  * Récupère le contenu d'un quiz (PDF ou questions enrichies)
  * @param quizId - ID du quiz (1-9)
+ * @param level - Niveau (Collège/Lycée)
+ * @param classe - Classe (6ème, 2nde, etc.)
  * @returns Objet contenant hasPDF, pdfUrl (si PDF), et questions (questions enrichies)
  */
-export async function getQuizContent(quizId: number): Promise<{
+export async function getQuizContent(quizId: number, level?: string, classe?: string): Promise<{
   hasPDF: boolean
   pdfUrl?: string
   questions?: QuizQuestion[]
 }> {
   try {
-    // Vérifier s'il existe un PDF pour ce quiz dans Firestore
-    const q = query(
+    // Convertir level en format attendu
+    const levelFormatted = level?.toLowerCase().includes('lycée') || level?.toLowerCase().includes('lycee') 
+      ? 'lycee' as const
+      : 'college' as const;
+
+    // Construire la requête avec filtres
+    let q = query(
       collection(db, "pdfs"),
       where("quizId", "==", quizId),
-      where("type", "==", "quiz"),
-      orderBy("uploadedAt", "desc"),
-      limit(1)
+      where("type", "==", "quiz")
     )
+
+    // Ajouter les filtres level et classe si fournis
+    if (level) {
+      q = query(q, where("level", "==", levelFormatted))
+    }
+    if (classe) {
+      q = query(q, where("classe", "==", classe))
+    }
+
+    q = query(q, orderBy("uploadedAt", "desc"), limit(1))
 
     const querySnapshot = await getDocs(q)
 

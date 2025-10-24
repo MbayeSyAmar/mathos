@@ -118,20 +118,33 @@ export const uploadPDFToServer = async (
 
 /**
  * Récupère le PDF pour un contenu spécifique
+ * Filtre par contentId, type, level et classe pour éviter les conflits d'ID entre niveaux
  */
 export const getPDFForContent = async (
   contentId: number,
-  type: 'cours' | 'exercice' | 'quiz'
+  type: 'cours' | 'exercice' | 'quiz',
+  level?: 'college' | 'lycee',
+  classe?: string
 ): Promise<PDFDocument | null> => {
   try {
     const fieldName = type === 'cours' ? 'courseId' : type === 'exercice' ? 'exerciseId' : 'quizId';
     
-    const q = query(
+    // Construire la requête avec filtres
+    let q = query(
       collection(db, 'pdfs'),
       where(fieldName, '==', contentId),
-      where('type', '==', type),
-      orderBy('uploadedAt', 'desc')
+      where('type', '==', type)
     );
+
+    // Ajouter les filtres level et classe si fournis pour éviter les conflits d'ID
+    if (level) {
+      q = query(q, where('level', '==', level));
+    }
+    if (classe) {
+      q = query(q, where('classe', '==', classe));
+    }
+
+    q = query(q, orderBy('uploadedAt', 'desc'));
 
     const querySnapshot = await getDocs(q);
 

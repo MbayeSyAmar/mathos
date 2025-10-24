@@ -2243,14 +2243,19 @@ export const enrichedCoursesData: Record<number, { title: string; content: strin
  * Récupère le contenu enrichi pour un cours
  * Vérifie d'abord s'il y a un PDF, sinon retourne le contenu enrichi
  */
-export async function getCourseContent(courseId: number): Promise<{
+export async function getCourseContent(courseId: number, level?: string, classe?: string): Promise<{
   hasPDF: boolean;
   pdfUrl?: string;
   content?: string;
 }> {
   try {
-    // Vérifier s'il y a un PDF uploadé pour ce cours
-    const pdf = await getPDFForContent(courseId, 'cours');
+    // Convertir level en format attendu
+    const levelFormatted = level?.toLowerCase().includes('lycée') || level?.toLowerCase().includes('lycee') 
+      ? 'lycee' as const
+      : 'college' as const;
+
+    // Vérifier s'il y a un PDF uploadé pour ce cours avec level et classe
+    const pdf = await getPDFForContent(courseId, 'cours', levelFormatted, classe);
     
     if (pdf) {
       return {

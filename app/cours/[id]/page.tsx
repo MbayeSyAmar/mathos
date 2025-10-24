@@ -57,7 +57,7 @@ export default function CourseDetailPage() {
         // Charger le contenu enrichi ou PDF
         const numericId = parseInt(courseId)
         if (!isNaN(numericId)) {
-          const content = await getCourseContent(numericId)
+          const content = await getCourseContent(numericId, courseData.level, courseData.classe)
           setHasPDF(content.hasPDF)
           if (content.hasPDF && content.pdfUrl) {
             setPdfUrl(content.pdfUrl)
@@ -93,8 +93,8 @@ export default function CourseDetailPage() {
             setCourse(adaptedCourse)
             setIsStaticCourse(true)
             
-            // Charger le contenu enrichi ou PDF
-            const content = await getCourseContent(numericId)
+            // Charger le contenu enrichi ou PDF avec level et classe du cours statique
+            const content = await getCourseContent(numericId, staticCourse.level, staticCourse.classe)
             setHasPDF(content.hasPDF)
             if (content.hasPDF && content.pdfUrl) {
               setPdfUrl(content.pdfUrl)

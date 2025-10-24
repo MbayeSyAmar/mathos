@@ -323,20 +323,33 @@ const enrichedExercisesData: { [key: number]: string } = {
  * @param exerciseId - ID de l'exercice (1-21)
  * @returns Objet contenant hasPDF, pdfUrl (si PDF), et content (contenu HTML enrichi)
  */
-export async function getExerciseContent(exerciseId: number): Promise<{
+export async function getExerciseContent(exerciseId: number, level?: string, classe?: string): Promise<{
   hasPDF: boolean
   pdfUrl?: string
   content?: string
 }> {
   try {
-    // Vérifier s'il existe un PDF pour cet exercice
-    const q = query(
+    // Convertir level en format attendu
+    const levelFormatted = level?.toLowerCase().includes('lycée') || level?.toLowerCase().includes('lycee') 
+      ? 'lycee' as const
+      : 'college' as const;
+
+    // Construire la requête avec filtres level et classe
+    let q = query(
       collection(db, "pdfs"),
       where("exerciseId", "==", exerciseId),
-      where("type", "==", "exercice"),
-      orderBy("uploadedAt", "desc"),
-      limit(1)
+      where("type", "==", "exercice")
     )
+
+    // Ajouter les filtres level et classe si fournis
+    if (level) {
+      q = query(q, where("level", "==", levelFormatted))
+    }
+    if (classe) {
+      q = query(q, where("classe", "==", classe))
+    }
+
+    q = query(q, orderBy("uploadedAt", "desc"), limit(1))
 
     const querySnapshot = await getDocs(q)
 
