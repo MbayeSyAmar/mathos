@@ -14,10 +14,21 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 }
 
+// Log la configuration (sans les clés sensibles) pour déboguer
+console.log('[Firebase] Initializing with config:', {
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+  storageBucket: firebaseConfig.storageBucket,
+  hasApiKey: !!firebaseConfig.apiKey,
+  hasAppId: !!firebaseConfig.appId,
+})
+
 const app: FirebaseApp = initializeApp(firebaseConfig)
 const auth: Auth = getAuth(app)
 const db: Firestore = getFirestore(app)
 const storage: FirebaseStorage = getStorage(app)
 const functions: Functions = getFunctions(app)
+
+console.log('[Firebase] Storage bucket:', storage.app.options.storageBucket)
 
 export { app, auth, db, storage, functions }

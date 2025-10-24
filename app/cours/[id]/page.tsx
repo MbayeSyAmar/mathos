@@ -18,7 +18,9 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { getCourseById, type Course } from "@/lib/services/content-service"
+import { getStaticCourseById, type StaticCourse } from "@/lib/services/static-courses.service"
 import { hasAccessToTeacher } from "@/lib/services/student-access-service"
+import { getCourseContent } from "@/lib/services/content-enrichment.service"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 
@@ -26,9 +28,13 @@ export default function CourseDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
-  const [course, setCourse] = useState<Course | null>(null)
+  const [course, setCourse] = useState<Course | StaticCourse | null>(null)
   const [loading, setLoading] = useState(true)
   const [hasAccess, setHasAccess] = useState(false)
+  const [enrichedContent, setEnrichedContent] = useState<string>("")
+  const [hasPDF, setHasPDF] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string>("")
+  const [isStaticCourse, setIsStaticCourse] = useState(false)
 
   useEffect(() => {
     if (params.id) {
@@ -39,20 +45,73 @@ export default function CourseDetailPage() {
   const fetchCourse = async (courseId: string) => {
     try {
       setLoading(true)
+      
+      // D'abord essayer de récupérer un cours Firestore
       const courseData = await getCourseById(courseId)
       
-      if (!courseData) {
-        toast.error("Cours introuvable")
-        router.push("/cours")
-        return
-      }
+      if (courseData) {
+        // Cours Firestore trouvé
+        setCourse(courseData)
+        setIsStaticCourse(false)
 
-      setCourse(courseData)
+        // Charger le contenu enrichi ou PDF
+        const numericId = parseInt(courseId)
+        if (!isNaN(numericId)) {
+          const content = await getCourseContent(numericId)
+          setHasPDF(content.hasPDF)
+          if (content.hasPDF && content.pdfUrl) {
+            setPdfUrl(content.pdfUrl)
+          } else if (content.content) {
+            setEnrichedContent(content.content)
+          }
+        }
 
-      // Vérifier l'accès si c'est un étudiant
-      if (user && courseData.teacherId) {
-        const access = await hasAccessToTeacher(user.uid, courseData.teacherId)
-        setHasAccess(access)
+        // Vérifier l'accès si c'est un étudiant
+        if (user && courseData.teacherId) {
+          const access = await hasAccessToTeacher(user.uid, courseData.teacherId)
+          setHasAccess(access)
+        }
+      } else {
+        // Essayer de récupérer un cours statique (IDs 1-30)
+        const numericId = parseInt(courseId)
+        if (!isNaN(numericId)) {
+          const staticCourse = getStaticCourseById(numericId)
+          
+          if (staticCourse) {
+            // Cours statique trouvé - adapter au format Course
+            const adaptedCourse: any = {
+              ...staticCourse,
+              id: courseId,
+              teacherId: "",
+              teacherName: "Équipe Mathosphère",
+              content: "",
+              status: "published",
+              studentsEnrolled: 0,
+              rating: 0,
+              totalRatings: 0,
+            }
+            setCourse(adaptedCourse)
+            setIsStaticCourse(true)
+            
+            // Charger le contenu enrichi ou PDF
+            const content = await getCourseContent(numericId)
+            setHasPDF(content.hasPDF)
+            if (content.hasPDF && content.pdfUrl) {
+              setPdfUrl(content.pdfUrl)
+            } else if (content.content) {
+              setEnrichedContent(content.content)
+            }
+          } else {
+            // Aucun cours trouvé
+            toast.error("Cours introuvable")
+            router.push("/cours")
+            return
+          }
+        } else {
+          toast.error("Cours introuvable")
+          router.push("/cours")
+          return
+        }
       }
     } catch (error) {
       console.error("Error fetching course:", error)
@@ -109,9 +168,11 @@ export default function CourseDetailPage() {
                       {course.description}
                     </CardDescription>
                   </div>
-                  <Badge variant={course.status === "published" ? "default" : "secondary"}>
-                    {course.status === "published" ? "Publié" : course.status === "draft" ? "Brouillon" : "Archivé"}
-                  </Badge>
+                  {!isStaticCourse && 'status' in course && (
+                    <Badge variant={course.status === "published" ? "default" : "secondary"}>
+                      {course.status === "published" ? "Publié" : course.status === "draft" ? "Brouillon" : "Archivé"}
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
             </Card>
@@ -129,10 +190,30 @@ export default function CourseDetailPage() {
                   </TabsList>
 
                   <TabsContent value="content" className="mt-6">
-                    <div
-                      className="prose prose-slate dark:prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: course.content }}
-                    />
+                    {hasPDF ? (
+                      // Afficher le PDF dans un iframe
+                      <div className="w-full h-[600px] border rounded-lg overflow-hidden">
+                        <iframe
+                          src={pdfUrl}
+                          className="w-full h-full"
+                          title="Contenu du cours PDF"
+                        />
+                      </div>
+                    ) : enrichedContent ? (
+                      // Afficher le contenu enrichi HTML
+                      <div
+                        className="prose prose-slate dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ __html: enrichedContent }}
+                      />
+                    ) : 'content' in course && course.content ? (
+                      // Afficher le contenu original du cours
+                      <div
+                        className="prose prose-slate dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ __html: course.content }}
+                      />
+                    ) : (
+                      <p className="text-muted-foreground">Aucun contenu disponible</p>
+                    )}
                   </TabsContent>
 
                   <TabsContent value="objectives" className="mt-6">
@@ -180,7 +261,9 @@ export default function CourseDetailPage() {
                   <User className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Professeur</p>
-                    <p className="text-sm text-muted-foreground">{course.teacherName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {'teacherName' in course ? course.teacherName : 'Équipe Mathosphère'}
+                    </p>
                   </div>
                 </div>
 
@@ -190,7 +273,9 @@ export default function CourseDetailPage() {
                   <Clock className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Durée</p>
-                    <p className="text-sm text-muted-foreground">{course.duration} minutes</p>
+                    <p className="text-sm text-muted-foreground">
+                      {typeof course.duration === 'string' ? course.duration : `${course.duration} minutes`}
+                    </p>
                   </div>
                 </div>
 
@@ -213,27 +298,29 @@ export default function CourseDetailPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Statistiques</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Étudiants inscrits</span>
-                  <span className="font-medium">{course.studentsEnrolled}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Note moyenne</span>
-                  <span className="font-medium">
-                    {course.rating > 0 ? `${course.rating.toFixed(1)}/5` : "Non noté"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Évaluations</span>
-                  <span className="font-medium">{course.totalRatings}</span>
-                </div>
-              </CardContent>
-            </Card>
+            {!isStaticCourse && 'studentsEnrolled' in course && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Statistiques</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Étudiants inscrits</span>
+                    <span className="font-medium">{course.studentsEnrolled}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Note moyenne</span>
+                    <span className="font-medium">
+                      {course.rating > 0 ? `${course.rating.toFixed(1)}/5` : "Non noté"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Évaluations</span>
+                    <span className="font-medium">{course.totalRatings}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </motion.div>

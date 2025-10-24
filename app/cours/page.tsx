@@ -11,7 +11,17 @@ const levels = [
   { id: "superieur", name: "Supérieur", classes: ["Licence", "Master", "Prépa"] },
 ]
 
-const coursesData = {
+interface Course {
+  id: number
+  title: string
+  description: string
+  image: string
+  duration: string
+}
+
+type ClasseKey = "6ème" | "5ème" | "4ème" | "3ème" | "2nde" | "1ère" | "Terminale" | "Licence" | "Master" | "Prépa"
+
+const coursesData: Record<ClasseKey, Course[]> = {
   "6ème": [
     {
       id: 1,
@@ -284,7 +294,7 @@ export default function CoursPage() {
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {coursesData[classe]?.map((course) => (
+                  {coursesData[classe as ClasseKey]?.map((course) => (
                     <Card key={course.id} className="overflow-hidden group">
                       <div className="relative h-48">
                         <Image
