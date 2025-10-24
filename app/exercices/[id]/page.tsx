@@ -25,12 +25,19 @@ import { toast } from "sonner"
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc as firestoreDoc, getDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { BackButton } from "@/components/back-button"
+import { getExerciseContent } from "@/lib/services/exercises-enrichment.service"
+import { getStaticExerciseById, type StaticExercise } from "@/lib/services/static-exercises.service"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function ExerciseDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { user } = useAuth()
-  const [exercise, setExercise] = useState<Exercise | null>(null)
+  const [exercise, setExercise] = useState<Exercise | StaticExercise | null>(null)
+  const [isStaticExercise, setIsStaticExercise] = useState(false)
+  const [hasPDF, setHasPDF] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string>("")
+  const [enrichedContent, setEnrichedContent] = useState<string>("")
   const [loading, setLoading] = useState(true)
   const [showHints, setShowHints] = useState(false)
   const [showSolution, setShowSolution] = useState(false)
@@ -59,20 +66,67 @@ export default function ExerciseDetailPage() {
   const fetchExercise = async (exerciseId: string) => {
     try {
       setLoading(true)
+      
+      // D'abord essayer de récupérer un exercice Firestore
       const exerciseData = await getExerciseById(exerciseId)
       
-      if (!exerciseData) {
-        toast.error("Exercice introuvable")
-        router.push("/exercices")
-        return
-      }
+      if (exerciseData) {
+        // Exercice Firestore trouvé
+        setExercise(exerciseData)
+        setIsStaticExercise(false)
 
-      setExercise(exerciseData)
-
-      // Vérifier l'accès si c'est un étudiant
-      if (user && exerciseData.teacherId) {
-        const access = await hasAccessToTeacher(user.uid, exerciseData.teacherId)
-        setHasAccess(access)
+        // Vérifier l'accès si c'est un étudiant
+        if (user && exerciseData.teacherId) {
+          const access = await hasAccessToTeacher(user.uid, exerciseData.teacherId)
+          setHasAccess(access)
+        }
+      } else {
+        // Essayer de récupérer un exercice statique (IDs 1-21)
+        const numericId = parseInt(exerciseId)
+        if (!isNaN(numericId)) {
+          const staticExercise = getStaticExerciseById(numericId)
+          
+          if (staticExercise) {
+            // Exercice statique trouvé - adapter au format Exercise
+            const adaptedExercise: any = {
+              ...staticExercise,
+              id: exerciseId,
+              teacherId: "",
+              teacherName: "Équipe Mathosphère",
+              statement: "",
+              points: 10,
+              hints: [],
+              solution: null,
+              type: "practice",
+              subject: "Mathématiques",
+              level: staticExercise.level,
+              status: "published",
+              studentsCompleted: 0,
+              successRate: 0,
+              timeLimit: parseInt(staticExercise.time) || 60,
+            }
+            setExercise(adaptedExercise)
+            setIsStaticExercise(true)
+            
+            // Charger le contenu enrichi ou PDF
+            const content = await getExerciseContent(numericId)
+            setHasPDF(content.hasPDF)
+            if (content.hasPDF && content.pdfUrl) {
+              setPdfUrl(content.pdfUrl)
+            } else if (content.content) {
+              setEnrichedContent(content.content)
+            }
+          } else {
+            // Aucun exercice trouvé
+            toast.error("Exercice introuvable")
+            router.push("/exercices")
+            return
+          }
+        } else {
+          toast.error("Exercice introuvable")
+          router.push("/exercices")
+          return
+        }
       }
     } catch (error) {
       console.error("Error fetching exercise:", error)
@@ -142,8 +196,8 @@ export default function ExerciseDetailPage() {
         userName: userData.nom && userData.prenom 
           ? `${userData.prenom} ${userData.nom}` 
           : user.email,
-        teacherId: exercise.teacherId,
-        teacherName: exercise.teacherName,
+        teacherId: 'teacherId' in exercise ? exercise.teacherId : '',
+        teacherName: 'teacherName' in exercise ? exercise.teacherName : 'Équipe Mathosphère',
         answer: userAnswer,
         submittedAt: serverTimestamp(),
         status: "pending", // pending, reviewed
@@ -233,10 +287,14 @@ export default function ExerciseDetailPage() {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Badge className={getDifficultyColor(exercise.difficulty)}>
-                      {getDifficultyLabel(exercise.difficulty)}
-                    </Badge>
-                    <Badge variant="outline">{exercise.points} pts</Badge>
+                    {'difficulty' in exercise && (
+                      <Badge className={getDifficultyColor(exercise.difficulty)}>
+                        {getDifficultyLabel(exercise.difficulty)}
+                      </Badge>
+                    )}
+                    {'points' in exercise && exercise.points && (
+                      <Badge variant="outline">{exercise.points} pts</Badge>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -244,121 +302,184 @@ export default function ExerciseDetailPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Énoncé</CardTitle>
+                <CardTitle>Contenu de l'exercice</CardTitle>
               </CardHeader>
               <CardContent>
-                <div
-                  className="prose prose-slate dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: exercise.statement }}
-                />
+                {isStaticExercise ? (
+                  // Affichage pour exercices statiques (avec onglets)
+                  <Tabs defaultValue="content">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="content">Énoncé</TabsTrigger>
+                      <TabsTrigger value="info">Informations</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="content" className="mt-6">
+                      {hasPDF ? (
+                        // Afficher le PDF dans un iframe
+                        <div className="w-full h-[600px] border rounded-lg overflow-hidden">
+                          <iframe
+                            src={pdfUrl}
+                            className="w-full h-full"
+                            title="Contenu de l'exercice PDF"
+                          />
+                        </div>
+                      ) : enrichedContent ? (
+                        // Afficher le contenu enrichi HTML
+                        <div
+                          className="prose prose-slate dark:prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ __html: enrichedContent }}
+                        />
+                      ) : (
+                        <p className="text-muted-foreground">Contenu en cours de préparation...</p>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="info" className="mt-6">
+                      <div className="space-y-3">
+                        {'exercises' in exercise && (
+                          <div className="flex items-start gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                            <p>{exercise.exercises} exercices inclus</p>
+                          </div>
+                        )}
+                        {'hasCorrection' in exercise && exercise.hasCorrection && (
+                          <div className="flex items-start gap-3">
+                            <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                            <p>Corrigés détaillés fournis</p>
+                          </div>
+                        )}
+                        {'time' in exercise && (
+                          <div className="flex items-start gap-3">
+                            <Clock className="h-5 w-5 text-blue-500 mt-0.5" />
+                            <p>Temps conseillé : {exercise.time}</p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                ) : (
+                  // Affichage pour exercices Firestore
+                  <div>
+                    <div
+                      className="prose prose-slate dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: 'statement' in exercise ? exercise.statement : '' }}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Votre réponse</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Textarea
-                  placeholder="Écrivez votre réponse ici..."
-                  value={userAnswer}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  rows={10}
-                  disabled={submitting || (hasSubmitted && submissionFeedback?.status === "reviewed")}
-                />
-                {hasSubmitted && !submissionFeedback && (
-                  <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-                    <Clock className="h-4 w-4" />
-                    <span>Réponse soumise - En attente de correction par votre professeur</span>
-                  </div>
-                )}
-                {submissionFeedback && (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
-                      <CheckCircle className="h-4 w-4" />
-                      <span>Corrigé par votre professeur</span>
-                      {submissionFeedback.score !== null && (
-                        <span className="ml-auto font-bold">
-                          Note : {submissionFeedback.score}/20
-                        </span>
+            {!isStaticExercise && (
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Votre réponse</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Textarea
+                      placeholder="Écrivez votre réponse ici..."
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      rows={10}
+                      disabled={submitting || (hasSubmitted && submissionFeedback?.status === "reviewed")}
+                    />
+                    {hasSubmitted && !submissionFeedback && (
+                      <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                        <Clock className="h-4 w-4" />
+                        <span>Réponse soumise - En attente de correction par votre professeur</span>
+                      </div>
+                    )}
+                    {submissionFeedback && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                          <CheckCircle className="h-4 w-4" />
+                          <span>Corrigé par votre professeur</span>
+                          {submissionFeedback.score !== null && (
+                            <span className="ml-auto font-bold">
+                              Note : {submissionFeedback.score}/20
+                            </span>
+                          )}
+                        </div>
+                        <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                          <h4 className="font-semibold mb-2">Correction du professeur :</h4>
+                          <p className="text-sm whitespace-pre-wrap">{submissionFeedback.feedback}</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleSubmit} 
+                        disabled={submitting || !userAnswer.trim() || (hasSubmitted && submissionFeedback?.status === "reviewed")}
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Envoi en cours...
+                          </>
+                        ) : hasSubmitted ? (
+                          "Modifier ma réponse"
+                        ) : (
+                          "Soumettre"
+                        )}
+                      </Button>
+                      {'hints' in exercise && exercise.hints && exercise.hints.length > 0 && (
+                        <Button variant="outline" onClick={() => setShowHints(!showHints)}>
+                          <Lightbulb className="h-4 w-4 mr-2" />
+                          {showHints ? "Masquer les indices" : "Voir les indices"}
+                        </Button>
+                      )}
+                      {'solution' in exercise && exercise.solution && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => setShowSolution(!showSolution)}
+                        >
+                          {showSolution ? "Masquer la solution" : "Voir la solution"}
+                        </Button>
                       )}
                     </div>
-                    <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                      <h4 className="font-semibold mb-2">Correction du professeur :</h4>
-                      <p className="text-sm whitespace-pre-wrap">{submissionFeedback.feedback}</p>
-                    </div>
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleSubmit} 
-                    disabled={submitting || !userAnswer.trim() || (hasSubmitted && submissionFeedback?.status === "reviewed")}
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Envoi en cours...
-                      </>
-                    ) : hasSubmitted ? (
-                      "Modifier ma réponse"
-                    ) : (
-                      "Soumettre"
-                    )}
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowHints(!showHints)}>
-                    <Lightbulb className="h-4 w-4 mr-2" />
-                    {showHints ? "Masquer les indices" : "Voir les indices"}
-                  </Button>
-                  {exercise.solution && (
-                    <Button
-                      variant="secondary"
-                      onClick={() => setShowSolution(!showSolution)}
-                    >
-                      {showSolution ? "Masquer la solution" : "Voir la solution"}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
 
-            {showHints && exercise.hints.length > 0 && (
-              <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5" />
-                    Indices
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {exercise.hints.map((hint, index) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <div className="h-6 w-6 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center text-sm font-medium">
-                          {index + 1}
-                        </div>
-                        <p>{hint}</p>
+                {showHints && 'hints' in exercise && exercise.hints && exercise.hints.length > 0 && (
+                  <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5" />
+                        Indices
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {exercise.hints.map((hint, index) => (
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="h-6 w-6 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center text-sm font-medium">
+                              {index + 1}
+                            </div>
+                            <p>{hint}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                    </CardContent>
+                  </Card>
+                )}
 
-            {showSolution && exercise.solution && (
-              <Card className="border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5" />
-                    Solution
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div
-                    className="prose prose-slate dark:prose-invert max-w-none"
-                    dangerouslySetInnerHTML={{ __html: exercise.solution }}
-                  />
-                </CardContent>
-              </Card>
+                {showSolution && 'solution' in exercise && exercise.solution && (
+                  <Card className="border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5" />
+                        Solution
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div
+                        className="prose prose-slate dark:prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ __html: exercise.solution }}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
           </div>
 
@@ -373,13 +494,15 @@ export default function ExerciseDetailPage() {
                   <User className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium">Professeur</p>
-                    <p className="text-sm text-muted-foreground">{exercise.teacherName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {'teacherName' in exercise ? exercise.teacherName : 'Équipe Mathosphère'}
+                    </p>
                   </div>
                 </div>
 
                 <Separator />
 
-                {exercise.timeLimit && (
+                {'timeLimit' in exercise && exercise.timeLimit && (
                   <>
                     <div className="flex items-center gap-3">
                       <Clock className="h-5 w-5 text-muted-foreground" />
@@ -404,7 +527,9 @@ export default function ExerciseDetailPage() {
 
                 <div>
                   <p className="text-sm font-medium mb-2">Matière</p>
-                  <Badge variant="secondary">{exercise.subject}</Badge>
+                  <Badge variant="secondary">
+                    {'subject' in exercise ? exercise.subject : 'Mathématiques'}
+                  </Badge>
                 </div>
 
                 <Separator />
@@ -412,9 +537,9 @@ export default function ExerciseDetailPage() {
                 <div>
                   <p className="text-sm font-medium mb-2">Type</p>
                   <Badge variant="outline">
-                    {exercise.type === "practice"
+                    {'type' in exercise && exercise.type === "practice"
                       ? "Pratique"
-                      : exercise.type === "application"
+                      : 'type' in exercise && exercise.type === "application"
                       ? "Application"
                       : "Défi"}
                   </Badge>
@@ -422,23 +547,25 @@ export default function ExerciseDetailPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Statistiques</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Étudiants complétés</span>
-                  <span className="font-medium">{exercise.studentsCompleted}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Taux de réussite</span>
-                  <span className="font-medium">
-                    {exercise.successRate > 0 ? `${exercise.successRate.toFixed(1)}%` : "N/A"}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+            {!isStaticExercise && 'studentsCompleted' in exercise && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Statistiques</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Étudiants complétés</span>
+                    <span className="font-medium">{exercise.studentsCompleted}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Taux de réussite</span>
+                    <span className="font-medium">
+                      {exercise.successRate > 0 ? `${exercise.successRate.toFixed(1)}%` : "N/A"}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </motion.div>
