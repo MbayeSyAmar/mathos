@@ -119,7 +119,7 @@ export default function ProfesseurMessagesPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-2">Chargement du chat...</span>
             </div>
-          ) : conversation && user && userData && superAdmin ? (
+          ) : conversation && user && superAdmin ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
                 <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
@@ -134,7 +134,7 @@ export default function ProfesseurMessagesPage() {
               <ChatInterface
                 conversation={conversation}
                 currentUserId={user.uid}
-                currentUserName={userData.displayName || user.email?.split("@")[0] || "Professeur"}
+                currentUserName={userData?.displayName || user.email?.split("@")[0] || "Professeur"}
                 currentUserRole="teacher"
               />
             </div>

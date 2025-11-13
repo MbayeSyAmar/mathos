@@ -115,19 +115,23 @@ export async function getConversation(conversationId: string): Promise<Conversat
   }
 }
 
+function sortConversations(conversations: Conversation[]): Conversation[] {
+  return conversations.sort((a, b) => {
+    const timeA = a.updatedAt?.toMillis?.() ?? (a.updatedAt as any)?.seconds * 1000 ?? 0
+    const timeB = b.updatedAt?.toMillis?.() ?? (b.updatedAt as any)?.seconds * 1000 ?? 0
+    return timeB - timeA
+  })
+}
+
 export async function getStudentConversations(studentId: string): Promise<Conversation[]> {
   try {
-    const q = query(
-      collection(db, "conversations"),
-      where("studentId", "==", studentId),
-      orderBy("updatedAt", "desc")
-    )
-    
+    const q = query(collection(db, "conversations"), where("studentId", "==", studentId))
     const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
+    const conversations = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Conversation[]
+    return sortConversations(conversations)
   } catch (error) {
     console.error("Error getting student conversations:", error)
     return []
@@ -136,17 +140,13 @@ export async function getStudentConversations(studentId: string): Promise<Conver
 
 export async function getTeacherConversations(teacherId: string): Promise<Conversation[]> {
   try {
-    const q = query(
-      collection(db, "conversations"),
-      where("teacherId", "==", teacherId),
-      orderBy("updatedAt", "desc")
-    )
-    
+    const q = query(collection(db, "conversations"), where("teacherId", "==", teacherId))
     const snapshot = await getDocs(q)
-    return snapshot.docs.map((doc) => ({
+    const conversations = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Conversation[]
+    return sortConversations(conversations)
   } catch (error) {
     console.error("Error getting teacher conversations:", error)
     return []
@@ -182,43 +182,14 @@ export async function getConversationByParticipants(
  */
 export async function getConversationsByUserId(userId: string): Promise<Conversation[]> {
   try {
-    // Chercher dans studentId
-    const q1 = query(
-      collection(db, "conversations"),
-      where("studentId", "==", userId),
-      orderBy("updatedAt", "desc")
-    )
-    
-    const snapshot1 = await getDocs(q1)
-    const conversations1 = snapshot1.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Conversation[]
-    
-    // Chercher dans teacherId
-    const q2 = query(
-      collection(db, "conversations"),
-      where("teacherId", "==", userId),
-      orderBy("updatedAt", "desc")
-    )
-    
-    const snapshot2 = await getDocs(q2)
-    const conversations2 = snapshot2.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Conversation[]
-    
-    // Combiner et dédupliquer
-    const allConversations = [...conversations1, ...conversations2]
-    const uniqueConversations = Array.from(
-      new Map(allConversations.map((conv) => [conv.id, conv])).values()
-    )
-    
-    return uniqueConversations.sort((a, b) => {
-      const timeA = a.updatedAt?.toMillis() || 0
-      const timeB = b.updatedAt?.toMillis() || 0
-      return timeB - timeA
-    })
+    const conversations1 = await getStudentConversations(userId)
+    const conversations2 = await getTeacherConversations(userId)
+
+    const uniqueConversations = new Map<string, Conversation>()
+    conversations1.forEach((conv) => uniqueConversations.set(conv.id, conv))
+    conversations2.forEach((conv) => uniqueConversations.set(conv.id, conv))
+
+    return sortConversations(Array.from(uniqueConversations.values()))
   } catch (error) {
     console.error("Error getting conversations by user id:", error)
     return []
@@ -382,18 +353,14 @@ export function subscribeToConversations(
 ): Unsubscribe {
   const field = userRole === "teacher" ? "teacherId" : "studentId"
 
-  const q = query(
-    collection(db, "conversations"),
-    where(field, "==", userId),
-    orderBy("updatedAt", "desc")
-  )
+  const q = query(collection(db, "conversations"), where(field, "==", userId))
 
   return onSnapshot(q, (snapshot) => {
     const conversations = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     })) as Conversation[]
-    callback(conversations)
+    callback(sortConversations(conversations))
   })
 }
 
