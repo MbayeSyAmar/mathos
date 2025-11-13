@@ -75,6 +75,32 @@ export default function ExerciseDetailPage() {
         setExercise(exerciseData)
         setIsStaticExercise(false)
 
+        // Charger le contenu enrichi ou PDF
+        const numericId = parseInt(exerciseId)
+        if (!isNaN(numericId)) {
+          // Déterminer le niveau (college/lycee) à partir de la classe
+          const isLycee = ['2nde', '1ère', '1ere', 'Terminale', 'Term'].some(l => exerciseData.level.includes(l))
+          const levelType = isLycee ? 'Lycée' : 'Collège'
+          
+          console.log('[ExercicePage] Loading content with params:', {
+            numericId,
+            levelType,
+            classe: exerciseData.level,
+            isLycee
+          })
+          
+          const content = await getExerciseContent(numericId, levelType, exerciseData.level)
+          
+          console.log('[ExercicePage] Content result:', content)
+          
+          setHasPDF(content.hasPDF)
+          if (content.hasPDF && content.pdfUrl) {
+            setPdfUrl(content.pdfUrl)
+          } else if (content.content) {
+            setEnrichedContent(content.content)
+          }
+        }
+
         // Vérifier l'accès si c'est un étudiant
         if (user && exerciseData.teacherId) {
           const access = await hasAccessToTeacher(user.uid, exerciseData.teacherId)
@@ -109,7 +135,21 @@ export default function ExerciseDetailPage() {
             setIsStaticExercise(true)
             
             // Charger le contenu enrichi ou PDF
-            const content = await getExerciseContent(numericId)
+            // Déterminer le niveau (college/lycee) à partir de la classe
+            const isLycee = ['2nde', '1ère', '1ere', 'Terminale', 'Term'].some(l => staticExercise.level.includes(l))
+            const levelType = isLycee ? 'Lycée' : 'Collège'
+            
+            console.log('[ExercicePage - Static] Loading content with params:', {
+              numericId,
+              levelType,
+              classe: staticExercise.level,
+              isLycee
+            })
+            
+            const content = await getExerciseContent(numericId, levelType, staticExercise.level)
+            
+            console.log('[ExercicePage - Static] Content result:', content)
+            
             setHasPDF(content.hasPDF)
             if (content.hasPDF && content.pdfUrl) {
               setPdfUrl(content.pdfUrl)
@@ -165,6 +205,78 @@ export default function ExerciseDetailPage() {
     }
   }
 
+  const resolveTeacherInfo = async (): Promise<{ teacherId: string | null; teacherName: string | null }> => {
+    if (!exercise || isStaticExercise) {
+      return { teacherId: null, teacherName: null }
+    }
+
+    const rawTeacherId =
+      "teacherId" in exercise && typeof (exercise as any).teacherId === "string"
+        ? (exercise as any).teacherId.trim()
+        : ""
+    const rawTeacherName =
+      "teacherName" in exercise && typeof (exercise as any).teacherName === "string"
+        ? (exercise as any).teacherName.trim()
+        : ""
+
+    if (rawTeacherId) {
+      return { teacherId: rawTeacherId, teacherName: rawTeacherName || null }
+    }
+
+    if (!user) {
+      return { teacherId: null, teacherName: rawTeacherName || null }
+    }
+
+    try {
+      const accessesSnapshot = await getDocs(
+        query(
+          collection(db, "student_access"),
+          where("studentId", "==", user.uid),
+          where("status", "==", "active")
+        )
+      )
+
+      let fallbackTeacherId: string | null = null
+      let fallbackTeacherName: string | null = rawTeacherName || null
+
+      accessesSnapshot.forEach((doc) => {
+        if (fallbackTeacherId) {
+          return
+        }
+        const data = doc.data()
+        if (!data) {
+          return
+        }
+
+        const accessTeacherName = typeof data.teacherName === "string" ? data.teacherName.trim() : ""
+        const accessSubject = typeof data.subject === "string" ? data.subject.trim() : ""
+        const accessTeacherId = typeof data.teacherId === "string" ? data.teacherId.trim() : ""
+
+        const exerciseSubject =
+          "subject" in exercise && typeof (exercise as any).subject === "string"
+            ? (exercise as any).subject.trim()
+            : ""
+
+        const matchesTeacherName =
+          rawTeacherName && accessTeacherName && accessTeacherName.toLowerCase() === rawTeacherName.toLowerCase()
+        const matchesSubject = exerciseSubject && accessSubject && accessSubject.toLowerCase() === exerciseSubject.toLowerCase()
+
+        if (accessTeacherId && (matchesTeacherName || matchesSubject || !fallbackTeacherId)) {
+          fallbackTeacherId = accessTeacherId
+          fallbackTeacherName = accessTeacherName || fallbackTeacherName
+        }
+      })
+
+      return {
+        teacherId: fallbackTeacherId,
+        teacherName: fallbackTeacherName,
+      }
+    } catch (error) {
+      console.error("Error resolving teacher info:", error)
+      return { teacherId: null, teacherName: rawTeacherName || null }
+    }
+  }
+
   const handleSubmit = async () => {
     if (!user) {
       toast.error("Vous devez être connecté pour soumettre une réponse")
@@ -182,11 +294,23 @@ export default function ExerciseDetailPage() {
     }
 
     try {
+      if (isStaticExercise) {
+        toast.error("Cet exercice ne permet pas la soumission en ligne")
+        return
+      }
+
       setSubmitting(true)
 
       // Récupérer les infos de l'utilisateur
       const userDoc = await getDoc(firestoreDoc(db, "users", user.uid))
       const userData = userDoc.exists() ? userDoc.data() : {}
+
+      const { teacherId, teacherName } = await resolveTeacherInfo()
+
+      if (!teacherId) {
+        toast.error("Impossible de déterminer le professeur associé à cet exercice. Veuillez contacter votre encadrant.")
+        return
+      }
 
       // Créer la soumission
       const submissionData = {
@@ -196,8 +320,8 @@ export default function ExerciseDetailPage() {
         userName: userData.nom && userData.prenom 
           ? `${userData.prenom} ${userData.nom}` 
           : user.email,
-        teacherId: 'teacherId' in exercise ? exercise.teacherId : '',
-        teacherName: 'teacherName' in exercise ? exercise.teacherName : 'Équipe Mathosphère',
+        teacherId,
+        teacherName: teacherName || ('teacherName' in exercise ? exercise.teacherName : 'Équipe Mathosphère'),
         answer: userAnswer,
         submittedAt: serverTimestamp(),
         status: "pending", // pending, reviewed

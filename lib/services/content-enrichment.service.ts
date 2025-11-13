@@ -2249,13 +2249,19 @@ export async function getCourseContent(courseId: number, level?: string, classe?
   content?: string;
 }> {
   try {
+    console.log('[getCourseContent] Params:', { courseId, level, classe });
+    
     // Convertir level en format attendu
     const levelFormatted = level?.toLowerCase().includes('lycée') || level?.toLowerCase().includes('lycee') 
       ? 'lycee' as const
       : 'college' as const;
 
+    console.log('[getCourseContent] levelFormatted:', levelFormatted);
+
     // Vérifier s'il y a un PDF uploadé pour ce cours avec level et classe
     const pdf = await getPDFForContent(courseId, 'cours', levelFormatted, classe);
+    
+    console.log('[getCourseContent] PDF found:', pdf ? 'YES' : 'NO', pdf);
     
     if (pdf) {
       return {
@@ -2279,7 +2285,7 @@ export async function getCourseContent(courseId: number, level?: string, classe?
       content: '<p class="text-muted-foreground">Contenu en cours de préparation...</p>',
     };
   } catch (error) {
-    console.error('Erreur lors de la récupération du contenu:', error);
+    console.error('[getCourseContent] Error:', error);
     return {
       hasPDF: false,
       content: '<p class="text-red-500">Erreur lors du chargement du contenu</p>',

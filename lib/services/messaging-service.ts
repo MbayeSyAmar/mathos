@@ -248,24 +248,30 @@ export async function sendMessage(
       read: false,
       createdAt: Timestamp.now(),
     }
-    
+
     await setDoc(messageRef, messageData)
-    
+
     // Mettre à jour la conversation
     const conversationRef = doc(db, "conversations", conversationId)
+    const conversationSnapshot = await getDoc(conversationRef)
+    const conversationData = conversationSnapshot.data() || {}
+
     const updateData: any = {
       lastMessage: content.length > 100 ? content.substring(0, 100) + "..." : content,
       lastMessageAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     }
-    
-    // Incrémenter le compteur de non-lus pour le destinataire
-    if (senderRole === "student") {
-      updateData.unreadCountTeacher = (await getDoc(conversationRef)).data()?.unreadCountTeacher + 1 || 1
+
+    const isStudentSideSender = senderRole === "student" || senderRole === "super_admin"
+
+    if (isStudentSideSender) {
+      const currentUnread = typeof conversationData.unreadCountTeacher === "number" ? conversationData.unreadCountTeacher : 0
+      updateData.unreadCountTeacher = currentUnread + 1
     } else {
-      updateData.unreadCountStudent = (await getDoc(conversationRef)).data()?.unreadCountStudent + 1 || 1
+      const currentUnread = typeof conversationData.unreadCountStudent === "number" ? conversationData.unreadCountStudent : 0
+      updateData.unreadCountStudent = currentUnread + 1
     }
-    
+
     await updateDoc(conversationRef, updateData)
   } catch (error) {
     console.error("Error sending message:", error)
@@ -302,30 +308,42 @@ export async function markMessagesAsRead(
   userRole: "student" | "teacher" | "super_admin"
 ): Promise<void> {
   try {
-    // Marquer les messages comme lus
-    const q = query(
-      collection(db, "messages"),
-      where("conversationId", "==", conversationId),
-      where("read", "==", false),
-      where("senderRole", "==", userRole === "student" ? "teacher" : "student")
+    const messagesSnapshot = await getDocs(
+      query(
+        collection(db, "messages"),
+        where("conversationId", "==", conversationId),
+        where("read", "==", false)
+      )
     )
-    
-    const snapshot = await getDocs(q)
-    const updates = snapshot.docs.map((doc) =>
-      updateDoc(doc.ref, {
-        read: true,
-        readAt: serverTimestamp(),
+
+    const shouldMark = (senderRole: string) => {
+      if (userRole === "teacher") {
+        return senderRole === "student" || senderRole === "super_admin"
+      }
+      // Étudiants et super admins lisent les messages des professeurs
+      return senderRole === "teacher"
+    }
+
+    const updates = messagesSnapshot.docs
+      .filter((doc) => {
+        const data = doc.data()
+        return shouldMark(data.senderRole)
       })
-    )
-    
+      .map((doc) =>
+        updateDoc(doc.ref, {
+          read: true,
+          readAt: serverTimestamp(),
+        })
+      )
+
     await Promise.all(updates)
-    
+
     // Réinitialiser le compteur de non-lus
     const conversationRef = doc(db, "conversations", conversationId)
-    if (userRole === "student") {
-      await updateDoc(conversationRef, { unreadCountStudent: 0 })
-    } else {
+    if (userRole === "teacher") {
       await updateDoc(conversationRef, { unreadCountTeacher: 0 })
+    } else {
+      await updateDoc(conversationRef, { unreadCountStudent: 0 })
     }
   } catch (error) {
     console.error("Error marking messages as read:", error)
@@ -362,12 +380,14 @@ export function subscribeToConversations(
   userRole: "student" | "teacher" | "super_admin",
   callback: (conversations: Conversation[]) => void
 ): Unsubscribe {
+  const field = userRole === "teacher" ? "teacherId" : "studentId"
+
   const q = query(
     collection(db, "conversations"),
-    where(userRole === "student" ? "studentId" : "teacherId", "==", userId),
+    where(field, "==", userId),
     orderBy("updatedAt", "desc")
   )
-  
+
   return onSnapshot(q, (snapshot) => {
     const conversations = snapshot.docs.map((doc) => ({
       id: doc.id,
@@ -386,12 +406,13 @@ export async function getUnreadMessageCount(
   userRole: "student" | "teacher" | "super_admin"
 ): Promise<number> {
   try {
-    const conversations = userRole === "student"
+    const isStudentSide = userRole === "student" || userRole === "super_admin"
+    const conversations = isStudentSide
       ? await getStudentConversations(userId)
       : await getTeacherConversations(userId)
-    
+
     return conversations.reduce((total, conv) => {
-      return total + (userRole === "student" ? conv.unreadCountStudent : conv.unreadCountTeacher)
+      return total + (isStudentSide ? conv.unreadCountStudent : conv.unreadCountTeacher)
     }, 0)
   } catch (error) {
     console.error("Error getting unread message count:", error)

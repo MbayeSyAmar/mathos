@@ -7,10 +7,11 @@ import { ChatInterface } from "@/components/chat-interface"
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useAuth } from "@/lib/auth-context"
-import { 
-  getConversationByParticipants, 
+import {
+  getConversationByParticipants,
   createConversation,
-  type Conversation 
+  getConversation,
+  type Conversation,
 } from "@/lib/services/messaging-service"
 import { collection, query, where, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
@@ -58,18 +59,19 @@ export default function ProfesseurMessagesPage() {
       }
       setSuperAdmin(adminInfo)
 
-      // Pour le professeur, on utilise son ID comme studentId dans la conversation avec admin
-      let conv = await getConversationByParticipants(user.uid, adminInfo.uid)
+      const teacherDisplayName = userData.displayName || user.email?.split("@")[0] || "Professeur"
+
+      let conv = await getConversationByParticipants(adminInfo.uid, user.uid)
 
       if (!conv) {
         // Créer une nouvelle conversation
         const conversationId = await createConversation(
-          user.uid,
-          userData.displayName || user.email?.split("@")[0] || "Professeur",
           adminInfo.uid,
-          adminInfo.displayName
+          adminInfo.displayName,
+          user.uid,
+          teacherDisplayName
         )
-        conv = await getConversationByParticipants(user.uid, adminInfo.uid)
+        conv = await getConversation(conversationId)
       }
 
       if (conv) {

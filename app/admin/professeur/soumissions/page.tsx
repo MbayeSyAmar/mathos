@@ -34,7 +34,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
-import { collection, query, where, getDocs, doc as firestoreDoc, updateDoc, orderBy } from "firebase/firestore"
+import { collection, query, where, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
@@ -76,11 +76,7 @@ export default function SoumissionsPage() {
     try {
       setLoading(true)
       const submissionsRef = collection(db, "exercise_submissions")
-      const q = query(
-        submissionsRef,
-        where("teacherId", "==", user.uid),
-        orderBy("submittedAt", "desc")
-      )
+      const q = query(submissionsRef, where("teacherId", "==", user.uid))
       const querySnapshot = await getDocs(q)
 
       const submissionsData: Submission[] = []
@@ -89,6 +85,17 @@ export default function SoumissionsPage() {
           id: doc.id,
           ...doc.data(),
         } as Submission)
+      })
+
+      submissionsData.sort((a, b) => {
+        const getTime = (value: any) => {
+          if (!value) return 0
+          if (typeof value.toMillis === "function") return value.toMillis()
+          if (value.seconds) return value.seconds * 1000
+          const date = new Date(value)
+          return isNaN(date.getTime()) ? 0 : date.getTime()
+        }
+        return getTime(b.submittedAt) - getTime(a.submittedAt)
       })
 
       setSubmissions(submissionsData)

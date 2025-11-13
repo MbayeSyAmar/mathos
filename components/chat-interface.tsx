@@ -114,7 +114,9 @@ export function ChatInterface({
     }
   }
 
-  const otherParticipant = currentUserRole === "student" ? conversation.teacherName : conversation.studentName
+  const otherParticipant =
+    currentUserRole === "teacher" ? conversation.studentName : conversation.teacherName || conversation.studentName
+  const participantLabel = currentUserRole === "teacher" ? "Votre interlocuteur" : "Votre professeur"
 
   if (loading) {
     return (
@@ -141,9 +143,7 @@ export function ChatInterface({
           </Avatar>
           <div>
             <CardTitle className="text-lg">{otherParticipant}</CardTitle>
-            <CardDescription>
-              {currentUserRole === "student" ? "Votre professeur" : "Votre élève"}
-            </CardDescription>
+            <CardDescription>{participantLabel}</CardDescription>
           </div>
         </div>
       </CardHeader>

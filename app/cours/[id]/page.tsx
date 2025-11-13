@@ -57,7 +57,21 @@ export default function CourseDetailPage() {
         // Charger le contenu enrichi ou PDF
         const numericId = parseInt(courseId)
         if (!isNaN(numericId)) {
-          const content = await getCourseContent(numericId, courseData.level, courseData.classe)
+          // Déterminer le niveau (college/lycee) à partir de la classe
+          const isLycee = ['2nde', '1ère', '1ere', 'Terminale', 'Term'].some(l => courseData.level.includes(l))
+          const levelType = isLycee ? 'Lycée' : 'Collège'
+          
+          console.log('[CoursePage] Loading content with params:', {
+            numericId,
+            levelType,
+            classe: courseData.level,
+            isLycee
+          })
+          
+          const content = await getCourseContent(numericId, levelType, courseData.level)
+          
+          console.log('[CoursePage] Content result:', content)
+          
           setHasPDF(content.hasPDF)
           if (content.hasPDF && content.pdfUrl) {
             setPdfUrl(content.pdfUrl)
@@ -94,7 +108,21 @@ export default function CourseDetailPage() {
             setIsStaticCourse(true)
             
             // Charger le contenu enrichi ou PDF avec level et classe du cours statique
-            const content = await getCourseContent(numericId, staticCourse.level, staticCourse.classe)
+            // Déterminer le niveau (college/lycee) à partir de la classe
+            const isLycee = ['2nde', '1ère', '1ere', 'Terminale', 'Term'].some(l => staticCourse.level.includes(l))
+            const levelType = isLycee ? 'Lycée' : 'Collège'
+            
+            console.log('[CoursePage - Static] Loading content with params:', {
+              numericId,
+              levelType,
+              classe: staticCourse.level,
+              isLycee
+            })
+            
+            const content = await getCourseContent(numericId, levelType, staticCourse.level)
+            
+            console.log('[CoursePage - Static] Content result:', content)
+            
             setHasPDF(content.hasPDF)
             if (content.hasPDF && content.pdfUrl) {
               setPdfUrl(content.pdfUrl)

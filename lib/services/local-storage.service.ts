@@ -127,39 +127,67 @@ export const getPDFForContent = async (
   classe?: string
 ): Promise<PDFDocument | null> => {
   try {
+    console.log('[getPDFForContent] Query params:', { contentId, type, level, classe });
+    
     const fieldName = type === 'cours' ? 'courseId' : type === 'exercice' ? 'exerciseId' : 'quizId';
     
-    // Construire la requête avec filtres
+    // Requête simple sans orderBy pour éviter les indexes composites
     let q = query(
       collection(db, 'pdfs'),
       where(fieldName, '==', contentId),
       where('type', '==', type)
     );
 
-    // Ajouter les filtres level et classe si fournis pour éviter les conflits d'ID
+    // Ajouter les filtres level et classe si fournis
     if (level) {
+      console.log('[getPDFForContent] Adding level filter:', level);
       q = query(q, where('level', '==', level));
     }
+    
     if (classe) {
+      console.log('[getPDFForContent] Adding classe filter:', classe);
       q = query(q, where('classe', '==', classe));
     }
 
-    q = query(q, orderBy('uploadedAt', 'desc'));
+    // NE PAS ajouter orderBy pour éviter le besoin d'index composite
+    // On va trier en mémoire après
 
     const querySnapshot = await getDocs(q);
+    
+    console.log('[getPDFForContent] Query results:', {
+      empty: querySnapshot.empty,
+      size: querySnapshot.size,
+      docs: querySnapshot.docs.map(doc => ({ 
+        id: doc.id, 
+        courseId: doc.data().courseId,
+        exerciseId: doc.data().exerciseId,
+        type: doc.data().type,
+        level: doc.data().level,
+        classe: doc.data().classe,
+        publicPath: doc.data().publicPath,
+        uploadedAt: doc.data().uploadedAt
+      }))
+    });
 
     if (querySnapshot.empty) {
       return null;
     }
 
-    const docData = querySnapshot.docs[0];
+    // Trier les résultats en mémoire par uploadedAt (le plus récent en premier)
+    const sortedDocs = querySnapshot.docs.sort((a, b) => {
+      const aTime = a.data().uploadedAt?.toMillis() || 0;
+      const bTime = b.data().uploadedAt?.toMillis() || 0;
+      return bTime - aTime; // Ordre décroissant (plus récent en premier)
+    });
+
+    const docData = sortedDocs[0];
     return {
       id: docData.id,
       ...docData.data(),
       uploadedAt: docData.data().uploadedAt?.toDate() || new Date(),
     } as PDFDocument;
   } catch (error) {
-    console.error('Erreur lors de la récupération du PDF:', error);
+    console.error('[getPDFForContent] Error querying PDFs:', error);
     return null;
   }
 };

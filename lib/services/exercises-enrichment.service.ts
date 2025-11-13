@@ -1,5 +1,6 @@
 import { db } from "@/lib/firebase"
 import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore"
+import { getPDFForContent } from "./local-storage.service"
 
 // Contenu enrichi pour tous les exercices (IDs 1-21)
 const enrichedExercisesData: { [key: number]: string } = {
@@ -329,42 +330,25 @@ export async function getExerciseContent(exerciseId: number, level?: string, cla
   content?: string
 }> {
   try {
+    console.log('[getExerciseContent] Params:', { exerciseId, level, classe });
+    
     // Convertir level en format attendu
     const levelFormatted = level?.toLowerCase().includes('lycée') || level?.toLowerCase().includes('lycee') 
       ? 'lycee' as const
       : 'college' as const;
 
-    // Construire la requête avec filtres level et classe
-    let q = query(
-      collection(db, "pdfs"),
-      where("exerciseId", "==", exerciseId),
-      where("type", "==", "exercice")
-    )
+    console.log('[getExerciseContent] levelFormatted:', levelFormatted);
 
-    // Ajouter les filtres level et classe si fournis
-    if (level) {
-      q = query(q, where("level", "==", levelFormatted))
-    }
-    if (classe) {
-      q = query(q, where("classe", "==", classe))
-    }
-
-    q = query(q, orderBy("uploadedAt", "desc"), limit(1))
-
-    const querySnapshot = await getDocs(q)
-
-    if (!querySnapshot.empty) {
-      // PDF trouvé
-      const pdfDoc = querySnapshot.docs[0]
-      const pdfData = pdfDoc.data()
-      
-      // Utiliser le chemin public au lieu de Firebase Storage
-      const publicPath = pdfData.publicPath
-
+    // Vérifier s'il y a un PDF uploadé pour cet exercice avec level et classe
+    const pdf = await getPDFForContent(exerciseId, 'exercice', levelFormatted, classe);
+    
+    console.log('[getExerciseContent] PDF found:', pdf ? 'YES' : 'NO', pdf);
+    
+    if (pdf) {
       return {
         hasPDF: true,
-        pdfUrl: publicPath, // Ex: /pdfs/college/exercice/6eme/123_exercice.pdf
-      }
+        pdfUrl: pdf.publicPath,
+      };
     }
 
     // Pas de PDF, retourner le contenu enrichi
