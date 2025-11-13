@@ -143,9 +143,9 @@ const exercisesData = {
   "2nde": [
     {
       id: 13,
-      title: "Fonctions de référence",
+      title: "Calcul dans ℝ",
       description: "Étude des fonctions carré, inverse et racine carrée",
-      image: "/placeholder.svg?height=200&width=400",
+      image: "/images/exercice.jpg",
       difficulty: "Moyen",
       time: "45 min",
       exercises: 10,
