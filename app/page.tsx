@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { BookOpen, PenTool, BrainCircuit, BookText, Youtube, Mail, ArrowRight, CheckCircle } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/lib/auth-context"
+import { getCourseImage, getExerciseImage, getQuizImage } from "@/lib/utils/course-images"
 
 export default function Home() {
   const router = useRouter()
@@ -165,42 +166,42 @@ export default function Home() {
                 description: "Des cours complets pour tous les niveaux, de la 6ème à la terminale",
                 icon: BookOpen,
                 href: "/cours",
-                image: "/placeholder.svg?height=200&width=400",
+                image: getCourseImage("analyse", "Terminale"),
               },
               {
                 title: "Exercices",
                 description: "Des exercices variés avec corrections détaillées",
                 icon: PenTool,
                 href: "/exercices",
-                image: "/placeholder.svg?height=200&width=400",
+                image: getExerciseImage("medium", "géométrie"),
               },
               {
                 title: "Quiz",
                 description: "Testez vos connaissances avec nos quiz interactifs",
                 icon: BrainCircuit,
                 href: "/quiz",
-                image: "/placeholder.svg?height=200&width=400",
+                image: getQuizImage("avancé"),
               },
               {
                 title: "Blog",
                 description: "Articles sur les mathématiques, concours et méthodes d'apprentissage",
                 icon: BookText,
                 href: "/blog",
-                image: "/placeholder.svg?height=200&width=400",
+                image: "/images/reussirenmaths.jpg",
               },
               {
                 title: "Vidéos YouTube",
                 description: "Vidéos explicatives sur divers sujets mathématiques",
                 icon: Youtube,
                 href: "/videos",
-                image: "/placeholder.svg?height=200&width=400",
+                image: "https://img.youtube.com/vi/jTi1EPh6c9c/hqdefault.jpg",
               },
               {
                 title: "Contact",
                 description: "Besoin d'aide ? Contactez-nous pour toute question",
                 icon: Mail,
                 href: "/contact",
-                image: "/placeholder.svg?height=200&width=400",
+                image: "https://picsum.photos/seed/contact-mathosphere/800/600",
               },
             ].map((section, index) => {
               const Icon = section.icon
