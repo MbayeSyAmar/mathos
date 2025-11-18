@@ -293,45 +293,103 @@ export default function ForumPage() {
   }
 
   return (
-    <div className="container py-10 space-y-10">
-      <motion.div className="space-y-6 text-center" initial="hidden" animate="visible" variants={fadeIn}>
-        <div className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium text-primary/80">
-          <Sparkles className="h-4 w-4" />
-          Communauté Mathosphère
+    <div className="flex flex-col min-h-screen bg-background">
+      <section className="relative w-full overflow-hidden bg-gradient-to-br from-primary/10 via-purple-500/10 to-background py-16 md:py-24">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5" />
+        <div className="container relative z-10">
+          <motion.div
+            className="flex flex-col items-center text-center space-y-6 max-w-3xl mx-auto"
+            initial="hidden"
+            animate="visible"
+            variants={fadeIn}
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+              <div className="relative bg-gradient-to-br from-primary to-purple-600 p-4 rounded-2xl">
+                <MessageSquare className="h-12 w-12 md:h-16 md:w-16 text-white" />
+              </div>
+            </motion.div>
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium text-primary/80">
+                <Sparkles className="h-4 w-4" />
+                Communauté Mathosphère
+              </div>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter bg-gradient-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Forum Mathématique Collaboratif
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+                Posez vos questions, partagez vos astuces et collaborez avec une communauté passionnée qui progresse ensemble au quotidien.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 w-full">
+              <div className="flex items-center justify-center gap-2 rounded-2xl border bg-background/80 px-4 py-3 backdrop-blur-sm">
+                <Target className="h-5 w-5 text-primary" />
+                <div className="text-left">
+                  <p className="text-sm text-muted-foreground">Discussions actives</p>
+                  <p className="text-lg font-semibold">{stats.discussions}+</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-2 rounded-2xl border bg-background/80 px-4 py-3 backdrop-blur-sm">
+                <Zap className="h-5 w-5 text-primary" />
+                <div className="text-left">
+                  <p className="text-sm text-muted-foreground">Messages postés</p>
+                  <p className="text-lg font-semibold">{stats.messages}+</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-2 rounded-2xl border bg-background/80 px-4 py-3 backdrop-blur-sm">
+                <Users className="h-5 w-5 text-primary" />
+                <div className="text-left">
+                  <p className="text-sm text-muted-foreground">Membres</p>
+                  <p className="text-lg font-semibold">{stats.membres}+</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Button className="gap-2" onClick={handleNewDiscussion}>
+                <Plus className="h-4 w-4" />
+                Ouvrir une discussion
+              </Button>
+              <Button variant="outline" className="gap-2 border-dashed">
+                <PenLine className="h-4 w-4" />
+                Rédiger une astuce
+              </Button>
+            </div>
+          </motion.div>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-5xl">
-          Posez vos questions, partagez vos astuces et progressez ensemble
-        </h1>
-        <p className="mx-auto max-w-2xl text-muted-foreground text-lg">
-          Chaque fil de discussion est conçu comme un atelier : entraide, coaching express, retours d&apos;expériences et
-          défis créatifs pour faire vibrer les mathématiques.
-        </p>
-        <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 px-4 py-2">
-            <Target className="h-4 w-4 text-primary" />
-            {stats.discussions}+ discussions
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 px-4 py-2">
-            <Zap className="h-4 w-4 text-primary" />
-            {stats.messages}+ messages
-          </div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 px-4 py-2">
-            <Users className="h-4 w-4 text-primary" />
-            {stats.membres}+ membres
-          </div>
-        </div>
-        <div className="flex flex-wrap justify-center gap-3">
-          <Button className="gap-2" onClick={handleNewDiscussion}>
-            <Plus className="h-4 w-4" />
-            Ouvrir une discussion
-          </Button>
-          <Button variant="outline" className="gap-2 border-dashed">
-            <PenLine className="h-4 w-4" />
-            Rédiger une astuce
-          </Button>
-        </div>
-      </motion.div>
+      </section>
 
+      <div className="container -mt-8 relative z-20 mb-10 w-full">
+        <motion.div initial="hidden" animate="visible" variants={fadeIn}>
+          <Card className="rounded-3xl border-2 shadow-xl">
+            <CardContent className="flex flex-col gap-4 pt-6 md:flex-row md:items-center md:gap-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Rechercher un fil, un auteur ou un mot-clé..."
+                  className="h-12 rounded-full border-0 bg-muted/60 pl-12 text-base shadow-inner focus-visible:ring-2 focus-visible:ring-primary"
+                />
+              </div>
+              <div className="flex flex-wrap gap-3 text-sm">
+                <Badge variant="secondary" className="rounded-full px-4 py-1 text-sm">
+                  {filteredDiscussions.length} discussions disponibles
+                </Badge>
+                <Badge variant="outline" className="rounded-full border-dashed px-4 py-1 text-sm">
+                  Réponses en moins de 24h
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+
+      <div className="container flex-1 space-y-10 pb-8">
       <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
         {featuredDiscussion ? (
           <motion.div
@@ -340,7 +398,7 @@ export default function ForumPage() {
             initial="hidden"
             animate="visible"
           >
-            <div className="space-y-4 p-8">
+            <div className="space-y-3 p-6 md:p-8">
               <div className="flex flex-wrap items-center gap-3">
                 <Badge className={`${getCategoryColor(featuredDiscussion.categorie)} font-semibold`}>
                   Fil mis en avant
@@ -435,36 +493,14 @@ export default function ForumPage() {
         </motion.div>
       </div>
 
-      <motion.div className="rounded-3xl border bg-card/40 p-6 backdrop-blur" initial="hidden" animate="visible" variants={fadeIn}>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Cherchez un thème, un auteur ou un mot-clé..."
-              className="h-12 rounded-full border-none bg-muted/60 pl-12 text-base shadow-inner focus-visible:ring-2 focus-visible:ring-primary"
-            />
-          </div>
-          <div className="flex flex-wrap gap-3 text-sm">
-            <Badge variant="secondary" className="rounded-full px-4 py-1 text-sm">
-              {filteredDiscussions.length} discussions disponibles
-            </Badge>
-            <Badge variant="outline" className="rounded-full border-dashed px-4 py-1 text-sm">
-              Réponses en moins de 24h
-            </Badge>
-          </div>
-        </div>
-      </motion.div>
-
-      <div className="pb-10 space-y-8">
-        <Tabs value={activeCategory} onValueChange={handleCategoryChange} className="w-full space-y-8">
-          <TabsList className="grid w-full grid-cols-2 gap-2 overflow-hidden rounded-3xl bg-muted/40 p-2 md:grid-cols-4 lg:grid-cols-6">
+      <div className="space-y-8">
+        <Tabs value={activeCategory} onValueChange={handleCategoryChange} className="w-full space-y-6 pb-4">
+          <TabsList className="grid w-full grid-cols-2 gap-3 rounded-3xl bg-muted/50 p-2 shadow-lg sm:grid-cols-3 lg:grid-cols-6">
             {categories.map((category) => (
               <TabsTrigger
                 key={category.id}
                 value={category.id}
-                className="rounded-2xl border border-transparent px-3 py-3 text-sm font-semibold data-[state=active]:border-primary/30 data-[state=active]:bg-background"
+                className="flex items-center justify-center gap-2 rounded-2xl border border-transparent px-4 py-3 text-sm font-semibold transition-all data-[state=active]:border-transparent data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-purple-600 data-[state=active]:text-white data-[state=active]:shadow-lg"
               >
                 <span className="mr-2 text-lg">{category.icon}</span>
                 {category.name}
@@ -472,7 +508,7 @@ export default function ForumPage() {
             ))}
           </TabsList>
 
-          <TabsContent value={activeCategory} className="mt-6">
+          <TabsContent value={activeCategory} className="mt-4">
             <div className="grid gap-8 lg:grid-cols-[2fr,1fr]">
               <div>
                 {loading ? (
@@ -662,6 +698,7 @@ export default function ForumPage() {
           </TabsContent>
         </Tabs>
       </div>
+    </div>
     </div>
   )
 }
