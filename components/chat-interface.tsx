@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Loader2, Send, MessageSquare, User } from "lucide-react"
+import { Loader2, Send, MessageSquare, User, AlertCircle, ExternalLink } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   getMessages,
   sendMessage,
@@ -37,6 +38,7 @@ export function ChatInterface({
   const [newMessage, setNewMessage] = useState("")
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
+  const [indexError, setIndexError] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -61,9 +63,21 @@ export function ChatInterface({
       const msgs = await getMessages(conversation.id, 100)
       setMessages(msgs)
       scrollToBottom()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading messages:", error)
-      toast.error("Erreur lors du chargement des messages")
+      
+      // Gérer l'erreur d'index manquant
+      if (error?.message?.startsWith("INDEX_REQUIRED:")) {
+        const indexUrl = error.message.split("INDEX_REQUIRED:")[1]
+        console.error("🔗 Lien pour créer l'index:", indexUrl)
+        setIndexError(indexUrl)
+        toast.error(
+          `Un index Firestore est requis pour charger les messages.`,
+          { duration: 10000 }
+        )
+      } else {
+        toast.error("Erreur lors du chargement des messages")
+      }
     } finally {
       setLoading(false)
     }
@@ -148,10 +162,30 @@ export function ChatInterface({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 p-0 overflow-hidden">
-        <ScrollArea className="h-full px-4">
+      <CardContent className="flex-1 p-0 overflow-hidden flex flex-col">
+        {indexError && (
+          <div className="p-4 border-b">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Index Firestore requis</AlertTitle>
+              <AlertDescription className="mt-2">
+                <p className="mb-2">Un index Firestore doit être créé pour charger les messages.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(indexError, "_blank")}
+                  className="w-full"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Créer l'index dans Firebase
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+        <ScrollArea className="flex-1 px-4">
           <div className="space-y-4 py-4">
-            {messages.length === 0 ? (
+            {messages.length === 0 && !indexError ? (
               <div className="text-center py-10 text-muted-foreground">
                 <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Aucun message pour le moment</p>

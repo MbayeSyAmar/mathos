@@ -11,6 +11,7 @@ import {
   getConversationByParticipants,
   createConversation,
   getConversation,
+  getConversationsByUserId,
   type Conversation,
 } from "@/lib/services/messaging-service"
 import { collection, query, where, getDocs } from "firebase/firestore"
@@ -35,10 +36,18 @@ export default function ProfesseurMessagesPage() {
   }, [mounted, user, userData])
 
   const initializeConversation = async () => {
-    if (!user || !userData) return
+    if (!user || !userData) {
+      console.error("❌ Utilisateur ou données utilisateur manquantes")
+      console.error("User:", user)
+      console.error("UserData:", userData)
+      return
+    }
 
     try {
       setLoading(true)
+      console.log("🔍 Début de l'initialisation de la conversation...")
+      console.log("User UID:", user.uid)
+      console.log("User Email:", user.email)
 
       // Trouver le super admin
       const usersRef = collection(db, "users")
@@ -46,10 +55,13 @@ export default function ProfesseurMessagesPage() {
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
+        console.error("❌ Aucun administrateur trouvé dans la base de données")
         toast.error("Aucun administrateur trouvé")
         setLoading(false)
         return
       }
+
+      console.log("✅ Super admin trouvé:", querySnapshot.docs.length, "admin(s)")
 
       const adminDoc = querySnapshot.docs[0]
       const adminData = adminDoc.data()
@@ -61,27 +73,98 @@ export default function ProfesseurMessagesPage() {
 
       const teacherDisplayName = userData.displayName || user.email?.split("@")[0] || "Professeur"
 
+      // Chercher une conversation existante de plusieurs façons
+      // Méthode 1: Chercher directement avec getConversationByParticipants
       let conv = await getConversationByParticipants(adminInfo.uid, user.uid)
+      
+      // Méthode 2: Si pas trouvée, chercher dans toutes les conversations du professeur
+      if (!conv) {
+        console.log("Recherche dans toutes les conversations du professeur...")
+        const allConversations = await getConversationsByUserId(user.uid)
+        conv = allConversations.find(
+          (c) => 
+            (c.studentId === adminInfo.uid && c.teacherId === user.uid) ||
+            (c.studentId === user.uid && c.teacherId === adminInfo.uid)
+        ) || null
+      }
+
+      // Méthode 3: Si toujours pas trouvée, chercher dans l'autre sens
+      if (!conv) {
+        console.log("Recherche dans l'autre sens...")
+        conv = await getConversationByParticipants(user.uid, adminInfo.uid)
+      }
 
       if (!conv) {
-        // Créer une nouvelle conversation
-        const conversationId = await createConversation(
-          adminInfo.uid,
-          adminInfo.displayName,
-          user.uid,
-          teacherDisplayName
-        )
-        conv = await getConversation(conversationId)
+        console.log("Aucune conversation trouvée, création d'une nouvelle conversation...")
+        try {
+          // Créer une nouvelle conversation
+          // createConversation(studentId, studentName, teacherId, teacherName)
+          const conversationId = await createConversation(
+            adminInfo.uid,        // studentId (super admin)
+            adminInfo.displayName, // studentName
+            user.uid,             // teacherId (professeur)
+            teacherDisplayName    // teacherName
+          )
+          
+          if (!conversationId) {
+            console.error("Échec de la création de la conversation - conversationId est null")
+            toast.error("Impossible de créer la conversation")
+            setLoading(false)
+            return
+          }
+
+          console.log("Conversation créée avec l'ID:", conversationId)
+          
+          // Attendre un peu pour que Firestore s'indexe
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // Essayer de récupérer la conversation par ID
+          conv = await getConversation(conversationId)
+          
+          // Si toujours pas trouvée, réessayer avec getConversationByParticipants
+          if (!conv) {
+            console.log("Réessai de récupération de la conversation...")
+            await new Promise(resolve => setTimeout(resolve, 500))
+            conv = await getConversationByParticipants(adminInfo.uid, user.uid)
+          }
+          
+          // Dernière tentative : chercher dans toutes les conversations
+          if (!conv) {
+            console.log("Dernière tentative : recherche dans toutes les conversations...")
+            const allConversations = await getConversationsByUserId(user.uid)
+            conv = allConversations.find(
+              (c) => 
+                (c.studentId === adminInfo.uid && c.teacherId === user.uid) ||
+                (c.studentId === user.uid && c.teacherId === adminInfo.uid)
+            ) || null
+          }
+        } catch (createError) {
+          console.error("Erreur lors de la création de la conversation:", createError)
+          toast.error("Erreur lors de la création de la conversation. Veuillez réessayer.")
+          setLoading(false)
+          return
+        }
       }
 
       if (conv) {
+        console.log("✅ Conversation trouvée/créée avec succès:", conv.id)
+        console.log("Détails de la conversation:", {
+          id: conv.id,
+          studentId: conv.studentId,
+          teacherId: conv.teacherId,
+          studentName: conv.studentName,
+          teacherName: conv.teacherName
+        })
         setConversation(conv)
       } else {
-        toast.error("Impossible de créer la conversation")
+        console.error("❌ Impossible de récupérer la conversation après toutes les tentatives")
+        console.error("Admin UID:", adminInfo.uid)
+        console.error("Teacher UID:", user.uid)
+        toast.error("Impossible de charger la conversation. Veuillez réessayer ou contacter le support.")
       }
     } catch (error) {
-      console.error("Error initializing conversation:", error)
-      toast.error("Erreur lors de l'initialisation du chat")
+      console.error("Erreur lors de l'initialisation de la conversation:", error)
+      toast.error("Erreur lors de l'initialisation du chat. Veuillez réessayer plus tard.")
     } finally {
       setLoading(false)
     }
@@ -119,22 +202,24 @@ export default function ProfesseurMessagesPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
               <span className="ml-2">Chargement du chat...</span>
             </div>
-          ) : conversation && user && superAdmin ? (
+          ) : conversation && user && userData ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-                <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
-                  {superAdmin.displayName.charAt(0)}
+              {superAdmin && (
+                <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+                  <div className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                    {superAdmin.displayName.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-medium">{superAdmin.displayName}</div>
+                    <div className="text-sm text-muted-foreground">Administrateur principal</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="font-medium">{superAdmin.displayName}</div>
-                  <div className="text-sm text-muted-foreground">Administrateur principal</div>
-                </div>
-              </div>
+              )}
               
               <ChatInterface
                 conversation={conversation}
                 currentUserId={user.uid}
-                currentUserName={userData?.displayName || user.email?.split("@")[0] || "Professeur"}
+                currentUserName={userData.displayName || user.email?.split("@")[0] || "Professeur"}
                 currentUserRole="teacher"
               />
             </div>
@@ -142,8 +227,25 @@ export default function ProfesseurMessagesPage() {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Erreur</AlertTitle>
-              <AlertDescription>
-                Impossible de charger le chat. Veuillez réessayer plus tard.
+              <AlertDescription className="space-y-3">
+                <div>
+                  <p className="mb-2">Impossible de charger le chat. Veuillez réessayer plus tard.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Si le problème persiste, ouvrez la console du navigateur (F12) pour voir les détails de l'erreur.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    console.log("🔄 Tentative de rechargement manuel...")
+                    setLoading(true)
+                    initializeConversation()
+                  }}
+                  className="w-full sm:w-auto"
+                >
+                  Réessayer
+                </Button>
               </AlertDescription>
             </Alert>
           )}

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, useRef } from "react"
 import { doc, getDoc, setDoc } from "firebase/firestore"
 import { auth, db } from "@/lib/firebase"
 
@@ -44,6 +44,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [totalPrice, setTotalPrice] = useState(0)
   const [totalItems, setTotalItems] = useState(0)
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const firebaseSyncTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     // Load cart from localStorage
@@ -83,25 +84,36 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Save cart to localStorage
-    localStorage.setItem("cart", JSON.stringify(items))
+    if (typeof window !== "undefined") {
+      localStorage.setItem("cart", JSON.stringify(items))
+    }
     calculateTotal(items)
 
-    // Sync with Firebase if user is logged in
-    const syncCartWithFirebase = async () => {
-      const user = auth.currentUser
-      if (user) {
-        try {
-          await setDoc(doc(db, "user_carts", user.uid), {
-            items: items,
-            updatedAt: new Date(),
-          })
-        } catch (error) {
-          console.error("Error syncing cart with Firebase:", error)
-        }
-      }
+    const user = auth.currentUser
+    if (!user) {
+      return
     }
 
-    syncCartWithFirebase()
+    if (firebaseSyncTimeout.current) {
+      clearTimeout(firebaseSyncTimeout.current)
+    }
+
+    firebaseSyncTimeout.current = setTimeout(async () => {
+      try {
+        await setDoc(doc(db, "user_carts", user.uid), {
+          items: items,
+          updatedAt: new Date(),
+        })
+      } catch (error) {
+        console.error("Error syncing cart with Firebase:", error)
+      }
+    }, 1000)
+
+    return () => {
+      if (firebaseSyncTimeout.current) {
+        clearTimeout(firebaseSyncTimeout.current)
+      }
+    }
   }, [items])
 
   const calculateTotal = (cartItems: CartItem[]) => {

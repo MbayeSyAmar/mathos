@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -20,121 +20,85 @@ import {
   Clock,
   Eye,
   Calendar,
-  PlayCircle,
+  Youtube,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { Textarea } from "@/components/ui/textarea"
+import { getYouTubeEmbedUrl, getYouTubeThumbnail } from "@/lib/services/videos-service"
 
-// Données simulées pour la vidéo
-const videoData = {
-  id: 1,
-  title: "Les nombres complexes - Partie 1",
-  description: "Introduction aux nombres complexes et opérations de base",
-  thumbnail: "/placeholder.svg?height=400&width=800",
-  videoUrl: "#", // URL fictive
-  category: "cours",
-  duration: "15:24",
-  views: 12540,
-  date: "15 mars 2023",
-  author: "Marie Dupont",
-  authorAvatar: "/placeholder.svg?height=40&width=40",
-  authorBio: "Professeure agrégée de mathématiques, spécialisée en algèbre et analyse complexe.",
-  content: `
-    <h2>Description de la vidéo</h2>
-    <p>Dans cette première partie sur les nombres complexes, nous abordons les concepts fondamentaux et les opérations de base. Cette vidéo est destinée aux élèves de Terminale et aux étudiants en première année d'études supérieures.</p>
-    
-    <h3>Plan de la vidéo</h3>
-    <ol>
-      <li>Introduction et motivation historique (00:00 - 02:15)</li>
-      <li>Définition des nombres complexes (02:16 - 04:30)</li>
-      <li>Forme algébrique et représentation dans le plan complexe (04:31 - 07:45)</li>
-      <li>Opérations de base : addition et soustraction (07:46 - 10:20)</li>
-      <li>Multiplication et division (10:21 - 14:30)</li>
-      <li>Conclusion et aperçu de la partie 2 (14:31 - 15:24)</li>
-    </ol>
-    
-    <h3>Prérequis</h3>
-    <p>Pour suivre cette vidéo, vous devez être à l'aise avec :</p>
-    <ul>
-      <li>Les opérations sur les nombres réels</li>
-      <li>La résolution d'équations du second degré</li>
-      <li>Les notions de base de géométrie analytique</li>
-    </ul>
-    
-    <h3>Ressources complémentaires</h3>
-    <p>Pour approfondir le sujet, vous pouvez consulter :</p>
-    <ul>
-      <li>La fiche de cours sur les nombres complexes disponible sur Mathosphère</li>
-      <li>Les exercices d'application associés à cette vidéo</li>
-      <li>La partie 2 de cette série qui abordera la forme trigonométrique et les applications</li>
-    </ul>
-  `,
-  tags: ["Nombres complexes", "Terminale", "Algèbre", "Analyse complexe"],
-  relatedVideos: [
-    {
-      id: 2,
-      title: "Résolution d'équations du second degré",
-      thumbnail: "/placeholder.svg?height=100&width=200",
-      duration: "18:36",
-      views: 8750,
-      date: "22 avril 2023",
-    },
-    {
-      id: 5,
-      title: "Les intégrales - Cours complet",
-      thumbnail: "/placeholder.svg?height=100&width=200",
-      duration: "32:10",
-      views: 7650,
-      date: "18 juillet 2023",
-    },
-    {
-      id: 9,
-      title: "Les probabilités - Cours complet",
-      thumbnail: "/placeholder.svg?height=100&width=200",
-      duration: "29:15",
-      views: 8940,
-      date: "8 novembre 2023",
-    },
-  ],
-  comments: [
+// Import des données depuis la page principale
+// En production, cela devrait venir d'une base de données
+import { videosData } from "../page"
+
+interface Comment {
+  id: number
+  author: string
+  authorAvatar: string
+  date: string
+  content: string
+  likes: number
+}
+
+// Fonction pour récupérer une vidéo par son ID
+function getVideoById(id: number) {
+  const allVideos = Object.values(videosData).flat()
+  return allVideos.find((video) => video.id === id) || null
+}
+
+// Fonction pour récupérer des vidéos similaires
+function getRelatedVideos(currentVideoId: number, limit: number = 3) {
+  const allVideos = Object.values(videosData).flat()
+  return allVideos.filter((video) => video.id !== currentVideoId).slice(0, limit)
+}
+
+export default function VideoPage() {
+  const router = useRouter()
+  const params = useParams()
+  const videoId = params?.id ? Number(params.id) : null
+
+  const [activeTab, setActiveTab] = useState("description")
+  const [isLiked, setIsLiked] = useState(false)
+  const [isBookmarked, setIsBookmarked] = useState(false)
+  const [showShareOptions, setShowShareOptions] = useState(false)
+  const [commentText, setCommentText] = useState("")
+  const [comments, setComments] = useState<Comment[]>([
     {
       id: 1,
       author: "Lucas Petit",
       authorAvatar: "/placeholder.svg?height=40&width=40",
-      date: "16 mars 2023",
-      content:
-        "Excellente vidéo ! J'ai enfin compris la différence entre la forme algébrique et la forme trigonométrique. Merci beaucoup !",
+      date: "Il y a 2 jours",
+      content: "Excellente vidéo ! J'ai enfin compris les concepts expliqués. Merci beaucoup !",
       likes: 12,
     },
     {
       id: 2,
       author: "Sophie Leclerc",
       authorAvatar: "/placeholder.svg?height=40&width=40",
-      date: "17 mars 2023",
-      content:
-        "Est-ce que vous pourriez préciser comment calculer le module d'un nombre complexe ? Je n'ai pas bien compris cette partie.",
+      date: "Il y a 5 jours",
+      content: "Très bien expliqué, j'ai pu suivre facilement. Est-ce qu'il y a une suite ?",
       likes: 5,
     },
-    {
-      id: 3,
-      author: "Marie Dupont",
-      authorAvatar: "/placeholder.svg?height=40&width=40",
-      date: "17 mars 2023",
-      content:
-        "Bonjour Sophie, le module d'un nombre complexe z = a + ib est défini par |z| = √(a² + b²). C'est la distance entre le point représentant z dans le plan complexe et l'origine. J'aborderai ce sujet plus en détail dans la partie 2 !",
-      likes: 8,
-    },
-  ],
-}
+  ])
 
-export default function VideoPage({ params }) {
-  const router = useRouter()
-  const [activeTab, setActiveTab] = useState("description")
-  const [isLiked, setIsLiked] = useState(false)
-  const [isBookmarked, setIsBookmarked] = useState(false)
-  const [showShareOptions, setShowShareOptions] = useState(false)
-  const [commentText, setCommentText] = useState("")
-  const [comments, setComments] = useState(videoData.comments)
+  const video = videoId ? getVideoById(videoId) : null
+  const relatedVideos = video ? getRelatedVideos(video.id) : []
+
+  useEffect(() => {
+    if (!videoId || !video) {
+      router.push("/videos")
+    }
+  }, [videoId, video, router])
+
+  if (!video) {
+    return (
+      <div className="container py-10 text-center">
+        <p className="text-muted-foreground">Vidéo non trouvée</p>
+        <Button onClick={() => router.push("/videos")} className="mt-4">
+          Retour aux vidéos
+        </Button>
+      </div>
+    )
+  }
 
   const handleLike = () => {
     setIsLiked(!isLiked)
@@ -148,11 +112,11 @@ export default function VideoPage({ params }) {
     setShowShareOptions(!showShareOptions)
   }
 
-  const handleSubmitComment = (e) => {
+  const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (commentText.trim()) {
-      const newComment = {
+      const newComment: Comment = {
         id: comments.length + 1,
         author: "Vous",
         authorAvatar: "/placeholder.svg?height=40&width=40",
@@ -166,7 +130,7 @@ export default function VideoPage({ params }) {
     }
   }
 
-  const handleLikeComment = (commentId) => {
+  const handleLikeComment = (commentId: number) => {
     setComments(
       comments.map((comment) => {
         if (comment.id === commentId) {
@@ -177,11 +141,14 @@ export default function VideoPage({ params }) {
     )
   }
 
-  const formatViews = (views) => {
+  const formatViews = (views: number) => {
+    if (views >= 1000000) {
+      return `${(views / 1000000).toFixed(1)}M`
+    }
     if (views >= 1000) {
       return `${(views / 1000).toFixed(1)}k`
     }
-    return views
+    return views.toString()
   }
 
   const fadeIn = {
@@ -203,47 +170,51 @@ export default function VideoPage({ params }) {
     },
   }
 
+  const videoThumbnail = video.thumbnail || getYouTubeThumbnail(video.youtubeId)
+  const embedUrl = getYouTubeEmbedUrl(video.youtubeId)
+
   return (
     <div className="container py-10">
       <motion.div className="flex items-center gap-2 mb-6" initial="hidden" animate="visible" variants={fadeIn}>
         <Button variant="ghost" size="icon" onClick={() => router.push("/videos")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <Badge className="bg-blue-500/10 text-blue-500">
-          {videoData.category === "cours" ? "Cours" : videoData.category}
-        </Badge>
+        {video.category && (
+          <Badge className="bg-blue-500/10 text-blue-500">
+            {video.category === "cours" ? "Cours" : video.category === "exercices" ? "Exercices" : "Méthodes"}
+          </Badge>
+        )}
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-8">
           <motion.div initial="hidden" animate="visible" variants={fadeIn}>
-            <div className="relative w-full aspect-video rounded-lg overflow-hidden mb-4 group">
-              <Image
-                src={videoData.thumbnail || "/placeholder.svg"}
-                alt={videoData.title}
-                fill
-                className="object-cover"
+            {/* Player YouTube */}
+            <div className="relative w-full aspect-video rounded-lg overflow-hidden mb-4 bg-black">
+              <iframe
+                src={embedUrl}
+                title={video.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
               />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <PlayCircle className="h-16 w-16 text-white" />
-              </div>
-              <div className="absolute bottom-4 right-4 bg-black/70 px-2 py-1 rounded text-white text-sm flex items-center">
-                <Clock className="mr-1 h-3 w-3" />
-                {videoData.duration}
-              </div>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tighter mb-4">{videoData.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tighter mb-4">{video.title}</h1>
 
             <div className="flex flex-wrap items-center justify-between gap-4 text-sm text-muted-foreground mb-6">
               <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center">
                   <Eye className="mr-1 h-4 w-4" />
-                  {formatViews(videoData.views)} vues
+                  {formatViews(video.views)} vues
                 </div>
                 <div className="flex items-center">
-                  <Calendar className="mr-1 h-4 w-4" />
-                  {videoData.date}
+                  <Clock className="mr-1 h-4 w-4" />
+                  {video.duration}
+                </div>
+                <div className="flex items-center">
+                  <ThumbsUp className="mr-1 h-4 w-4" />
+                  {formatViews(video.likes)} likes
                 </div>
               </div>
 
@@ -270,7 +241,7 @@ export default function VideoPage({ params }) {
                   </Button>
 
                   {showShareOptions && (
-                    <div className="absolute top-full right-0 mt-2 p-2 bg-background border rounded-md shadow-md flex gap-2">
+                    <div className="absolute top-full right-0 mt-2 p-2 bg-background border rounded-md shadow-md flex gap-2 z-10">
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <Facebook className="h-4 w-4 text-blue-600" />
                       </Button>
@@ -288,11 +259,11 @@ export default function VideoPage({ params }) {
 
             <div className="flex items-center gap-3 mb-6 pb-6 border-b">
               <Avatar className="h-12 w-12">
-                <AvatarImage src={videoData.authorAvatar} alt={videoData.author} />
-                <AvatarFallback>{videoData.author.charAt(0)}</AvatarFallback>
+                <AvatarImage src={video.authorAvatar || "/placeholder.svg?height=40&width=40"} alt={video.author || "Auteur"} />
+                <AvatarFallback>{(video.author || "A")[0]}</AvatarFallback>
               </Avatar>
               <div>
-                <div className="font-medium">{videoData.author}</div>
+                <div className="font-medium">{video.author || "Professeur Mathosphère"}</div>
                 <div className="text-xs text-muted-foreground">Professeur</div>
               </div>
               <Button variant="outline" size="sm" className="ml-auto">
@@ -306,18 +277,22 @@ export default function VideoPage({ params }) {
                 <TabsTrigger value="comments">Commentaires ({comments.length})</TabsTrigger>
               </TabsList>
               <TabsContent value="description" className="mt-4">
-                <div
-                  className="prose prose-gray dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: videoData.content }}
-                />
-
-                <div className="flex flex-wrap gap-2 mt-6">
-                  {videoData.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-sm">
-                      #{tag}
-                    </Badge>
-                  ))}
+                <div className="prose prose-gray dark:prose-invert max-w-none">
+                  <p className="text-lg text-muted-foreground mb-4">{video.description}</p>
+                  {video.content && (
+                    <div dangerouslySetInnerHTML={{ __html: video.content }} />
+                  )}
                 </div>
+
+                {video.tags && video.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-6">
+                    {video.tags.map((tag) => (
+                      <Badge key={tag} variant="outline" className="text-sm">
+                        #{tag}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="comments" className="mt-4">
                 <form onSubmit={handleSubmitComment} className="mb-8">
@@ -330,7 +305,7 @@ export default function VideoPage({ params }) {
                   />
                   <Button
                     type="submit"
-                    className="bg-gray-900 hover:bg-gray-800 ml-auto"
+                    className="bg-primary hover:bg-primary/90 ml-auto"
                     disabled={!commentText.trim()}
                   >
                     Publier
@@ -378,32 +353,33 @@ export default function VideoPage({ params }) {
               <CardTitle className="text-lg">Vidéos similaires</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {videoData.relatedVideos.map((video) => (
-                <Link key={video.id} href={`/videos/${video.id}`} className="flex gap-3 group">
-                  <div className="relative w-24 h-16 rounded-md overflow-hidden flex-shrink-0">
-                    <Image
-                      src={video.thumbnail || "/placeholder.svg"}
-                      alt={video.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute bottom-1 right-1 bg-black/70 px-1 py-0.5 rounded text-white text-xs">
-                      {video.duration}
+              {relatedVideos.map((relatedVideo) => {
+                const relatedThumbnail = relatedVideo.thumbnail || getYouTubeThumbnail(relatedVideo.youtubeId, "medium")
+                return (
+                  <Link key={relatedVideo.id} href={`/videos/${relatedVideo.id}`} className="flex gap-3 group">
+                    <div className="relative w-24 h-16 rounded-md overflow-hidden flex-shrink-0">
+                      <Image
+                        src={relatedThumbnail}
+                        alt={relatedVideo.title}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute bottom-1 right-1 bg-black/70 px-1 py-0.5 rounded text-white text-xs">
+                        {relatedVideo.duration}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
-                      {video.title}
-                    </h4>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                      <span>{formatViews(video.views)} vues</span>
-                      <span>•</span>
-                      <span>{video.date}</span>
+                    <div>
+                      <h4 className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
+                        {relatedVideo.title}
+                      </h4>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <span>{formatViews(relatedVideo.views)} vues</span>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
-              <Button variant="outline" size="sm" className="w-full">
+                  </Link>
+                )
+              })}
+              <Button variant="outline" size="sm" className="w-full" onClick={() => router.push("/videos")}>
                 Voir plus de vidéos
               </Button>
             </CardContent>
@@ -414,15 +390,17 @@ export default function VideoPage({ params }) {
               <h3 className="font-bold mb-4">À propos de l'auteur</h3>
               <div className="flex items-center gap-3 mb-4">
                 <Avatar className="h-12 w-12">
-                  <AvatarImage src={videoData.authorAvatar} alt={videoData.author} />
-                  <AvatarFallback>{videoData.author.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={video.authorAvatar || "/placeholder.svg?height=40&width=40"} alt={video.author || "Auteur"} />
+                  <AvatarFallback>{(video.author || "A")[0]}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="font-medium">{videoData.author}</div>
+                  <div className="font-medium">{video.author || "Professeur Mathosphère"}</div>
                   <div className="text-xs text-muted-foreground">Professeur</div>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">{videoData.authorBio}</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {video.authorBio || "Professeur expérimenté en mathématiques, passionné par l'enseignement et la transmission du savoir."}
+              </p>
               <Button variant="outline" size="sm" className="w-full">
                 Voir toutes ses vidéos
               </Button>
@@ -433,11 +411,18 @@ export default function VideoPage({ params }) {
             <CardContent className="p-6">
               <h3 className="font-bold mb-4">Tags populaires</h3>
               <div className="flex flex-wrap gap-2">
-                {["Nombres complexes", "Terminale", "Algèbre", "Analyse", "Cours", "Exercices", "Prépa"].map((tag) => (
-                  <Badge key={tag} variant="outline" className="text-sm">
-                    #{tag}
-                  </Badge>
-                ))}
+                {[
+                  video.subject || "Mathématiques",
+                  video.classe || video.level,
+                  video.category === "cours" ? "Cours" : video.category === "exercices" ? "Exercices" : "Méthodes",
+                  "Éducation",
+                ]
+                  .filter(Boolean)
+                  .map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-sm">
+                      #{tag}
+                    </Badge>
+                  ))}
               </div>
             </CardContent>
           </Card>

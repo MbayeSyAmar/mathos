@@ -55,7 +55,12 @@ export default function Cart() {
                     className="flex gap-4 py-3"
                   >
                     <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
-                      <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
+                      <Image
+                        src={item.image || "/placeholder.svg"}
+                        alt={item.title || "Produit du panier"}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
                     <div className="flex-grow min-w-0">
                       <Link

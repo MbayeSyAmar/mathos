@@ -6,14 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -21,13 +13,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Clock, CheckCircle, XCircle, Eye, RefreshCw, AlertCircle, Ban } from "lucide-react"
+import { Clock, CheckCircle, XCircle, Eye, RefreshCw, AlertCircle, Ban, FileText, Calendar, User, GraduationCap, Target } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 import { getStudentRequests, type EncadrementRequest } from "@/lib/services/encadrement-requests-service"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
+import { BackButton } from "@/components/back-button"
 
 export default function MesDemandesPage() {
   const router = useRouter()
@@ -60,14 +53,9 @@ export default function MesDemandesPage() {
 
     try {
       setLoading(true)
-      console.log("🔍 Fetching requests for student:", user.uid)
-      
       const requests = await getStudentRequests(user.uid)
-      console.log("📊 Student requests:", requests)
-      
       setDemandes(requests)
       
-      // Calculer les stats
       setStats({
         total: requests.length,
         pending: requests.filter(d => d.status === "pending").length,
@@ -75,7 +63,6 @@ export default function MesDemandesPage() {
         rejected: requests.filter(d => d.status === "rejected").length,
       })
 
-      // Afficher une notification si une demande a été traitée récemment (dans les dernières 24h)
       const recentlyProcessed = requests.filter(d => {
         if (!d.processedAt) return false
         const processedTime = d.processedAt.seconds * 1000
@@ -129,8 +116,8 @@ export default function MesDemandesPage() {
     }
     
     return (
-      <Badge className={`${className} text-white`}>
-        <Icon className="h-3 w-3 mr-1" />
+      <Badge className={`${className} text-white flex items-center gap-1`}>
+        <Icon className="h-3 w-3" />
         {label}
       </Badge>
     )
@@ -145,58 +132,114 @@ export default function MesDemandesPage() {
     },
   }
 
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  }
+
   if (loading) {
     return (
-      <div className="container py-10">
-        <div className="flex items-center justify-center h-64">
-          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+      <div className="container py-10 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Chargement de vos demandes...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="container py-10">
+    <div className="container py-6 md:py-10 space-y-8">
+      <div className="mb-6">
+        <BackButton href="/dashboard" label="Retour au dashboard" />
+      </div>
+
       <motion.div className="mb-6" initial="hidden" animate="visible" variants={fadeIn}>
-        <h1 className="text-3xl font-bold tracking-tighter mb-2">Mes Demandes de Formation</h1>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tighter mb-2 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+          Mes Demandes de Formation
+        </h1>
         <p className="text-muted-foreground">Suivez l'état de vos demandes d'encadrement</p>
       </motion.div>
 
       {/* Statistiques */}
-      <motion.div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" initial="hidden" animate="visible" variants={fadeIn}>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">Total</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-orange-500">{stats.pending}</div>
-            <p className="text-xs text-muted-foreground">En attente</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-            <p className="text-xs text-muted-foreground">Approuvées</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-            <p className="text-xs text-muted-foreground">Refusées</p>
-          </CardContent>
-        </Card>
+      <motion.div 
+        className="grid grid-cols-1 md:grid-cols-4 gap-4" 
+        initial="hidden" 
+        animate="visible" 
+        variants={staggerContainer}
+      >
+        <motion.div variants={fadeIn}>
+          <Card className="border-l-4 border-l-blue-500 hover:shadow-lg transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold">{stats.total}</div>
+                  <p className="text-sm text-muted-foreground mt-1">Total</p>
+                </div>
+                <FileText className="h-8 w-8 text-blue-500 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={fadeIn}>
+          <Card className="border-l-4 border-l-orange-500 hover:shadow-lg transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold text-orange-500">{stats.pending}</div>
+                  <p className="text-sm text-muted-foreground mt-1">En attente</p>
+                </div>
+                <Clock className="h-8 w-8 text-orange-500 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={fadeIn}>
+          <Card className="border-l-4 border-l-green-500 hover:shadow-lg transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold text-green-600">{stats.approved}</div>
+                  <p className="text-sm text-muted-foreground mt-1">Approuvées</p>
+                </div>
+                <CheckCircle className="h-8 w-8 text-green-600 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={fadeIn}>
+          <Card className="border-l-4 border-l-red-500 hover:shadow-lg transition-shadow">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-3xl font-bold text-red-600">{stats.rejected}</div>
+                  <p className="text-sm text-muted-foreground mt-1">Refusées</p>
+                </div>
+                <XCircle className="h-8 w-8 text-red-600 opacity-50" />
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </motion.div>
 
       {/* Liste des demandes */}
       <motion.div initial="hidden" animate="visible" variants={fadeIn}>
-        <Card>
-          <CardHeader>
+        <Card className="border-2">
+          <CardHeader className="bg-gradient-to-r from-primary/10 to-purple-500/10">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Historique des demandes</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Historique des demandes
+                </CardTitle>
                 <CardDescription>Consultez le statut de toutes vos demandes</CardDescription>
               </div>
               <Button onClick={fetchDemandes} variant="outline" size="sm">
@@ -205,73 +248,108 @@ export default function MesDemandesPage() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <Tabs value={selectedTab} onValueChange={(v: any) => setSelectedTab(v)}>
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="all">Toutes ({stats.total})</TabsTrigger>
-                <TabsTrigger value="pending">En attente ({stats.pending})</TabsTrigger>
-                <TabsTrigger value="approved">Approuvées ({stats.approved})</TabsTrigger>
-                <TabsTrigger value="rejected">Refusées ({stats.rejected})</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 mb-6">
+                <TabsTrigger value="all" className="flex items-center gap-2">
+                  Toutes
+                  <Badge variant="secondary">{stats.total}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="pending" className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  En attente
+                  <Badge variant="secondary">{stats.pending}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="approved" className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  Approuvées
+                  <Badge variant="secondary">{stats.approved}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="rejected" className="flex items-center gap-2">
+                  <XCircle className="h-4 w-4" />
+                  Refusées
+                  <Badge variant="secondary">{stats.rejected}</Badge>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value={selectedTab} className="mt-6">
                 {filteredDemandes.length === 0 ? (
-                  <div className="text-center py-10">
-                    <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">
+                  <div className="text-center py-16">
+                    <AlertCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-lg font-medium mb-2">
                       {demandes.length === 0 
-                        ? "Vous n'avez pas encore de demande de formation"
+                        ? "Aucune demande de formation"
                         : "Aucune demande dans cette catégorie"
                       }
                     </p>
+                    <p className="text-muted-foreground mb-6">
+                      {demandes.length === 0 
+                        ? "Commencez par faire une demande d'encadrement"
+                        : "Aucune demande ne correspond à ce filtre"
+                      }
+                    </p>
                     {demandes.length === 0 && (
-                      <Button className="mt-4" onClick={() => router.push("/encadrement")}>
+                      <Button size="lg" onClick={() => router.push("/encadrement")}>
+                        <GraduationCap className="h-4 w-4 mr-2" />
                         Faire une demande
                       </Button>
                     )}
                   </div>
                 ) : (
-                  <div className="border rounded-lg">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Professeur</TableHead>
-                          <TableHead>Matière</TableHead>
-                          <TableHead>Formule</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Statut</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredDemandes.map((demande) => (
-                          <TableRow key={demande.id}>
-                            <TableCell>
-                              <div className="font-medium">{demande.teacherName}</div>
-                            </TableCell>
-                            <TableCell>{demande.subject}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{demande.formule}</Badge>
-                            </TableCell>
-                            <TableCell className="text-sm">{formatDate(demande.createdAt)}</TableCell>
-                            <TableCell>{getStatusBadge(demande.status)}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedDemande(demande)
-                                  setDialogOpen(true)
-                                }}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <motion.div
+                    className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                    variants={staggerContainer}
+                    initial="hidden"
+                    animate="visible"
+                  >
+                    {filteredDemandes.map((demande) => (
+                      <motion.div key={demande.id} variants={fadeIn}>
+                        <Card className="h-full hover:shadow-lg transition-all border-2">
+                          <CardHeader className="pb-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg mb-1">{demande.teacherName}</CardTitle>
+                                <CardDescription className="flex items-center gap-2 mt-2">
+                                  <Badge variant="outline">{demande.subject}</Badge>
+                                  <Badge variant="secondary">{demande.formule}</Badge>
+                                </CardDescription>
+                              </div>
+                              {getStatusBadge(demande.status)}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Calendar className="h-4 w-4" />
+                              <span>{formatDate(demande.createdAt)}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <User className="h-4 w-4" />
+                              <span>{demande.studentLevel} - {demande.studentClass}</span>
+                            </div>
+                            {demande.objectives && (
+                              <div className="flex items-start gap-2 text-sm">
+                                <Target className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                                <p className="text-muted-foreground line-clamp-2">{demande.objectives}</p>
+                              </div>
+                            )}
+                          </CardContent>
+                          <CardContent className="pt-0">
+                            <Button
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => {
+                                setSelectedDemande(demande)
+                                setDialogOpen(true)
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Voir les détails
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </motion.div>
                 )}
               </TabsContent>
             </Tabs>
@@ -281,89 +359,142 @@ export default function MesDemandesPage() {
 
       {/* Dialog de détails */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Détails de la demande</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              Détails de la demande
+            </DialogTitle>
+            <DialogDescription className="text-base">
               {selectedDemande?.teacherName} - {selectedDemande?.subject}
             </DialogDescription>
           </DialogHeader>
 
           {selectedDemande && (
-            <div className="space-y-4">
+            <div className="space-y-6 mt-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Statut</p>
-                  <div className="mt-1">{getStatusBadge(selectedDemande.status)}</div>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Formule</p>
-                  <p className="font-medium mt-1">{selectedDemande.formule}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Niveau</p>
-                  <p className="font-medium mt-1">{selectedDemande.studentLevel}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Classe</p>
-                  <p className="font-medium mt-1">{selectedDemande.studentClass}</p>
-                </div>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <Clock className="h-4 w-4" />
+                      Statut
+                    </div>
+                    {getStatusBadge(selectedDemande.status)}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <GraduationCap className="h-4 w-4" />
+                      Formule
+                    </div>
+                    <p className="font-medium">{selectedDemande.formule}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <User className="h-4 w-4" />
+                      Niveau
+                    </div>
+                    <p className="font-medium">{selectedDemande.studentLevel}</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <User className="h-4 w-4" />
+                      Classe
+                    </div>
+                    <p className="font-medium">{selectedDemande.studentClass}</p>
+                  </CardContent>
+                </Card>
               </div>
 
-              <div>
-                <p className="text-sm text-muted-foreground">École</p>
-                <p className="text-sm mt-1">{selectedDemande.studentSchool}</p>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Informations</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">École</p>
+                    <p className="text-sm">{selectedDemande.studentSchool}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Objectifs</p>
+                    <p className="text-sm">{selectedDemande.objectives}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Disponibilités</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDemande.availability.map((slot, index) => (
+                        <Badge key={index} variant="outline">{slot}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {selectedDemande.message && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Message</p>
+                      <p className="text-sm bg-muted p-3 rounded-lg">{selectedDemande.message}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <Calendar className="h-4 w-4" />
+                      Date de soumission
+                    </div>
+                    <p className="text-sm font-medium">{formatDate(selectedDemande.createdAt)}</p>
+                  </CardContent>
+                </Card>
+
+                {selectedDemande.processedAt && (
+                  <Card>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        <Calendar className="h-4 w-4" />
+                        {selectedDemande.status === "approved" ? "Approuvée le" : "Refusée le"}
+                      </div>
+                      <p className="text-sm font-medium">{formatDate(selectedDemande.processedAt)}</p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">Objectifs</p>
-                <p className="text-sm mt-1">{selectedDemande.objectives}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-muted-foreground">Disponibilités</p>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {selectedDemande.availability.map((slot, index) => (
-                    <Badge key={index} variant="outline">{slot}</Badge>
-                  ))}
-                </div>
-              </div>
-
-              {selectedDemande.message && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Message</p>
-                  <p className="text-sm mt-1">{selectedDemande.message}</p>
-                </div>
-              )}
-
-              <div>
-                <p className="text-sm text-muted-foreground">Date de soumission</p>
-                <p className="text-sm mt-1">{formatDate(selectedDemande.createdAt)}</p>
-              </div>
-
-              {selectedDemande.processedAt && (
-                <div>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedDemande.status === "approved" ? "Approuvée le" : "Refusée le"}
-                  </p>
-                  <p className="text-sm mt-1">{formatDate(selectedDemande.processedAt)}</p>
-                </div>
-              )}
 
               {selectedDemande.rejectionReason && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-                  <p className="text-sm font-semibold text-red-900">Raison du refus</p>
-                  <p className="text-sm text-red-800 mt-1">{selectedDemande.rejectionReason}</p>
-                </div>
+                <Card className="border-red-200 bg-red-50 dark:bg-red-950">
+                  <CardHeader>
+                    <CardTitle className="text-base text-red-900 dark:text-red-100">
+                      Raison du refus
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-red-800 dark:text-red-200">{selectedDemande.rejectionReason}</p>
+                  </CardContent>
+                </Card>
               )}
 
               {selectedDemande.status === "approved" && (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-md">
-                  <p className="text-sm font-semibold text-green-900">✅ Demande approuvée</p>
-                  <p className="text-sm text-green-800 mt-1">
-                    Votre professeur vous contactera prochainement pour organiser les séances.
-                  </p>
-                </div>
+                <Card className="border-green-200 bg-green-50 dark:bg-green-950">
+                  <CardHeader>
+                    <CardTitle className="text-base text-green-900 dark:text-green-100 flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5" />
+                      Demande approuvée
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-green-800 dark:text-green-200">
+                      Votre professeur vous contactera prochainement pour organiser les séances.
+                    </p>
+                  </CardContent>
+                </Card>
               )}
             </div>
           )}

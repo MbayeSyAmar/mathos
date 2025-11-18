@@ -10,17 +10,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, CreditCard, Truck, ShieldCheck } from "lucide-react"
+import { Truck, ShieldCheck } from "lucide-react"
 import { motion } from "framer-motion"
 import { useCart } from "@/components/cart-provider"
-import { 
-  collection, 
-  addDoc, 
+import {
+  collection,
+  addDoc,
   serverTimestamp,
   doc as firestoreDoc,
-  getDoc
+  getDoc,
+  updateDoc,
 } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import { useAuth } from "@/lib/auth-context"
@@ -29,12 +29,22 @@ import { BackButton } from "@/components/back-button"
 
 export default function CheckoutPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const { toast } = useToast()
   const { items: cart, totalPrice: total, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [deliveryMode, setDeliveryMode] = useState("standard")
+  const [orderConfirmation, setOrderConfirmation] = useState<{
+    orderNumber: string
+    deliveryMode: string
+    trackingUrl: string
+  } | null>(null)
+  const [lastOrderSnapshot, setLastOrderSnapshot] = useState<any>(null)
+  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminStatus, setAdminStatus] = useState("pending")
+  const [adminUpdateLoading, setAdminUpdateLoading] = useState(false)
   
   // Informations de livraison
   const [firstName, setFirstName] = useState("")
@@ -45,7 +55,40 @@ export default function CheckoutPage() {
   const [postalCode, setPostalCode] = useState("")
   const [city, setCity] = useState("")
   const [country, setCountry] = useState("Sénégal")
-  const [paymentMethod, setPaymentMethod] = useState("card")
+  const paymentPlaceholder = "Paiement confirmé par l'équipe"
+
+  const formatPrice = (amount: number) => (amount <= 0 ? "Gratuit" : `${amount.toLocaleString("fr-FR")} FCFA`)
+  const subtotal = total || 0
+  const vatAmount = subtotal * 0.18
+  const getDeliveryPrice = (mode: string) => {
+    switch (mode) {
+      case "standard":
+        return subtotal >= 30000 ? 0 : 3000
+      case "express":
+        return 6500
+      case "pickup":
+        return 0
+      default:
+        return 0
+    }
+  }
+  const deliveryPriceLabel = (mode: string) => formatPrice(getDeliveryPrice(mode))
+  const selectedDeliveryCost = getDeliveryPrice(deliveryMode)
+  const estimatedTotal = subtotal + selectedDeliveryCost
+
+  const deliveryModeLabels: Record<string, string> = {
+    standard: "Livraison standard",
+    express: "Livraison express",
+    pickup: "Retrait en magasin",
+  }
+
+  const statusLabels: Record<string, string> = {
+    pending: "En attente",
+    processing: "En préparation",
+    shipped: "Expédiée",
+    delivered: "Livrée",
+    cancelled: "Annulée",
+  }
 
   // Charger les informations de l'utilisateur connecté
   useEffect(() => {
@@ -62,6 +105,7 @@ export default function CheckoutPage() {
             setAddress(userData.adresse || "")
             setCity(userData.ville || "")
             setPostalCode(userData.codePostal || "")
+            setIsAdmin(Boolean(userData.role === "admin" || userData.isAdmin))
           } else {
             setEmail(user.email || "")
           }
@@ -77,6 +121,7 @@ export default function CheckoutPage() {
 
   // Vérifier si l'utilisateur est connecté
   useEffect(() => {
+    if (loading) return
     if (!user) {
       toast({
         title: "Connexion requise",
@@ -85,10 +130,182 @@ export default function CheckoutPage() {
       })
       router.push(`/connexion?redirect=/boutique/checkout`)
     }
-  }, [user, router, toast])
+  }, [user, loading, router, toast])
+
+  const handleAdminStatusChange = async (nextStatus: string) => {
+    if (!currentOrderId) return
+    setAdminUpdateLoading(true)
+    try {
+      await updateDoc(firestoreDoc(db, "orders", currentOrderId), {
+        status: nextStatus,
+        updatedAt: serverTimestamp(),
+      })
+      setAdminStatus(nextStatus)
+      setLastOrderSnapshot((prev: any) => (prev ? { ...prev, status: nextStatus } : prev))
+      toast({
+        title: "Statut mis à jour",
+        description: `La commande ${lastOrderSnapshot?.orderNumber || ""} est maintenant ${statusLabels[nextStatus] || nextStatus}`,
+      })
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du statut:", error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut pour le moment.",
+        variant: "destructive",
+      })
+    } finally {
+      setAdminUpdateLoading(false)
+    }
+  }
+
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 },
+    },
+  }
+
+  if (orderConfirmation && lastOrderSnapshot) {
+    return (
+      <div className="container py-10 space-y-8">
+        <motion.div initial="hidden" animate="visible" variants={fadeIn}>
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-background to-background">
+            <CardHeader>
+              <CardTitle className="text-3xl">Commande enregistrée 🎉</CardTitle>
+              <CardDescription>Merci pour votre confiance. Nous avons transmis toutes vos informations à notre équipe logistique.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-primary/20 p-4">
+                  <p className="text-sm text-muted-foreground">Numéro de commande</p>
+                  <p className="text-xl font-semibold tracking-tight">{orderConfirmation.orderNumber}</p>
+                </div>
+                <div className="rounded-2xl border border-primary/20 p-4">
+                  <p className="text-sm text-muted-foreground">Statut actuel</p>
+                  <p className="text-xl font-semibold tracking-tight">{statusLabels[adminStatus] || statusLabels.pending}</p>
+                </div>
+                <div className="rounded-2xl border border-muted p-4">
+                  <p className="text-sm text-muted-foreground">Mode de livraison</p>
+                  <p className="font-semibold">{deliveryModeLabels[orderConfirmation.deliveryMode]}</p>
+                  <p className="text-xs text-muted-foreground">{formatPrice(lastOrderSnapshot.deliveryCost)}</p>
+                </div>
+                <div className="rounded-2xl border border-muted p-4">
+                  <p className="text-sm text-muted-foreground">Paiement</p>
+                  <p className="font-semibold">{paymentPlaceholder}</p>
+                  <p className="text-xs text-muted-foreground">Confirmation envoyée à l&apos;administrateur</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button asChild className="gap-2 bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white hover:opacity-90">
+                  <Link href={orderConfirmation.trackingUrl}>
+                    Suivre ma commande
+                    <ShieldCheck className="h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" className="gap-2 border-dashed border-primary/40 text-primary hover:bg-primary/10" asChild>
+                  <Link href="/boutique">Continuer mes achats</Link>
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Un email récapitulatif vient de vous être envoyé et l&apos;administrateur est déjà informé pour préparer l&apos;expédition.
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <motion.div initial="hidden" animate="visible" variants={fadeIn} className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Informations de livraison</CardTitle>
+                <CardDescription>Rappel des informations adressées à notre équipe</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <p>
+                  <span className="font-medium">Client :</span> {lastOrderSnapshot.userInfo.firstName} {lastOrderSnapshot.userInfo.lastName}
+                </p>
+                <p>
+                  <span className="font-medium">Adresse :</span> {lastOrderSnapshot.userInfo.address}, {lastOrderSnapshot.userInfo.city}{" "}
+                  {lastOrderSnapshot.userInfo.postalCode}, {lastOrderSnapshot.userInfo.country}
+                </p>
+                <p>
+                  <span className="font-medium">Contact :</span> {lastOrderSnapshot.userInfo.email} · {lastOrderSnapshot.userInfo.phone}
+                </p>
+              </CardContent>
+            </Card>
+
+            {isAdmin && currentOrderId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gestion administrative</CardTitle>
+                  <CardDescription>Mettez à jour le statut de la commande</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Label htmlFor="adminStatus">Statut</Label>
+                  <select
+                    id="adminStatus"
+                    value={adminStatus}
+                    onChange={(event) => handleAdminStatusChange(event.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    disabled={adminUpdateLoading}
+                  >
+                    {Object.entries(statusLabels).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">Le client sera notifié automatiquement de chaque changement.</p>
+                </CardContent>
+              </Card>
+            )}
+          </motion.div>
+
+          <motion.div initial="hidden" animate="visible" variants={fadeIn}>
+            <Card>
+              <CardHeader>
+                <CardTitle>Détails de la commande</CardTitle>
+                <CardDescription>{lastOrderSnapshot.items.length} article(s)</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {lastOrderSnapshot.items.map((item: any) => (
+                  <div key={item.id} className="flex items-center justify-between text-sm">
+                    <div>
+                      <p className="font-medium">{item.title}</p>
+                      <p className="text-muted-foreground">Quantité : {item.quantity}</p>
+                    </div>
+                    <p className="font-semibold">{formatPrice(item.price * item.quantity)}</p>
+                  </div>
+                ))}
+                <Separator />
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Sous-total</span>
+                    <span>{formatPrice(lastOrderSnapshot.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Livraison ({deliveryModeLabels[lastOrderSnapshot.deliveryMode]})</span>
+                    <span>{formatPrice(lastOrderSnapshot.deliveryCost)}</span>
+                  </div>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-semibold text-lg">
+                  <span>Total payé</span>
+                  <span>{formatPrice(lastOrderSnapshot.total)}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    )
+  }
 
   // Vérifier si le panier est vide
-  if (!cart || cart.length === 0) {
+  if ((!cart || cart.length === 0) && !orderConfirmation) {
     return (
       <div className="container py-20 text-center">
         <h1 className="text-2xl font-bold mb-4">Votre panier est vide</h1>
@@ -100,7 +317,9 @@ export default function CheckoutPage() {
     )
   }
 
-    const handleSubmitOrder = async () => {
+  const handleSubmitOrder = async () => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
     if (!user) {
       toast({
         title: "Erreur",
@@ -136,7 +355,7 @@ export default function CheckoutPage() {
       const orderNumber = `CMD-${timestamp}-${random}`
 
       // Calculer les frais de livraison
-      const deliveryCost = deliveryMode === "express" ? 5000 : 2000
+      const deliveryCost = getDeliveryPrice(deliveryMode)
 
       // Préparer les données de la commande
       const orderData = {
@@ -160,29 +379,43 @@ export default function CheckoutPage() {
           image: item.image || "",
           category: item.category || "",
         })),
-        total: total + deliveryCost,
-        subtotal: total,
+        total: subtotal + deliveryCost,
+        subtotal,
         deliveryMode,
         deliveryCost,
         status: "pending", // En attente de validation
-        paymentMethod: paymentMethod,
+        paymentMethod: paymentPlaceholder,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }
 
       // Sauvegarder la commande dans Firestore
-      await addDoc(collection(db, "orders"), orderData)
+      const orderRef = await addDoc(collection(db, "orders"), orderData)
+
+      // Alerter l'admin
+      await addDoc(collection(db, "admin_notifications"), {
+        type: "new_order",
+        orderNumber,
+        orderId: orderRef.id,
+        userId: user.uid,
+        createdAt: serverTimestamp(),
+      })
 
       toast({
         title: "Commande enregistrée",
         description: `Votre commande ${orderNumber} a été enregistrée avec succès`,
       })
 
-      // Vider le panier et rediriger
-      setTimeout(() => {
-        clearCart()
-        router.push(`/boutique/confirmation?orderNumber=${orderNumber}`)
-      }, 2000)
+      setOrderConfirmation({
+        orderNumber,
+        deliveryMode,
+        trackingUrl: `/boutique/suivi?orderNumber=${orderNumber}`,
+      })
+      setLastOrderSnapshot(orderData)
+      setCurrentOrderId(orderRef.id)
+      setAdminStatus(orderData.status)
+      clearCart()
+      setTermsAccepted(false)
     } catch (error) {
       console.error("Erreur lors de l'enregistrement de la commande:", error)
       toast({
@@ -190,16 +423,9 @@ export default function CheckoutPage() {
         description: "Une erreur est survenue lors de l'enregistrement de votre commande",
         variant: "destructive",
       })
+    } finally {
+      setIsSubmitting(false)
     }
-  }
-
-  const fadeIn = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.5 },
-    },
   }
 
   return (
@@ -219,38 +445,87 @@ export default function CheckoutPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">Prénom</Label>
-                  <Input id="firstName" placeholder="Votre prénom" required />
+                  <Input
+                    id="firstName"
+                    placeholder="Votre prénom"
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Nom</Label>
-                  <Input id="lastName" placeholder="Votre nom" required />
+                  <Input
+                    id="lastName"
+                    placeholder="Votre nom"
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    required
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="votre.email@exemple.com" required />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="votre.email@exemple.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Téléphone</Label>
-                <Input id="phone" placeholder="Votre numéro de téléphone" required />
+                <Input
+                  id="phone"
+                  placeholder="Votre numéro de téléphone"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="address">Adresse</Label>
-                <Input id="address" placeholder="Votre adresse" required />
+                <Input
+                  id="address"
+                  placeholder="Votre adresse"
+                  value={address}
+                  onChange={(event) => setAddress(event.target.value)}
+                  required
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="postalCode">Code postal</Label>
-                  <Input id="postalCode" placeholder="Code postal" required />
+                  <Input
+                    id="postalCode"
+                    placeholder="Code postal"
+                    value={postalCode}
+                    onChange={(event) => setPostalCode(event.target.value)}
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="city">Ville</Label>
-                  <Input id="city" placeholder="Ville" required />
+                  <Input
+                    id="city"
+                    placeholder="Ville"
+                    value={city}
+                    onChange={(event) => setCity(event.target.value)}
+                    required
+                  />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="country">Pays</Label>
-                <Input id="country" placeholder="Pays" defaultValue="France" required />
+                <Input
+                  id="country"
+                  placeholder="Pays"
+                  value={country}
+                  onChange={(event) => setCountry(event.target.value)}
+                  required
+                />
               </div>
             </CardContent>
           </Card>
@@ -261,7 +536,7 @@ export default function CheckoutPage() {
               <CardDescription>Choisissez votre mode de livraison préféré</CardDescription>
             </CardHeader>
             <CardContent>
-              <RadioGroup defaultValue="standard" className="space-y-4">
+              <RadioGroup value={deliveryMode} onValueChange={setDeliveryMode} className="space-y-4">
                 <div className="flex items-center justify-between space-x-2 border p-4 rounded-md">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="standard" id="standard" />
@@ -273,7 +548,7 @@ export default function CheckoutPage() {
                       </div>
                     </Label>
                   </div>
-                  <div className="font-medium">{total >= 30000 ? "Gratuit" : "3000 FCFA"}</div>
+                  <div className="font-medium">{deliveryPriceLabel("standard")}</div>
                 </div>
                 <div className="flex items-center justify-between space-x-2 border p-4 rounded-md">
                   <div className="flex items-center space-x-2">
@@ -286,7 +561,7 @@ export default function CheckoutPage() {
                       </div>
                     </Label>
                   </div>
-                  <div className="font-medium">6500 FCFA</div>
+                  <div className="font-medium">{deliveryPriceLabel("express")}</div>
                 </div>
                 <div className="flex items-center justify-between space-x-2 border p-4 rounded-md">
                   <div className="flex items-center space-x-2">
@@ -299,7 +574,7 @@ export default function CheckoutPage() {
                       </div>
                     </Label>
                   </div>
-                  <div className="font-medium">Gratuit</div>
+                  <div className="font-medium">{deliveryPriceLabel("pickup")}</div>
                 </div>
               </RadioGroup>
             </CardContent>
@@ -307,66 +582,13 @@ export default function CheckoutPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Mode de paiement</CardTitle>
-              <CardDescription>Choisissez votre mode de paiement préféré</CardDescription>
+              <CardTitle>Paiement</CardTitle>
+              <CardDescription>Validation sécurisée après contrôle</CardDescription>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="card" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="card">Carte bancaire</TabsTrigger>
-                  <TabsTrigger value="paypal">PayPal</TabsTrigger>
-                  <TabsTrigger value="other">Autres</TabsTrigger>
-                </TabsList>
-                <TabsContent value="card" className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="cardName">Nom sur la carte</Label>
-                    <Input id="cardName" placeholder="Nom complet" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="cardNumber">Numéro de carte</Label>
-                    <div className="relative">
-                      <Input id="cardNumber" placeholder="1234 5678 9012 3456" required />
-                      <CreditCard className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="expiryDate">Date d'expiration</Label>
-                      <Input id="expiryDate" placeholder="MM/AA" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cvv">CVV</Label>
-                      <Input id="cvv" placeholder="123" required />
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 mt-4">
-                    <Checkbox id="saveCard" />
-                    <Label htmlFor="saveCard">Sauvegarder cette carte pour mes prochains achats</Label>
-                  </div>
-                </TabsContent>
-                <TabsContent value="paypal" className="mt-4">
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">
-                      Vous serez redirigé vers PayPal pour finaliser votre paiement.
-                    </p>
-                    <Button className="bg-[#0070ba] hover:bg-[#005ea6]">Payer avec PayPal</Button>
-                  </div>
-                </TabsContent>
-                <TabsContent value="other" className="mt-4">
-                  <div className="space-y-4">
-                    <RadioGroup defaultValue="transfer" className="space-y-4">
-                      <div className="flex items-center space-x-2 border p-4 rounded-md">
-                        <RadioGroupItem value="transfer" id="transfer" />
-                        <Label htmlFor="transfer">Virement bancaire</Label>
-                      </div>
-                      <div className="flex items-center space-x-2 border p-4 rounded-md">
-                        <RadioGroupItem value="check" id="check" />
-                        <Label htmlFor="check">Chèque</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                </TabsContent>
-              </Tabs>
+              <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4 text-sm text-primary">
+                Aucun paiement en ligne n&apos;est demandé. L&apos;administrateur confirme le règlement une fois la commande vérifiée.
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -399,22 +621,24 @@ export default function CheckoutPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Sous-total</span>
-                  <span>{total ? total.toFixed(2) : "0.00"} FCFA</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Livraison</span>
-                  <span>{total && total >= 30000 ? "Gratuite" : "3000 FCFA"}</span>
+                  <span>{deliveryPriceLabel(deliveryMode)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">TVA (18%)</span>
-                  <span>{total ? (total * 0.18).toFixed(0) : "0"} FCFA</span>
+                  <span>{formatPrice(Math.round(vatAmount))}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Paiement</span>
+                  <span>{paymentPlaceholder}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-medium">
                   <span>Total</span>
-                  <span className="text-lg">
-                    {total ? (total >= 30000 ? total : total + 3000).toFixed(0) : "0"} FCFA
-                  </span>
+                  <span className="text-lg">{formatPrice(estimatedTotal)}</span>
                 </div>
               </div>
 
@@ -427,7 +651,12 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex items-center space-x-2">
-                <Checkbox id="terms" required />
+                <Checkbox
+                  id="terms"
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(Boolean(checked))}
+                  required
+                />
                 <Label htmlFor="terms" className="text-sm">
                   J'accepte les{" "}
                   <Link href="/conditions" className="text-primary hover:underline">
@@ -438,7 +667,7 @@ export default function CheckoutPage() {
             </CardContent>
             <CardFooter className="flex-col space-y-2">
               <Button
-                className="w-full bg-gray-900 hover:bg-gray-800"
+                className="w-full gap-2 bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white hover:opacity-90"
                 onClick={handleSubmitOrder}
                 disabled={isSubmitting}
               >

@@ -1,6 +1,7 @@
 import { db } from "@/lib/firebase"
 import { collection, query, where, orderBy, limit, getDocs } from "firebase/firestore"
 import { getPDFForContent } from "./local-storage.service"
+import { getPDFForExercise } from "./pdf-mapping.service"
 
 // Contenu enrichi pour tous les exercices (IDs 1-21)
 const enrichedExercisesData: { [key: number]: string } = {
@@ -339,7 +340,19 @@ export async function getExerciseContent(exerciseId: number, level?: string, cla
 
     console.log('[getExerciseContent] levelFormatted:', levelFormatted);
 
-    // Vérifier s'il y a un PDF uploadé pour cet exercice avec level et classe
+    // D'abord, vérifier s'il y a un PDF dans le mapping pour les exercices du lycée
+    if (levelFormatted === 'lycee' && classe) {
+      const mappedPDF = getPDFForExercise(exerciseId, classe);
+      if (mappedPDF) {
+        console.log('[getExerciseContent] PDF found in mapping:', mappedPDF);
+        return {
+          hasPDF: true,
+          pdfUrl: mappedPDF,
+        };
+      }
+    }
+
+    // Ensuite, vérifier s'il y a un PDF uploadé pour cet exercice avec level et classe
     const pdf = await getPDFForContent(exerciseId, 'exercice', levelFormatted, classe);
     
     console.log('[getExerciseContent] PDF found:', pdf ? 'YES' : 'NO', pdf);

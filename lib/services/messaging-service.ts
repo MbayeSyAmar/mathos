@@ -79,16 +79,20 @@ export async function createConversation(
     
     // Créer une nouvelle conversation
     const conversationRef = doc(collection(db, "conversations"))
-    const conversationData: Omit<Conversation, "id"> = {
+    const conversationData: any = {
       studentId,
       studentName,
       teacherId,
       teacherName,
-      encadrementId,
       unreadCountStudent: 0,
       unreadCountTeacher: 0,
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now(),
+    }
+    
+    // N'inclure encadrementId que s'il est défini (Firestore n'accepte pas undefined)
+    if (encadrementId) {
+      conversationData.encadrementId = encadrementId
     }
     
     await setDoc(conversationRef, conversationData)
@@ -117,8 +121,20 @@ export async function getConversation(conversationId: string): Promise<Conversat
 
 function sortConversations(conversations: Conversation[]): Conversation[] {
   return conversations.sort((a, b) => {
-    const timeA = a.updatedAt?.toMillis?.() ?? (a.updatedAt as any)?.seconds * 1000 ?? 0
-    const timeB = b.updatedAt?.toMillis?.() ?? (b.updatedAt as any)?.seconds * 1000 ?? 0
+    const getTime = (updatedAt: Timestamp | undefined): number => {
+      if (!updatedAt) return 0
+      if (typeof updatedAt.toMillis === 'function') {
+        return updatedAt.toMillis()
+      }
+      const seconds = (updatedAt as any)?.seconds
+      if (typeof seconds === 'number') {
+        return seconds * 1000
+      }
+      return 0
+    }
+    
+    const timeA = getTime(a.updatedAt)
+    const timeB = getTime(b.updatedAt)
     return timeB - timeA
   })
 }
@@ -267,8 +283,18 @@ export async function getMessages(
       id: doc.id,
       ...doc.data(),
     })) as Message[]
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error getting messages:", error)
+    
+    // Détecter l'erreur d'index manquant
+    if (error?.code === "failed-precondition" && error?.message?.includes("index")) {
+      const indexUrl = error.message.match(/https:\/\/[^\s]+/)?.[0]
+      if (indexUrl) {
+        console.error("❌ Index Firestore manquant. Créez l'index en cliquant sur ce lien:", indexUrl)
+        throw new Error(`INDEX_REQUIRED:${indexUrl}`)
+      }
+    }
+    
     return []
   }
 }

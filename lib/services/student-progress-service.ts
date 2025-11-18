@@ -417,6 +417,72 @@ export async function updateExerciseProgress(
   }
 }
 
+export async function setExerciseReviewProgress(
+  userId: string,
+  exerciseId: string,
+  exerciseTitle: string,
+  scorePercent: number | null
+): Promise<void> {
+  try {
+    const q = query(
+      collection(db, "exercise_progress"),
+      where("userId", "==", userId),
+      where("exerciseId", "==", exerciseId)
+    )
+
+    const snapshot = await getDocs(q)
+    const isCompleted = scorePercent !== null && scorePercent !== undefined
+
+    if (snapshot.empty) {
+      await setDoc(doc(collection(db, "exercise_progress")), {
+        userId,
+        exerciseId,
+        exerciseTitle,
+        completed: isCompleted,
+        score: scorePercent ?? null,
+        attempts: 1,
+        lastAttemptAt: serverTimestamp(),
+        ...(isCompleted && { completedAt: serverTimestamp() }),
+      })
+
+      if (isCompleted) {
+        await logActivity(
+          userId,
+          "exercise_completed",
+          exerciseTitle,
+          `A reçu une correction pour l'exercice ${exerciseTitle}`
+        )
+      }
+    } else {
+      const docRef = snapshot.docs[0].ref
+      const currentData = snapshot.docs[0].data()
+      const wasCompleted = Boolean(currentData.completed)
+
+      await updateDoc(docRef, {
+        score: scorePercent ?? currentData.score ?? null,
+        lastAttemptAt: serverTimestamp(),
+        attempts: currentData.attempts ?? 1,
+        ...(isCompleted ? { completed: true } : {}),
+        ...(isCompleted && !wasCompleted && { completedAt: serverTimestamp() }),
+      })
+
+      if (isCompleted && !wasCompleted) {
+        await logActivity(
+          userId,
+          "exercise_completed",
+          exerciseTitle,
+          `A reçu une correction pour l'exercice ${exerciseTitle}`
+        )
+      }
+    }
+
+    await recalculateGlobalStats(userId)
+  } catch (error) {
+    console.error("Error setting exercise review progress:", error)
+    throw error
+  }
+}
+
 // ============================================================================
 // QUIZ
 // ============================================================================

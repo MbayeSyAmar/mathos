@@ -136,17 +136,18 @@ export default function ExerciseDetailPage() {
             
             // Charger le contenu enrichi ou PDF
             // Déterminer le niveau (college/lycee) à partir de la classe
-            const isLycee = ['2nde', '1ère', '1ere', 'Terminale', 'Term'].some(l => staticExercise.level.includes(l))
+            const classe = staticExercise.classe || staticExercise.level
+            const isLycee = ['2nde', '1ère', '1ere', 'Terminale', 'Term'].some(l => classe.includes(l))
             const levelType = isLycee ? 'Lycée' : 'Collège'
             
             console.log('[ExercicePage - Static] Loading content with params:', {
               numericId,
               levelType,
-              classe: staticExercise.level,
+              classe: classe,
               isLycee
             })
             
-            const content = await getExerciseContent(numericId, levelType, staticExercise.level)
+            const content = await getExerciseContent(numericId, levelType, classe)
             
             console.log('[ExercicePage - Static] Content result:', content)
             

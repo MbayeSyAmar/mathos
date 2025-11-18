@@ -39,6 +39,7 @@ import { db } from "@/lib/firebase"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 import { BackButton } from "@/components/back-button"
+import { setExerciseReviewProgress } from "@/lib/services/student-progress-service"
 
 interface Submission {
   id: string
@@ -138,6 +139,14 @@ export default function SoumissionsPage() {
         status: "reviewed",
         reviewedAt: new Date(),
       })
+
+      const normalizedScore = scoreValue !== null ? Math.round((scoreValue / 20) * 100) : null
+      await setExerciseReviewProgress(
+        selectedSubmission.userId,
+        selectedSubmission.exerciseId,
+        selectedSubmission.exerciseTitle,
+        normalizedScore
+      )
 
       toast.success("Correction enregistrée avec succès")
       setReviewDialogOpen(false)

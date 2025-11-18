@@ -1,0 +1,453 @@
+/**
+ * Contenu enrichi pour tous les cours et exercices
+ * Descriptions attractives et engageantes pour rendre le site hyper intéressant
+ */
+
+export interface EnrichedCourse {
+  id: number
+  title: string
+  description: string
+  duration: string
+  highlights?: string[]
+  difficulty?: "Débutant" | "Intermédiaire" | "Avancé"
+}
+
+export interface EnrichedExercise {
+  id: number
+  title: string
+  description: string
+  difficulty: "Facile" | "Moyen" | "Difficile"
+  time: string
+  exercises: number
+  hasCorrection: boolean
+  highlights?: string[]
+}
+
+// ========== COURS ENRICHIS ==========
+
+export const enrichedCourses: Record<string, EnrichedCourse[]> = {
+  "6ème": [
+    {
+      id: 1,
+      title: "Nombres décimaux",
+      description: "Découvrez le monde fascinant des nombres décimaux ! Maîtrisez les opérations avec des exemples concrets de la vie quotidienne. Un cours interactif qui transforme les mathématiques en jeu passionnant.",
+      duration: "2h30",
+      highlights: ["Exemples pratiques", "Jeux interactifs", "Applications quotidiennes"],
+      difficulty: "Débutant",
+    },
+    {
+      id: 2,
+      title: "Fractions",
+      description: "Plongez dans l'univers des fractions ! Apprenez à les manipuler avec aisance grâce à des méthodes visuelles et des exercices progressifs. Transformez ce qui semble complexe en jeu d'enfant.",
+      duration: "3h",
+      highlights: ["Méthodes visuelles", "Exercices progressifs", "Astuces mnémotechniques"],
+      difficulty: "Débutant",
+    },
+    {
+      id: 3,
+      title: "Géométrie plane",
+      description: "Explorez les formes géométriques qui nous entourent ! De la construction à la mesure, découvrez les secrets des figures planes avec des activités pratiques et créatives.",
+      duration: "4h",
+      highlights: ["Constructions pratiques", "Activités créatives", "Applications artistiques"],
+      difficulty: "Débutant",
+    },
+    {
+      id: 70,
+      title: "Périmètres et aires",
+      description: "Calculez comme un architecte ! Apprenez à mesurer périmètres et aires avec des projets concrets. Transformez votre compréhension de l'espace.",
+      duration: "3h",
+      highlights: ["Projets concrets", "Applications architecturales", "Calculs pratiques"],
+      difficulty: "Débutant",
+    },
+    {
+      id: 71,
+      title: "Symétrie et transformations",
+      description: "Découvrez la beauté cachée des symétries ! Apprenez à créer des motifs fascinants et à comprendre les transformations géométriques qui nous entourent.",
+      duration: "2h45",
+      highlights: ["Création de motifs", "Art et géométrie", "Transformations visuelles"],
+      difficulty: "Débutant",
+    },
+    {
+      id: 72,
+      title: "Proportionnalité",
+      description: "Maîtrisez les proportions comme un chef cuisinier ! Découvrez comment les mathématiques régissent les recettes, les échelles et bien plus encore.",
+      duration: "3h15",
+      highlights: ["Applications culinaires", "Échelles et plans", "Problèmes pratiques"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 73,
+      title: "Pourcentages",
+      description: "Les pourcentages n'auront plus de secrets pour vous ! Apprenez à calculer réductions, augmentations et statistiques avec des exemples de la vie réelle.",
+      duration: "2h30",
+      highlights: ["Calculs commerciaux", "Statistiques", "Applications quotidiennes"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 74,
+      title: "Angles et mesures",
+      description: "Mesurez le monde qui vous entoure ! Découvrez les angles sous un nouveau jour avec des activités pratiques et des outils interactifs.",
+      duration: "3h",
+      highlights: ["Mesures pratiques", "Outils interactifs", "Applications concrètes"],
+      difficulty: "Débutant",
+    },
+  ],
+  "5ème": [
+    {
+      id: 4,
+      title: "Nombres relatifs",
+      description: "Voyagez dans le monde des nombres négatifs ! Comprenez comment fonctionnent les températures, les altitudes et les dettes. Un cours qui donne du sens aux nombres relatifs.",
+      duration: "2h",
+      highlights: ["Applications météo", "Représentations visuelles", "Jeux de nombres"],
+      difficulty: "Débutant",
+    },
+    {
+      id: 5,
+      title: "Calcul littéral",
+      description: "Entrez dans l'univers de l'algèbre ! Découvrez comment les lettres remplacent les nombres et ouvrez la porte à la résolution de problèmes complexes.",
+      duration: "3h30",
+      highlights: ["Introduction à l'algèbre", "Manipulation d'expressions", "Résolution progressive"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 6,
+      title: "Triangles",
+      description: "Explorez les propriétés fascinantes des triangles ! De la construction à la démonstration, découvrez pourquoi les triangles sont partout autour de nous.",
+      duration: "2h45",
+      highlights: ["Constructions géométriques", "Propriétés cachées", "Applications pratiques"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 75,
+      title: "Parallélogrammes et quadrilatères",
+      description: "Découvrez la famille des quadrilatères ! Apprenez à reconnaître et construire ces figures géométriques avec des méthodes simples et efficaces.",
+      duration: "3h",
+      highlights: ["Classification des figures", "Constructions", "Propriétés remarquables"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 76,
+      title: "Statistiques descriptives",
+      description: "Devenez un expert en données ! Apprenez à lire, analyser et présenter des statistiques avec des exemples concrets et des graphiques interactifs.",
+      duration: "2h30",
+      highlights: ["Lecture de graphiques", "Analyse de données", "Présentation visuelle"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 77,
+      title: "Probabilités simples",
+      description: "Calculez vos chances de gagner ! Découvrez les probabilités à travers des jeux, des expériences et des situations amusantes.",
+      duration: "2h15",
+      highlights: ["Jeux de probabilités", "Expériences pratiques", "Calculs amusants"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 78,
+      title: "Volumes et capacités",
+      description: "Mesurez l'espace en 3D ! Apprenez à calculer les volumes de solides avec des méthodes visuelles et des applications pratiques.",
+      duration: "3h30",
+      highlights: ["Visualisation 3D", "Calculs de volumes", "Applications concrètes"],
+      difficulty: "Intermédiaire",
+    },
+  ],
+  "4ème": [
+    {
+      id: 7,
+      title: "Puissances",
+      description: "Maîtrisez la puissance des nombres ! Découvrez comment les puissances simplifient les calculs et ouvrent la porte aux sciences modernes.",
+      duration: "2h15",
+      highlights: ["Calculs simplifiés", "Notation scientifique", "Applications scientifiques"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 8,
+      title: "Théorème de Pythagore",
+      description: "Découvrez l'un des théorèmes les plus célèbres ! Apprenez à l'appliquer dans des situations concrètes et à résoudre des problèmes fascinants.",
+      duration: "3h20",
+      highlights: ["Démonstration historique", "Applications pratiques", "Problèmes variés"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 9,
+      title: "Proportionnalité",
+      description: "Maîtrisez les relations proportionnelles ! Découvrez comment identifier et utiliser la proportionnalité dans des situations variées.",
+      duration: "2h50",
+      highlights: ["Reconnaissance de situations", "Tableaux et graphiques", "Applications multiples"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 79,
+      title: "Théorème de Thalès",
+      description: "Explorez un autre théorème fondamental ! Apprenez à utiliser Thalès pour calculer des distances inaccessibles et résoudre des problèmes géométriques.",
+      duration: "3h",
+      highlights: ["Applications pratiques", "Calculs de distances", "Démonstrations"],
+      difficulty: "Avancé",
+    },
+    {
+      id: 80,
+      title: "Fonctions linéaires et affines",
+      description: "Entrez dans le monde des fonctions ! Découvrez comment représenter graphiquement des relations mathématiques et prédire des résultats.",
+      duration: "3h30",
+      highlights: ["Représentations graphiques", "Prédictions", "Applications concrètes"],
+      difficulty: "Avancé",
+    },
+    {
+      id: 81,
+      title: "Calcul littéral avancé",
+      description: "Perfectionnez votre maîtrise de l'algèbre ! Développez, factorisez et simplifiez des expressions complexes avec aisance.",
+      duration: "4h",
+      highlights: ["Développement", "Factorisation", "Simplification"],
+      difficulty: "Avancé",
+    },
+    {
+      id: 82,
+      title: "Sphères et boules",
+      description: "Explorez les formes rondes en 3D ! Apprenez à calculer les volumes et aires de sphères avec des applications fascinantes.",
+      duration: "2h30",
+      highlights: ["Formes 3D", "Calculs de volumes", "Applications spatiales"],
+      difficulty: "Intermédiaire",
+    },
+  ],
+  "3ème": [
+    {
+      id: 10,
+      title: "Équations",
+      description: "Résolvez des équations comme un détective ! Découvrez les méthodes pour trouver l'inconnue et résoudre des problèmes passionnants.",
+      duration: "3h10",
+      highlights: ["Méthodes de résolution", "Problèmes variés", "Vérification"],
+      difficulty: "Intermédiaire",
+    },
+    {
+      id: 11,
+      title: "Fonctions linéaires",
+      description: "Maîtrisez les fonctions linéaires ! Apprenez à les représenter, les analyser et les utiliser pour modéliser des situations réelles.",
+      duration: "2h40",
+      highlights: ["Représentation graphique", "Analyse de fonctions", "Modélisation"],
+      difficulty: "Avancé",
+    },
+    {
+      id: 12,
+      title: "Trigonométrie",
+      description: "Découvrez la trigonométrie ! Apprenez à utiliser sinus, cosinus et tangente pour résoudre des problèmes géométriques fascinants.",
+      duration: "4h15",
+      highlights: ["Fonctions trigonométriques", "Applications géométriques", "Calculs pratiques"],
+      difficulty: "Avancé",
+    },
+    {
+      id: 83,
+      title: "Systèmes d'équations",
+      description: "Résolvez plusieurs équations simultanément ! Découvrez des méthodes efficaces pour trouver des solutions à des problèmes complexes.",
+      duration: "3h30",
+      highlights: ["Méthodes de résolution", "Substitution", "Élimination"],
+      difficulty: "Avancé",
+    },
+    {
+      id: 84,
+      title: "Inéquations",
+      description: "Explorez le monde des inégalités ! Apprenez à résoudre des inéquations et à représenter leurs solutions graphiquement.",
+      duration: "3h",
+      highlights: ["Résolution d'inéquations", "Représentation graphique", "Intervalles"],
+      difficulty: "Avancé",
+    },
+    {
+      id: 85,
+      title: "Statistiques et probabilités",
+      description: "Devenez expert en analyse de données ! Apprenez à calculer des indicateurs statistiques et à évaluer des probabilités.",
+      duration: "4h",
+      highlights: ["Indicateurs statistiques", "Calculs de probabilités", "Analyse de données"],
+      difficulty: "Avancé",
+    },
+    {
+      id: 86,
+      title: "Géométrie dans l'espace",
+      description: "Explorez la géométrie en 3 dimensions ! Découvrez les solides, leurs propriétés et leurs volumes avec des visualisations interactives.",
+      duration: "4h30",
+      highlights: ["Solides géométriques", "Visualisation 3D", "Calculs de volumes"],
+      difficulty: "Avancé",
+    },
+  ],
+}
+
+// ========== EXERCICES ENRICHIS ==========
+
+export const enrichedExercises: Record<string, EnrichedExercise[]> = {
+  "6ème": [
+    {
+      id: 1,
+      title: "Opérations sur les décimaux",
+      description: "15 exercices progressifs pour maîtriser les opérations sur les nombres décimaux. Des situations concrètes qui rendent les mathématiques vivantes et amusantes !",
+      difficulty: "Facile",
+      time: "30 min",
+      exercises: 15,
+      hasCorrection: true,
+      highlights: ["Situations concrètes", "Progression adaptée", "Corrections détaillées"],
+    },
+    {
+      id: 2,
+      title: "Fractions simples",
+      description: "12 exercices interactifs pour comprendre et manipuler les fractions. Transformez ce concept abstrait en jeu passionnant avec des exemples visuels !",
+      difficulty: "Moyen",
+      time: "45 min",
+      exercises: 12,
+      hasCorrection: true,
+      highlights: ["Exemples visuels", "Manipulation interactive", "Jeux éducatifs"],
+    },
+    {
+      id: 3,
+      title: "Périmètres et aires",
+      description: "10 exercices pratiques pour calculer périmètres et aires. Projetez-vous dans des situations réelles et devenez un expert en mesure !",
+      difficulty: "Moyen",
+      time: "40 min",
+      exercises: 10,
+      hasCorrection: true,
+      highlights: ["Situations réelles", "Calculs pratiques", "Applications concrètes"],
+    },
+    {
+      id: 100,
+      title: "Jeux avec les nombres",
+      description: "20 exercices ludiques pour s'amuser avec les nombres ! Des énigmes, des défis et des jeux qui rendent l'apprentissage passionnant.",
+      difficulty: "Facile",
+      time: "35 min",
+      exercises: 20,
+      hasCorrection: true,
+      highlights: ["Jeux ludiques", "Énigmes", "Défis amusants"],
+    },
+    {
+      id: 101,
+      title: "Problèmes de la vie quotidienne",
+      description: "15 problèmes concrets tirés de situations réelles. Apprenez à utiliser les mathématiques dans votre vie de tous les jours !",
+      difficulty: "Moyen",
+      time: "45 min",
+      exercises: 15,
+      hasCorrection: true,
+      highlights: ["Situations réelles", "Applications pratiques", "Résolution de problèmes"],
+    },
+  ],
+  "5ème": [
+    {
+      id: 4,
+      title: "Nombres relatifs",
+      description: "14 exercices pour maîtriser les nombres positifs et négatifs. Découvrez comment les utiliser dans des contextes variés et passionnants !",
+      difficulty: "Facile",
+      time: "35 min",
+      exercises: 14,
+      hasCorrection: true,
+      highlights: ["Contextes variés", "Applications pratiques", "Représentations visuelles"],
+    },
+    {
+      id: 5,
+      title: "Expressions littérales",
+      description: "8 exercices progressifs pour manipuler les expressions algébriques. Transformez l'abstraction en compréhension concrète !",
+      difficulty: "Difficile",
+      time: "50 min",
+      exercises: 8,
+      hasCorrection: true,
+      highlights: ["Manipulation algébrique", "Progression adaptée", "Compréhension approfondie"],
+    },
+    {
+      id: 6,
+      title: "Symétries",
+      description: "12 exercices créatifs sur les symétries. Créez des motifs fascinants tout en apprenant les propriétés géométriques !",
+      difficulty: "Moyen",
+      time: "40 min",
+      exercises: 12,
+      hasCorrection: false,
+      highlights: ["Créativité", "Motifs géométriques", "Propriétés visuelles"],
+    },
+    {
+      id: 102,
+      title: "Défis géométriques",
+      description: "18 exercices stimulants pour explorer la géométrie. Des constructions, des démonstrations et des problèmes fascinants !",
+      difficulty: "Moyen",
+      time: "50 min",
+      exercises: 18,
+      hasCorrection: true,
+      highlights: ["Constructions", "Démonstrations", "Problèmes variés"],
+    },
+  ],
+  "4ème": [
+    {
+      id: 7,
+      title: "Calcul littéral",
+      description: "10 exercices pour développer et factoriser des expressions. Maîtrisez ces techniques essentielles avec des méthodes claires !",
+      difficulty: "Moyen",
+      time: "45 min",
+      exercises: 10,
+      hasCorrection: true,
+      highlights: ["Développement", "Factorisation", "Méthodes claires"],
+    },
+    {
+      id: 8,
+      title: "Théorème de Pythagore",
+      description: "8 exercices d'application du théorème de Pythagore. Résolvez des problèmes fascinants avec ce théorème célèbre !",
+      difficulty: "Difficile",
+      time: "55 min",
+      exercises: 8,
+      hasCorrection: true,
+      highlights: ["Applications variées", "Problèmes fascinants", "Démonstrations"],
+    },
+    {
+      id: 9,
+      title: "Proportionnalité",
+      description: "12 exercices sur la proportionnalité et les pourcentages. Découvrez comment ces concepts régissent notre quotidien !",
+      difficulty: "Moyen",
+      time: "40 min",
+      exercises: 12,
+      hasCorrection: true,
+      highlights: ["Applications quotidiennes", "Pourcentages", "Tableaux et graphiques"],
+    },
+    {
+      id: 103,
+      title: "Thalès en action",
+      description: "15 exercices pratiques utilisant le théorème de Thalès. Calculez des distances inaccessibles et résolvez des problèmes réels !",
+      difficulty: "Difficile",
+      time: "60 min",
+      exercises: 15,
+      hasCorrection: true,
+      highlights: ["Calculs de distances", "Problèmes réels", "Applications pratiques"],
+    },
+  ],
+  "3ème": [
+    {
+      id: 10,
+      title: "Équations",
+      description: "15 exercices de résolution d'équations. Devenez un expert en trouvant l'inconnue avec des méthodes efficaces !",
+      difficulty: "Moyen",
+      time: "50 min",
+      exercises: 15,
+      hasCorrection: true,
+      highlights: ["Méthodes efficaces", "Problèmes variés", "Vérification"],
+    },
+    {
+      id: 11,
+      title: "Fonctions linéaires",
+      description: "10 exercices sur les fonctions linéaires. Représentez, analysez et utilisez ces fonctions pour modéliser des situations !",
+      difficulty: "Difficile",
+      time: "60 min",
+      exercises: 10,
+      hasCorrection: true,
+      highlights: ["Représentation graphique", "Analyse", "Modélisation"],
+    },
+    {
+      id: 12,
+      title: "Trigonométrie",
+      description: "12 exercices de trigonométrie dans le triangle rectangle. Maîtrisez sinus, cosinus et tangente avec des applications concrètes !",
+      difficulty: "Difficile",
+      time: "55 min",
+      exercises: 12,
+      hasCorrection: true,
+      highlights: ["Fonctions trigonométriques", "Applications concrètes", "Calculs pratiques"],
+    },
+    {
+      id: 104,
+      title: "Systèmes d'équations",
+      description: "18 exercices pour résoudre des systèmes d'équations. Maîtrisez les méthodes de substitution et d'élimination !",
+      difficulty: "Difficile",
+      time: "65 min",
+      exercises: 18,
+      hasCorrection: true,
+      highlights: ["Méthodes variées", "Substitution", "Élimination"],
+    },
+  ],
+}
+
