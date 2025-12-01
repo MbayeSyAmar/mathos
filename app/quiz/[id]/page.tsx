@@ -12,9 +12,11 @@ import { ArrowLeft, ArrowRight, Clock, CheckCircle, AlertCircle, Trophy } from "
 import { motion } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { getStaticQuizById } from "@/lib/services/static-quiz.service"
+import { quizQuestionBank } from "@/lib/data/quiz-bank"
 
 // Données simulées pour le quiz
-const quizData = {
+const defaultQuizData = {
   id: 3,
   title: "Fonctions et dérivées",
   description: "Évaluez votre maîtrise du calcul différentiel",
@@ -88,8 +90,29 @@ const quizData = {
   ],
 }
 
+const parseTimeLimitInMinutes = (time?: string): number => {
+  if (!time) {
+    return 25
+  }
+  const match = time.match(/\d+/)
+  return match ? Math.max(5, parseInt(match[0], 10)) : 25
+}
+
 export default function QuizPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const parsedId = Number(params.id)
+  const quizId = Number.isNaN(parsedId) ? defaultQuizData.id : parsedId
+  const quizMeta = !Number.isNaN(quizId) ? getStaticQuizById(quizId) : null
+  const questions = quizQuestionBank[quizId] ?? defaultQuizData.questions
+  const quizData = {
+    id: quizMeta?.id ?? quizId,
+    title: quizMeta?.title ?? defaultQuizData.title,
+    description: quizMeta?.description ?? defaultQuizData.description,
+    level: quizMeta?.level ?? defaultQuizData.level,
+    difficulty: quizMeta?.difficulty ?? defaultQuizData.difficulty,
+    totalQuestions: questions.length,
+    timeLimit: quizMeta ? parseTimeLimitInMinutes(quizMeta.time) : defaultQuizData.timeLimit,
+  }
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, string>>({})
   const [timeLeft, setTimeLeft] = useState(quizData.timeLimit * 60) // en secondes
@@ -125,7 +148,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
   const calculateScore = () => {
     let correctCount = 0
 
-    quizData.questions.forEach((question) => {
+    questions.forEach((question) => {
       if (selectedAnswers[question.id] === question.correctAnswer) {
         correctCount++
       }
@@ -133,8 +156,8 @@ export default function QuizPage({ params }: { params: { id: string } }) {
 
     return {
       correct: correctCount,
-      total: quizData.questions.length,
-      percentage: Math.round((correctCount / quizData.questions.length) * 100),
+      total: questions.length,
+      percentage: Math.round((correctCount / questions.length) * 100),
     }
   }
 
@@ -146,7 +169,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
   }
 
   const handleNextQuestion = () => {
-    if (currentQuestion < quizData.questions.length - 1) {
+    if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1)
       setShowExplanation(false)
     } else {
@@ -173,7 +196,17 @@ export default function QuizPage({ params }: { params: { id: string } }) {
     setShowExplanation(false)
   }
 
-  const question = quizData.questions[currentQuestion]
+  const question = questions[currentQuestion]
+  if (!question) {
+    return (
+      <div className="container py-10 text-center">
+        <p className="text-muted-foreground">Aucune question n'est disponible pour ce quiz pour le moment.</p>
+        <Button className="mt-4" onClick={() => router.push("/quiz")}>
+          Retour aux quiz
+        </Button>
+      </div>
+    )
+  }
   const score = calculateScore()
 
   const fadeIn = {
@@ -208,7 +241,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
             <Card className="border-gray-800">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-xl">
-                  Question {currentQuestion + 1} sur {quizData.questions.length}
+                  Question {currentQuestion + 1} sur {questions.length}
                 </CardTitle>
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-muted-foreground" />
@@ -257,7 +290,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                   </Button>
 
                   <Button className="bg-gray-900 hover:bg-gray-800" onClick={handleNextQuestion}>
-                    {currentQuestion < quizData.questions.length - 1 ? (
+                    {currentQuestion < questions.length - 1 ? (
                       <>
                         Question suivante <ArrowRight className="ml-2 h-4 w-4" />
                       </>
@@ -305,14 +338,14 @@ export default function QuizPage({ params }: { params: { id: string } }) {
                     <div className="flex justify-between text-sm">
                       <span>Questions répondues</span>
                       <span>
-                        {Object.keys(selectedAnswers).length} / {quizData.questions.length}
+                        {Object.keys(selectedAnswers).length} / {questions.length}
                       </span>
                     </div>
-                    <Progress value={(Object.keys(selectedAnswers).length / quizData.questions.length) * 100} />
+                    <Progress value={(Object.keys(selectedAnswers).length / questions.length) * 100} />
                   </div>
 
                   <div className="grid grid-cols-5 gap-2">
-                    {quizData.questions.map((q, index) => (
+                    {questions.map((q, index) => (
                       <Button
                         key={q.id}
                         variant={currentQuestion === index ? "default" : "outline"}
@@ -352,7 +385,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
               <div className="space-y-6">
                 <h3 className="text-lg font-bold">Révision des questions</h3>
 
-                {quizData.questions.map((q, index) => {
+                {questions.map((q, index) => {
                   const isCorrect = selectedAnswers[q.id] === q.correctAnswer
                   const selectedOption = q.options.find((o) => o.id === selectedAnswers[q.id])
                   const correctOption = q.options.find((o) => o.id === q.correctAnswer)

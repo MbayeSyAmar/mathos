@@ -221,10 +221,6 @@ export default function BlogPage() {
               </div>
             </div>
             <div className="flex flex-wrap justify-center gap-3">
-              <Button className="gap-2 bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white shadow-lg hover:opacity-90">
-                <PenLine className="h-4 w-4" />
-                Proposer un article
-              </Button>
               <Button variant="outline" className="gap-2 border-dashed border-primary/50 text-primary hover:bg-primary/10">
                 <Sparkles className="h-4 w-4" />
                 Découvrir la rédaction

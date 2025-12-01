@@ -4,49 +4,49 @@
  */
 
 export function getCourseImage(subject?: string, level?: string): string {
-  // Utiliser Picsum Photos avec des IDs fixes pour chaque type d'image
-  // Cela garantit des images différentes mais cohérentes pour chaque sujet
   const mathImages = [
-    "https://picsum.photos/seed/math1/800/600", // Formules mathématiques
-    "https://picsum.photos/seed/math2/800/600", // Géométrie
-    "https://picsum.photos/seed/math3/800/600", // Calcul
-    "https://picsum.photos/seed/math4/800/600", // Algèbre
-    "https://picsum.photos/seed/math5/800/600", // Tableau noir
+    "/images/math-blackboard.png",
+    "/images/geometrie.png",
+    "/images/prob.jpg",
+    "/images/exercice.jpg",
+    "/images/reussirenmaths.jpg",
   ]
 
-  // Images par sujet avec des seeds différents pour chaque sujet
   if (subject) {
     const subjectLower = subject.toLowerCase()
     if (subjectLower.includes("géométrie") || subjectLower.includes("geometrie")) {
-      return "https://picsum.photos/seed/geometry/800/600"
+      return "/images/geometrie.png"
     }
-    if (subjectLower.includes("algèbre") || subjectLower.includes("algebre")) {
-      return "https://picsum.photos/seed/algebra/800/600"
+    if (subjectLower.includes("algèbre") || subjectLower.includes("algebre") || subjectLower.includes("polyn")) {
+      return "/images/ln.png"
     }
-    if (subjectLower.includes("calcul") || subjectLower.includes("analyse")) {
-      return "https://picsum.photos/seed/calculus/800/600"
+    if (subjectLower.includes("calcul") || subjectLower.includes("analyse") || subjectLower.includes("fonction")) {
+      return "/images/math-blackboard.png"
     }
     if (subjectLower.includes("statistique") || subjectLower.includes("probabilité")) {
-      return "https://picsum.photos/seed/statistics/800/600"
-    }
-    if (subjectLower.includes("nombres") || subjectLower.includes("fractions")) {
-      return "https://picsum.photos/seed/numbers/800/600"
+      return "/images/prob.jpg"
     }
     if (subjectLower.includes("trigonométrie") || subjectLower.includes("trigonometrie")) {
-      return "https://picsum.photos/seed/trigonometry/800/600"
+      return "/images/olymp.jpg"
     }
-    if (subjectLower.includes("dérivée") || subjectLower.includes("derivee") || subjectLower.includes("dérivation")) {
-      return "https://picsum.photos/seed/derivative/800/600"
-    }
-    if (subjectLower.includes("intégrale") || subjectLower.includes("integrale")) {
-      return "https://picsum.photos/seed/integral/800/600"
-    }
-    if (subjectLower.includes("suites") || subjectLower.includes("série")) {
-      return "https://picsum.photos/seed/sequence/800/600"
+    if (subjectLower.includes("nombres") || subjectLower.includes("fractions")) {
+      return "/images/exercice.jpg"
     }
   }
 
-  // Retourner une image aléatoire basée sur le hash du sujet
+  if (level) {
+    const levelLower = level.toLowerCase()
+    if (levelLower.includes("collège")) {
+      return "/images/reussirenmaths.jpg"
+    }
+    if (levelLower.includes("lycée")) {
+      return "/images/math-blackboard.png"
+    }
+    if (levelLower.includes("sup")) {
+      return "/images/ln.png"
+    }
+  }
+
   if (subject) {
     const hash = subject.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
     return mathImages[hash % mathImages.length]
@@ -56,27 +56,33 @@ export function getCourseImage(subject?: string, level?: string): string {
 }
 
 export function getExerciseImage(difficulty?: string, subject?: string): string {
-  const exerciseImages = [
-    "https://picsum.photos/seed/exercise1/800/600", // Exercices
-    "https://picsum.photos/seed/exercise2/800/600", // Géométrie
-    "https://picsum.photos/seed/exercise3/800/600", // Algèbre
-    "https://picsum.photos/seed/exercise4/800/600", // Calcul
-  ]
+  const exerciseImages = ["/images/exercice.jpg", "/images/exo.jpg", "/images/reussirenmaths.jpg", "/images/prob.jpg"]
 
   if (subject) {
     return getCourseImage(subject)
+  }
+
+  if (difficulty) {
+    const hash = difficulty.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)
+    return exerciseImages[hash % exerciseImages.length]
   }
 
   return exerciseImages[0]
 }
 
 export function getQuizImage(level?: string): string {
-  const quizImages = [
-    "https://picsum.photos/seed/quiz1/800/600", // Quiz
-    "https://picsum.photos/seed/quiz2/800/600", // Graphiques
-    "https://picsum.photos/seed/quiz3/800/600", // Géométrie
-  ]
-
+  const quizImages = ["/images/math-blackboard.png", "/images/prob.jpg", "/images/olymp.jpg"]
+  if (level) {
+    if (level.toLowerCase().includes("collège")) {
+      return quizImages[0]
+    }
+    if (level.toLowerCase().includes("lycée")) {
+      return quizImages[1]
+    }
+    if (level.toLowerCase().includes("supérieur") || level.toLowerCase().includes("concours")) {
+      return quizImages[2]
+    }
+  }
   return quizImages[0]
 }
 

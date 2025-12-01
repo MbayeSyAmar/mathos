@@ -4,6 +4,8 @@
  * et ont du contenu enrichi par défaut
  */
 
+import { enrichedCourses, type EnrichedCourse } from "@/lib/data/enriched-content"
+
 export interface StaticCourse {
   id: number
   title: string
@@ -636,6 +638,81 @@ export const staticCoursesData: Record<number, StaticCourse> = {
       "Connaître les fonctions de plusieurs variables",
     ],
   },
+}
+
+const determineLevelFromClasse = (classe: string): string => {
+  if (["6ème", "5ème", "4ème", "3ème"].includes(classe)) {
+    return "Collège"
+  }
+  if (["2nde", "1ère", "Terminale"].includes(classe)) {
+    return "Lycée"
+  }
+  return "Supérieur"
+}
+
+const inferSubjectFromTitle = (title: string): string => {
+  const lower = title.toLowerCase()
+  if (lower.includes("algèbre") || lower.includes("algebre") || lower.includes("polyn")) {
+    return "Algèbre"
+  }
+  if (lower.includes("géométrie") || lower.includes("geometrie") || lower.includes("triangle") || lower.includes("cercle")) {
+    return "Géométrie"
+  }
+  if (lower.includes("probabil") || lower.includes("statist")) {
+    return "Probabilités"
+  }
+  if (lower.includes("fonction") || lower.includes("analyse") || lower.includes("dériv")) {
+    return "Analyse"
+  }
+  if (lower.includes("topologie")) {
+    return "Topologie"
+  }
+  if (lower.includes("trigonom")) {
+    return "Trigonométrie"
+  }
+  return "Mathématiques"
+}
+
+const buildObjectivesFromEnriched = (course: EnrichedCourse): string[] => {
+  if (course.highlights && course.highlights.length > 0) {
+    return course.highlights
+  }
+  return [
+    `Comprendre les notions essentielles de ${course.title.toLowerCase()}`,
+    "S'entraîner avec des exemples progressifs",
+    "Relier les concepts à des situations concrètes",
+  ]
+}
+
+const buildPrerequisitesFromClasse = (classe: string): string[] => {
+  if (["2nde", "1ère", "Terminale"].includes(classe)) {
+    return ["Bases solides du collège", "Maîtrise des opérations algébriques"]
+  }
+  if (["Licence", "Master", "Prépa"].includes(classe)) {
+    return ["Connaissances avancées du lycée", "À l'aise avec les démonstrations"]
+  }
+  return ["Savoir manipuler les nombres", "Avoir suivi le début du programme de la classe"]
+}
+
+for (const [classe, courses] of Object.entries(enrichedCourses)) {
+  courses.forEach((course) => {
+    if (staticCoursesData[course.id]) {
+      return
+    }
+
+    staticCoursesData[course.id] = {
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      level: determineLevelFromClasse(classe),
+      classe,
+      subject: inferSubjectFromTitle(course.title),
+      duration: course.duration || "2h",
+      image: "/images/math-blackboard.png",
+      objectives: buildObjectivesFromEnriched(course),
+      prerequisites: buildPrerequisitesFromClasse(classe),
+    }
+  })
 }
 
 /**

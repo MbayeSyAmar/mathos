@@ -223,7 +223,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container py-6 md:py-10 space-y-8">
+    <div className="container px-4 md:px-6 py-6 md:py-10 space-y-8">
       {/* Header avec niveau et XP */}
       <motion.div
         className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
@@ -318,7 +318,7 @@ export default function DashboardPage() {
       )}
 
       {/* Statistiques principales */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 min-w-0">
         <motion.div initial="hidden" animate="visible" variants={fadeIn}>
           <Card className="border-l-4 border-l-blue-500">
             <CardHeader className="pb-2">
@@ -391,7 +391,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Graphiques et progression */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
         {/* Graphique de progression hebdomadaire */}
         <motion.div initial="hidden" animate="visible" variants={fadeIn}>
           <Card>

@@ -1,3 +1,5 @@
+import { enrichedExercises, type EnrichedExercise } from "@/lib/data/enriched-content"
+
 // Données statiques pour les 21 exercices de la plateforme
 export interface StaticExercise {
   id: number
@@ -265,6 +267,41 @@ export const staticExercisesData: { [key: number]: StaticExercise } = {
     level: "Lycée",
     classe: "Terminale",
   },
+}
+
+const determineExerciseLevel = (classe: string): "Collège" | "Lycée" => {
+  if (["6ème", "5ème", "4ème", "3ème"].includes(classe)) {
+    return "Collège"
+  }
+  return "Lycée"
+}
+
+const normalizeDifficulty = (difficulty: EnrichedExercise["difficulty"]): "Facile" | "Moyen" | "Difficile" => {
+  if (difficulty === "Facile" || difficulty === "Moyen" || difficulty === "Difficile") {
+    return difficulty
+  }
+  return "Moyen"
+}
+
+for (const [classe, exercises] of Object.entries(enrichedExercises)) {
+  exercises.forEach((exercise) => {
+    if (staticExercisesData[exercise.id]) {
+      return
+    }
+
+    staticExercisesData[exercise.id] = {
+      id: exercise.id,
+      title: exercise.title,
+      description: exercise.description,
+      image: "/images/exercice.jpg",
+      difficulty: normalizeDifficulty(exercise.difficulty),
+      time: exercise.time || "45 min",
+      exercises: exercise.exercises || 10,
+      hasCorrection: exercise.hasCorrection,
+      level: determineExerciseLevel(classe),
+      classe,
+    }
+  })
 }
 
 /**

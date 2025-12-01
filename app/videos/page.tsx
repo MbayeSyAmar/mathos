@@ -23,7 +23,8 @@ import {
   ThumbsUp,
 } from "lucide-react"
 import { getCourseImage } from "@/lib/utils/course-images"
-import { generateYouTubeId } from "@/lib/utils/youtube-id-generator"
+import { getYouTubeIdForSubject } from "@/lib/data/youtube-videos-mapping"
+import { getYouTubeThumbnail, getYouTubeUrl } from "@/lib/services/videos-service"
 import { motion } from "framer-motion"
 
 const levels = [
@@ -50,10 +51,12 @@ export interface Video {
 export type ClasseKey = "6ème" | "5ème" | "4ème" | "3ème" | "2nde" | "1ère" | "Terminale" | "Brevet" | "Bac" | "Prépa"
 
 // Fonction pour créer une vidéo avec un ID YouTube unique
-function createVideo(data: Omit<Video, "youtubeId"> & { youtubeId?: string }): Video {
+function createVideo(data: Omit<Video, "youtubeId" | "thumbnail"> & { youtubeId?: string; thumbnail?: string }): Video {
+  const youtubeId = data.youtubeId || getYouTubeIdForSubject(data.subject || data.title, data.classe)
   return {
     ...data,
-    youtubeId: data.youtubeId || generateYouTubeId(data.title, data.subject, data.classe),
+    youtubeId,
+    thumbnail: data.thumbnail && data.thumbnail.length > 0 ? data.thumbnail : getYouTubeThumbnail(youtubeId, "high"),
   }
 }
 
@@ -1136,7 +1139,7 @@ export default function VideosPage() {
                         {videos.map((video) => {
                           // Utiliser l'image de cours comme image principale, avec fallback vers thumbnail YouTube si disponible
                           const courseImage = video.subject ? getCourseImage(video.subject, video.classe) : getCourseImage("mathématiques", video.classe)
-                          const videoImage = video.thumbnail || courseImage || "https://picsum.photos/seed/mathematics/800/600"
+                          const videoImage = video.thumbnail || courseImage || "/images/math-blackboard.png"
 
                           return (
                             <motion.div key={video.id} variants={fadeIn}>
@@ -1149,8 +1152,7 @@ export default function VideosPage() {
                                     className="object-cover transition-transform duration-500 group-hover:scale-110"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                     onError={(e) => {
-                                      // Fallback vers une image Picsum par défaut
-                                      e.currentTarget.src = "https://picsum.photos/seed/mathematics/800/600"
+                                      e.currentTarget.src = "/images/math-blackboard.png"
                                     }}
                                   />
                                   <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
@@ -1212,7 +1214,7 @@ export default function VideosPage() {
                                   </p>
                                 </CardContent>
 
-                                <CardFooter className="pt-4 pb-6">
+                                <CardFooter className="pt-4 pb-6 flex flex-col gap-3">
                                   <Button
                                     className="w-full group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-purple-600 group-hover:text-white transition-all duration-300 shadow-md group-hover:shadow-lg"
                                     variant="outline"
@@ -1222,6 +1224,12 @@ export default function VideosPage() {
                                       <Play className="mr-2 h-4 w-4" />
                                       <span>Regarder la vidéo</span>
                                       <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                                    </Link>
+                                  </Button>
+                                  <Button variant="secondary" className="w-full" asChild>
+                                    <Link href={getYouTubeUrl(video.youtubeId)} target="_blank" rel="noreferrer">
+                                      <Youtube className="mr-2 h-4 w-4" />
+                                      Voir sur YouTube
                                     </Link>
                                   </Button>
                                 </CardFooter>

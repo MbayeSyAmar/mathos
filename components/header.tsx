@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,8 @@ export default function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isAboutMenuOpen, setIsAboutMenuOpen] = useState(false)
   const closeTimer = useRef<number | null>(null)
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null)
+  const mobileToggleRef = useRef<HTMLButtonElement | null>(null)
   const { items, toggleCart } = useCart()
   const { user, userData, logout } = useAuth() 
   const router = useRouter()
@@ -35,6 +37,29 @@ export default function Header() {
   // Vérifier que items existe et est un tableau avant d'utiliser reduce
   const cartItemsCount =
     items && Array.isArray(items) ? items.reduce((acc, item) => acc + (item.quantity || 1), 0) : 0
+
+  useEffect(() => {
+    if (!isMenuOpen) return
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node
+      if (
+        mobileMenuRef.current &&
+        mobileMenuRef.current.contains(target)
+      ) {
+        return
+      }
+      if (mobileToggleRef.current && mobileToggleRef.current.contains(target)) {
+        return
+      }
+      setIsMenuOpen(false)
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown)
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown)
+    }
+  }, [isMenuOpen])
 
   const handleLogout = async () => {
     try {
@@ -188,7 +213,13 @@ export default function Header() {
             </Button>
           )}
 
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            ref={mobileToggleRef}
+          >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
@@ -196,36 +227,36 @@ export default function Header() {
 
       {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden border-t p-4">
+        <div className="md:hidden border-t p-4" ref={mobileMenuRef}>
           <nav className="flex flex-col space-y-4">
-            <Link href="/cours" className="text-sm font-medium hover:text-primary">
+            <Link href="/cours" className="text-sm font-medium hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               Cours
             </Link>
-            <Link href="/exercices" className="text-sm font-medium hover:text-primary">
+            <Link href="/exercices" className="text-sm font-medium hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               Exercices
             </Link>
-            <Link href="/quiz" className="text-sm font-medium hover:text-primary">
+            <Link href="/quiz" className="text-sm font-medium hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               Quiz
             </Link>
-            <Link href="/videos" className="text-sm font-medium hover:text-primary">
+            <Link href="/videos" className="text-sm font-medium hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               Vidéos
             </Link>
-            <Link href="/forum" className="text-sm font-medium hover:text-primary">
+            <Link href="/forum" className="text-sm font-medium hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               Forum
             </Link>
-            <Link href="/blog" className="text-sm font-medium hover:text-primary">
+            <Link href="/blog" className="text-sm font-medium hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               Blog
             </Link>
-            <Link href="/boutique" className="text-sm font-medium hover:text-primary">
+            <Link href="/boutique" className="text-sm font-medium hover:text-primary" onClick={() => setIsMenuOpen(false)}>
               Boutique
             </Link>
             <details className="group">
               <summary className="text-sm font-medium hover:text-primary cursor-pointer">À propos</summary>
               <div className="mt-2 ml-4 flex flex-col space-y-2">
-                <Link href="/encadrement" className="text-sm hover:text-primary">
+                <Link href="/encadrement" className="text-sm hover:text-primary" onClick={() => setIsMenuOpen(false)}>
                   Encadrement personnalisé
                 </Link>
-                <Link href="/contact" className="text-sm hover:text-primary">
+                <Link href="/contact" className="text-sm hover:text-primary" onClick={() => setIsMenuOpen(false)}>
                   Contact
                 </Link>
               </div>

@@ -58,36 +58,35 @@ export default function MathChatbot() {
     setIsLoading(true)
 
     try {
-      // Construire le contexte avec l'historique des messages
-      const context = messages
-        .map((msg) => `${msg.role === "user" ? "Question" : "Réponse"}: ${msg.content}`)
-        .join("\n\n")
+      const conversationHistory = [...messages, userMessage].slice(-6).map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }))
 
-      // Générer une réponse avec l'AI SDK
-      const prompt = `
-        Tu es MathBot, un assistant spécialisé en mathématiques pour aider les élèves.
-        Voici l'historique de la conversation:
-        ${context}
-        
-        Question de l'élève: ${input}
-        
-        Réponds de manière claire, pédagogique et précise. Si la question implique des formules mathématiques, 
-        explique-les étape par étape. Utilise un ton amical et encourageant.
-      `
+      const response = await fetch("/api/gemini", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt: userMessage.content,
+          history: conversationHistory,
+        }),
+      })
 
-      // Simuler une réponse (dans un environnement réel, nous utiliserions l'AI SDK)
-      let response
+      if (!response.ok) {
+        throw new Error("Réponse invalide")
+      }
 
-      // Simuler un délai pour l'effet de réponse
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const data = await response.json()
+      const reply =
+        typeof data.reply === "string" && data.reply.trim().length > 0
+          ? data.reply.trim()
+          : "Désolé, je n'ai pas pu formuler de réponse précise cette fois-ci."
 
-      response =
-        "Je comprends votre question sur les mathématiques. Pour vous aider plus précisément, pourriez-vous me donner plus de détails ou me poser une question plus spécifique ? Je peux vous aider avec des concepts mathématiques, des équations, ou vous parler des grands mathématiciens de l'histoire. N'hésitez pas à être précis dans votre demande."
-
-      // Ajouter la réponse de l'assistant
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: response,
+        content: reply,
         role: "assistant",
         timestamp: new Date(),
       }
