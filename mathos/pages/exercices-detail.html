@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détail de l'exercice - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="../index.html" class="nav-link">Accueil</a>
+                    <a href="cours.html" class="nav-link">Cours</a>
+                    <a href="exercices.html" class="nav-link">Exercices</a>
+                    <a href="quiz.html" class="nav-link">Quiz</a>
+                </nav>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <a href="dashboard.html" class="btn btn-outline btn-sm">
+                        <i class="fas fa-user"></i> Mon compte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="section py-5">
+        <div class="container">
+            <a href="exercices.html" class="btn btn-outline-secondary mb-4">
+                <i class="fas fa-arrow-left me-2"></i>Retour aux exercices
+            </a>
+
+            <div id="loadingState" class="text-center py-5">
+                <div class="spinner-border text-success" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-3 text-muted">Chargement de l'exercice...</p>
+            </div>
+
+            <div id="exerciseContent" style="display: none;">
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-lg mb-4">
+                            <div class="card-header bg-transparent border-0 pb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h1 class="h2 fw-bold mb-2" id="exerciseTitle">Titre de l'exercice</h1>
+                                        <p class="text-muted mb-0" id="exerciseDescription">Description de l'exercice</p>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-success" id="difficultyBadge">Facile</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-lg">
+                            <div class="card-header bg-transparent border-0 pb-3">
+                                <ul class="nav nav-tabs border-0" id="exerciseTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="statement-tab" data-bs-toggle="tab" data-bs-target="#statement" type="button" role="tab">
+                                            <i class="fas fa-file-alt me-2"></i>Énoncé
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="hints-tab" data-bs-toggle="tab" data-bs-target="#hints" type="button" role="tab">
+                                            <i class="fas fa-lightbulb me-2"></i>Indices
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="solution-tab" data-bs-toggle="tab" data-bs-target="#solution" type="button" role="tab">
+                                            <i class="fas fa-check-circle me-2"></i>Solution
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-body">
+                                <div class="tab-content" id="exerciseTabsContent">
+                                    <div class="tab-pane fade show active" id="statement" role="tabpanel">
+                                        <div id="statementContent">
+                                            <p class="text-muted">Chargement de l'énoncé...</p>
+                                        </div>
+                                        
+                                        <div class="mt-4 pt-4 border-top">
+                                            <h5 class="fw-bold mb-3">Votre réponse</h5>
+                                            <textarea class="form-control mb-3" id="userAnswer" rows="6" placeholder="Écrivez votre réponse ici..."></textarea>
+                                            <button class="btn btn-success" id="submitAnswerBtn">
+                                                <i class="fas fa-paper-plane me-2"></i>Soumettre ma réponse
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="hints" role="tabpanel">
+                                        <div id="hintsContent">
+                                            <p class="text-muted">Aucun indice disponible pour cet exercice.</p>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="solution" role="tabpanel">
+                                        <div id="solutionContent">
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                La solution sera disponible après avoir soumis votre réponse.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-lg mb-4">
+                            <div class="card-header bg-transparent border-0 pb-3">
+                                <h3 class="h5 fw-bold mb-0">Informations</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <small class="text-muted d-block mb-1">Niveau</small>
+                                    <span class="fw-semibold" id="exerciseLevel">-</span>
+                                </div>
+                                <hr>
+                                <div class="mb-3">
+                                    <small class="text-muted d-block mb-1">Durée estimée</small>
+                                    <span class="fw-semibold" id="exerciseTime">-</span>
+                                </div>
+                                <hr>
+                                <div class="mb-3">
+                                    <small class="text-muted d-block mb-1">Nombre d'exercices</small>
+                                    <span class="fw-semibold" id="exerciseCount">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-lg" id="submissionStatus" style="display: none;">
+                            <div class="card-body">
+                                <h5 class="fw-bold mb-3">Statut de soumission</h5>
+                                <div id="submissionFeedback">
+                                    <p class="text-muted">Votre réponse a été soumise avec succès !</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorState" style="display: none;" class="text-center py-5">
+                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
+                <h3 class="h4 fw-bold mb-2">Exercice introuvable</h3>
+                <p class="text-muted mb-4">L'exercice demandé n'existe pas ou n'est plus disponible.</p>
+                <a href="exercices.html" class="btn btn-success">Retour aux exercices</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/firebase.js"></script>
+    <script src="../js/static-data.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        let currentExercise = null;
+        let hasSubmitted = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const exerciseId = urlParams.get('id');
+            
+            if (!exerciseId) {
+                showError();
+                return;
+            }
+
+            loadExercise(exerciseId);
+            
+            // Gestion de la soumission
+            document.getElementById('submitAnswerBtn').addEventListener('click', handleSubmit);
+        });
+
+        async function loadExercise(exerciseId) {
+            try {
+                let exercise = null;
+                
+                // Essayer Firebase d'abord
+                if (window.ExerciseService) {
+                    try {
+                        exercise = await window.ExerciseService.getExerciseById(exerciseId);
+                    } catch (error) {
+                        console.log('Exercice non trouvé dans Firebase');
+                    }
+                }
+
+                // Si pas trouvé, chercher dans les données statiques
+                if (!exercise) {
+                    const numericId = parseInt(exerciseId);
+                    if (!isNaN(numericId) && window.getStaticExerciseById) {
+                        exercise = window.getStaticExerciseById(numericId);
+                        if (exercise) {
+                            exercise.isStatic = true;
+                        }
+                    }
+                }
+
+                if (!exercise) {
+                    showError();
+                    return;
+                }
+
+                currentExercise = exercise;
+                displayExercise(exercise);
+                
+                // Vérifier si l'utilisateur a déjà soumis une réponse
+                checkExistingSubmission(exerciseId);
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError();
+            }
+        }
+
+        function displayExercise(exercise) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('exerciseContent').style.display = 'block';
+
+            document.getElementById('exerciseTitle').textContent = exercise.title || 'Titre de l\'exercice';
+            document.getElementById('exerciseDescription').textContent = exercise.description || '';
+            document.getElementById('exerciseLevel').textContent = exercise.level || exercise.classe || '-';
+            document.getElementById('exerciseTime').textContent = exercise.time || '-';
+            document.getElementById('exerciseCount').textContent = exercise.exercises || '-';
+            
+            const difficulty = exercise.difficulty || 'Moyen';
+            document.getElementById('difficultyBadge').textContent = difficulty;
+            const difficultyColors = {
+                'Facile': 'success',
+                'Moyen': 'warning',
+                'Difficile': 'danger'
+            };
+            document.getElementById('difficultyBadge').className = `badge bg-${difficultyColors[difficulty] || 'secondary'}`;
+
+            // Vérifier si un PDF existe pour cet exercice
+            const pdfInfo = window.getExercisePDF(exercise.id);
+            const enrichedContent = window.getEnrichedExerciseContent(exercise.id);
+            
+            if (pdfInfo && pdfInfo.pdfPath) {
+                // Afficher le PDF dans un iframe
+                document.getElementById('statementContent').innerHTML = `
+                    <div class="pdf-viewer-container">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            <strong>Document PDF disponible :</strong> ${pdfInfo.title}
+                            <a href="${pdfInfo.pdfPath}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="fas fa-external-link-alt me-1"></i>Ouvrir dans un nouvel onglet
+                            </a>
+                        </div>
+                        <iframe src="${pdfInfo.pdfPath}" class="w-100" style="height: 800px; border: 1px solid #dee2e6; border-radius: 0.375rem;" title="PDF de l'exercice"></iframe>
+                    </div>
+                `;
+                
+                // Pour les indices et solutions, utiliser le contenu enrichi s'il existe
+                if (enrichedContent) {
+                    if (enrichedContent.hints) {
+                        document.getElementById('hintsContent').innerHTML = enrichedContent.hints;
+                    }
+                    if (enrichedContent.solution) {
+                        document.getElementById('solutionContent').innerHTML = enrichedContent.solution;
+                    }
+                }
+            } else if (enrichedContent) {
+                // Afficher le contenu enrichi HTML
+                if (enrichedContent.statement) {
+                    document.getElementById('statementContent').innerHTML = enrichedContent.statement;
+                }
+                if (enrichedContent.hints) {
+                    document.getElementById('hintsContent').innerHTML = enrichedContent.hints;
+                }
+                if (enrichedContent.solution) {
+                    document.getElementById('solutionContent').innerHTML = enrichedContent.solution;
+                }
+            } else {
+                // Contenu par défaut
+                document.getElementById('statementContent').innerHTML = `
+                    <div class="prose max-w-none">
+                        <h4>Énoncé de l'exercice</h4>
+                        <p>${exercise.description || 'Consultez l\'énoncé complet dans la section ci-dessous.'}</p>
+                        <p class="text-muted">Le contenu complet de cet exercice sera bientôt disponible.</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function checkExistingSubmission(exerciseId) {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const submissionsRef = window.db.collection('exercise_submissions');
+                const query = submissionsRef.where('userId', '==', user.uid).where('exerciseId', '==', exerciseId);
+                const snapshot = await query.get();
+                
+                if (!snapshot.empty) {
+                    const submission = snapshot.docs[0].data();
+                    hasSubmitted = true;
+                    document.getElementById('submissionStatus').style.display = 'block';
+                    document.getElementById('submitAnswerBtn').disabled = true;
+                    document.getElementById('submitAnswerBtn').innerHTML = '<i class="fas fa-check me-2"></i>Déjà soumis';
+                    
+                    if (submission.feedback) {
+                        document.getElementById('submissionFeedback').innerHTML = `
+                            <div class="alert alert-success">
+                                <strong>Score:</strong> ${submission.score || 'N/A'}/20<br>
+                                <strong>Feedback:</strong> ${submission.feedback}
+                            </div>
+                        `;
+                    } else {
+                        document.getElementById('submissionFeedback').innerHTML = `
+                            <div class="alert alert-info">
+                                Votre réponse est en cours de correction par votre professeur.
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors de la vérification de la soumission:', error);
+            }
+        }
+
+        async function handleSubmit() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            
+            if (!user) {
+                alert('Vous devez être connecté pour soumettre une réponse');
+                window.location.href = 'connexion.html';
+                return;
+            }
+
+            const answer = document.getElementById('userAnswer').value.trim();
+            if (!answer) {
+                alert('Veuillez écrire une réponse avant de soumettre');
+                return;
+            }
+
+            if (!currentExercise) return;
+
+            // Les exercices statiques ne permettent pas la soumission en ligne
+            if (currentExercise.isStatic) {
+                alert('Cet exercice ne permet pas la soumission en ligne. Vous pouvez consulter la solution dans l\'onglet "Solution".');
+                return;
+            }
+
+            try {
+                document.getElementById('submitAnswerBtn').disabled = true;
+                document.getElementById('submitAnswerBtn').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Soumission en cours...';
+
+                // Créer la soumission dans Firebase
+                if (window.db) {
+                    const submissionData = {
+                        exerciseId: currentExercise.id.toString(),
+                        exerciseTitle: currentExercise.title,
+                        userId: user.uid,
+                        userName: user.displayName || user.email.split('@')[0],
+                        teacherId: currentExercise.teacherId || '',
+                        teacherName: currentExercise.teacherName || 'Équipe Mathosphère',
+                        answer: answer,
+                        submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        status: 'pending',
+                        feedback: null,
+                        score: null
+                    };
+
+                    await window.db.collection('exercise_submissions').add(submissionData);
+                    
+                    // Enregistrer une activité
+                    await window.db.collection('activities').add({
+                        userId: user.uid,
+                        type: 'exercise_completed',
+                        title: `Exercice "${currentExercise.title}" soumis`,
+                        description: `Vous avez soumis une réponse pour l'exercice ${currentExercise.title}`,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                hasSubmitted = true;
+                document.getElementById('submissionStatus').style.display = 'block';
+                document.getElementById('submissionFeedback').innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        Votre réponse a été soumise avec succès ! Votre professeur recevra une notification.
+                    </div>
+                `;
+                
+                alert('Réponse soumise avec succès !');
+            } catch (error) {
+                console.error('Erreur lors de la soumission:', error);
+                alert('Erreur lors de la soumission. Veuillez réessayer.');
+                document.getElementById('submitAnswerBtn').disabled = false;
+                document.getElementById('submitAnswerBtn').innerHTML = '<i class="fas fa-paper-plane me-2"></i>Soumettre ma réponse';
+            }
+        }
+
+        function showError() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+

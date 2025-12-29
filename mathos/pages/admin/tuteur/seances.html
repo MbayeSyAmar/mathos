@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Séances - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Tuteur</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="seances.html"><i class="fas fa-calendar-alt me-2"></i>Mes Séances</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="mb-4">
+                <h1 class="h3 fw-bold">Mes Séances</h1>
+                <p class="text-muted mb-0">Gérez vos séances de tutorat</p>
+            </div>
+
+            <ul class="nav nav-pills mb-4" id="sessionTabs">
+                <li class="nav-item">
+                    <button class="nav-link active" onclick="filterSessions('upcoming')">À venir</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="filterSessions('past')">Passées</button>
+                </li>
+            </ul>
+
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="sessionsList">
+                        <!-- Les séances seront chargées ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let sessions = [];
+        let currentFilter = 'upcoming';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['tuteur', 'super_admin']);
+            loadSessions();
+        });
+
+        async function loadSessions() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const sessionsRef = window.db.collection('tutoring_sessions');
+                const query = sessionsRef.where('tutorId', '==', user.uid);
+                const snapshot = await query.get();
+
+                sessions = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    sessions.push({
+                        id: doc.id,
+                        ...data,
+                        date: data.date?.toDate ? data.date.toDate() : new Date(data.date)
+                    });
+                });
+
+                filterSessions('upcoming');
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function filterSessions(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('#sessionTabs .nav-link').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const now = new Date();
+            const filtered = filter === 'upcoming'
+                ? sessions.filter(s => s.date >= now)
+                : sessions.filter(s => s.date < now);
+
+            if (filtered.length === 0) {
+                document.getElementById('sessionsList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucune séance ${filter === 'upcoming' ? 'à venir' : 'passée'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sessionsHtml = filtered.map(session => {
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <h6 class="fw-bold mb-1">${session.studentName || 'Étudiant'}</h6>
+                                    <p class="text-muted small mb-0">${session.subject || 'Sujet'}</p>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">Date</small>
+                                    <span>${formatDate(session.date)}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <small class="text-muted d-block">Heure</small>
+                                    <span>${session.time || '-'}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <small class="text-muted d-block">Durée</small>
+                                    <span>${session.duration || '-'}</span>
+                                </div>
+                                <div class="col-md-1 text-end">
+                                    <span class="badge ${session.status === 'confirmed' ? 'bg-success' : 'bg-warning'}">${session.status || 'En attente'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('sessionsList').innerHTML = sessionsHtml;
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }).format(date);
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

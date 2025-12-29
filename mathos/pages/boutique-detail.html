@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détail Produit - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <section class="section py-5">
+        <div class="container">
+            <a href="boutique.html" class="btn btn-outline-primary mb-4">
+                <i class="fas fa-arrow-left me-2"></i>Retour à la boutique
+            </a>
+
+            <div class="row">
+                <div class="col-lg-6">
+                    <img id="productImage" src="https://via.placeholder.com/500" alt="Produit" class="img-fluid rounded shadow-lg">
+                </div>
+                <div class="col-lg-6">
+                    <h1 class="display-5 fw-bold mb-3" id="productName">Chargement...</h1>
+                    <div class="mb-4">
+                        <span class="h3 text-primary fw-bold" id="productPrice">-</span>
+                        <span class="badge bg-success ms-2" id="productStock">En stock</span>
+                    </div>
+                    
+                    <p class="text-muted mb-4" id="productDescription">Chargement...</p>
+
+                    <div class="mb-4">
+                        <label class="form-label">Quantité</label>
+                        <div class="input-group" style="max-width: 150px;">
+                            <button class="btn btn-outline-secondary" onclick="changeQuantity(-1)">-</button>
+                            <input type="number" class="form-control text-center" id="quantity" value="1" min="1">
+                            <button class="btn btn-outline-secondary" onclick="changeQuantity(1)">+</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mb-4">
+                        <button class="btn btn-primary btn-lg flex-grow-1" onclick="addToCart()">
+                            <i class="fas fa-shopping-cart me-2"></i>Ajouter au panier
+                        </button>
+                        <button class="btn btn-outline-danger btn-lg" onclick="toggleFavorite()">
+                            <i class="fas fa-heart" id="favoriteIcon"></i>
+                        </button>
+                    </div>
+
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-title">Informations</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li><strong>Catégorie:</strong> <span id="productCategory">-</span></li>
+                                <li><strong>Stock disponible:</strong> <span id="productStockCount">-</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/firebase.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        let currentProduct = null;
+        let isFavorite = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+
+            if (!productId) {
+                window.location.href = 'boutique.html';
+                return;
+            }
+
+            await loadProduct(productId);
+        });
+
+        async function loadProduct(productId) {
+            if (!window.db) return;
+
+            try {
+                const productDoc = await window.db.collection('products').doc(productId).get();
+                if (!productDoc.exists()) {
+                    window.location.href = 'boutique.html';
+                    return;
+                }
+
+                currentProduct = { id: productDoc.id, ...productDoc.data() };
+                
+                document.getElementById('productName').textContent = currentProduct.nom || 'Sans nom';
+                document.getElementById('productDescription').textContent = currentProduct.description || 'Aucune description';
+                document.getElementById('productPrice').textContent = formatPrice(currentProduct.prix || 0);
+                document.getElementById('productCategory').textContent = currentProduct.categorie || '-';
+                document.getElementById('productStockCount').textContent = currentProduct.stock || 0;
+                
+                if (currentProduct.image) {
+                    document.getElementById('productImage').src = currentProduct.image;
+                }
+
+                if (currentProduct.stock <= 0) {
+                    document.getElementById('productStock').textContent = 'Rupture de stock';
+                    document.getElementById('productStock').className = 'badge bg-danger ms-2';
+                }
+
+                // Vérifier si favori
+                checkFavorite();
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        async function checkFavorite() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db || !currentProduct) return;
+
+            try {
+                const favoritesRef = window.db.collection('boutique_favorites');
+                const query = favoritesRef.where('userId', '==', user.uid).where('productId', '==', currentProduct.id);
+                const snapshot = await query.get();
+                isFavorite = !snapshot.empty;
+                updateFavoriteIcon();
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function updateFavoriteIcon() {
+            const icon = document.getElementById('favoriteIcon');
+            icon.className = isFavorite ? 'fas fa-heart text-danger' : 'far fa-heart';
+        }
+
+        function changeQuantity(delta) {
+            const quantityInput = document.getElementById('quantity');
+            const currentValue = parseInt(quantityInput.value) || 1;
+            const newValue = Math.max(1, Math.min(currentValue + delta, currentProduct?.stock || 999));
+            quantityInput.value = newValue;
+        }
+
+        function addToCart() {
+            if (!currentProduct) return;
+            
+            const quantity = parseInt(document.getElementById('quantity').value) || 1;
+            const cart = JSON.parse(localStorage.getItem('mathosCart') || '[]');
+            
+            const existingItem = cart.find(item => item.id === currentProduct.id);
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({
+                    id: currentProduct.id,
+                    nom: currentProduct.nom,
+                    prix: currentProduct.prix,
+                    image: currentProduct.image,
+                    quantity: quantity
+                });
+            }
+            
+            localStorage.setItem('mathosCart', JSON.stringify(cart));
+            alert('Produit ajouté au panier !');
+        }
+
+        async function toggleFavorite() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db || !currentProduct) {
+                alert('Vous devez être connecté pour ajouter aux favoris');
+                return;
+            }
+
+            try {
+                const favoritesRef = window.db.collection('boutique_favorites');
+                const query = favoritesRef.where('userId', '==', user.uid).where('productId', '==', currentProduct.id);
+                const snapshot = await query.get();
+
+                if (snapshot.empty) {
+                    await favoritesRef.add({
+                        userId: user.uid,
+                        productId: currentProduct.id,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    isFavorite = true;
+                } else {
+                    snapshot.docs.forEach(doc => doc.ref.delete());
+                    isFavorite = false;
+                }
+                
+                updateFavoriteIcon();
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function formatPrice(amount) {
+            return `${amount.toLocaleString()} FCFA`;
+        }
+    </script>
+</body>
+</html>
+

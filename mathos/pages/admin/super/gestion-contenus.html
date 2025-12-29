@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Contenus PDF - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Super Admin</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="utilisateurs.html"><i class="fas fa-users me-2"></i>Utilisateurs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="demandes.html"><i class="fas fa-file-alt me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item"><a class="nav-link" href="boutique.html"><i class="fas fa-shopping-bag me-2"></i>Boutique</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contenu.html"><i class="fas fa-book me-2"></i>Contenu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="statistiques.html"><i class="fas fa-chart-line me-2"></i>Statistiques</a></li>
+                    <li class="nav-item"><a class="nav-link" href="parametres.html"><i class="fas fa-cog me-2"></i>Paramètres</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="gestion-contenus.html"><i class="fas fa-file-pdf me-2"></i>Gestion PDFs</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="mb-4">
+                <h1 class="h3 fw-bold">Gestion des PDFs</h1>
+                <p class="text-muted mb-0">Upload et gestion des fichiers PDF pour cours, exercices et quiz</p>
+            </div>
+
+            <!-- Formulaire d'upload -->
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Uploader un PDF</h5>
+                    <form id="uploadForm">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Type *</label>
+                                <select class="form-select" id="pdfType" required>
+                                    <option value="">Sélectionner...</option>
+                                    <option value="cours">Cours</option>
+                                    <option value="exercice">Exercice</option>
+                                    <option value="quiz">Quiz</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Niveau *</label>
+                                <select class="form-select" id="pdfLevel" required>
+                                    <option value="">Sélectionner...</option>
+                                    <option value="college">Collège</option>
+                                    <option value="lycee">Lycée</option>
+                                    <option value="superieur">Supérieur</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Classe</label>
+                                <input type="text" class="form-control" id="pdfClasse" placeholder="6ème, 5ème, etc.">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Fichier PDF *</label>
+                                <input type="file" class="form-control" id="pdfFile" accept=".pdf" required>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="uploadPDF()">
+                            <i class="fas fa-upload me-2"></i>Uploader
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Liste des PDFs -->
+            <ul class="nav nav-tabs mb-4" id="pdfTabs">
+                <li class="nav-item">
+                    <button class="nav-link active" onclick="showPDFs('cours')">Cours</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showPDFs('exercice')">Exercices</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showPDFs('quiz')">Quiz</button>
+                </li>
+            </ul>
+
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="pdfsList">
+                        <!-- Les PDFs seront chargés ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let currentPDFType = 'cours';
+        let allPDFs = {
+            cours: [],
+            exercice: [],
+            quiz: []
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['super_admin']);
+            loadPDFs();
+        });
+
+        async function loadPDFs() {
+            if (!window.db) return;
+
+            try {
+                const pdfsRef = window.db.collection('pdfs');
+                const snapshot = await pdfsRef.get();
+
+                allPDFs = { cours: [], exercice: [], quiz: [] };
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const type = data.type || 'cours';
+                    if (allPDFs[type]) {
+                        allPDFs[type].push({ id: doc.id, ...data });
+                    }
+                });
+
+                showPDFs('cours');
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function showPDFs(type) {
+            currentPDFType = type;
+            document.querySelectorAll('#pdfTabs .nav-link').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderPDFs();
+        }
+
+        function renderPDFs() {
+            const pdfs = allPDFs[currentPDFType] || [];
+            
+            if (pdfs.length === 0) {
+                document.getElementById('pdfsList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-pdf text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucun PDF trouvé</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const pdfsHtml = pdfs.map(pdf => {
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">${pdf.fileName || 'Fichier PDF'}</h6>
+                                    <small class="text-muted">${pdf.level || ''} - ${pdf.classe || ''}</small>
+                                </div>
+                                <div>
+                                    <a href="${pdf.publicPath || '#'}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye me-1"></i>Voir
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deletePDF('${pdf.id}')">
+                                        <i class="fas fa-trash me-1"></i>Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('pdfsList').innerHTML = pdfsHtml;
+        }
+
+        async function uploadPDF() {
+            const fileInput = document.getElementById('pdfFile');
+            const file = fileInput.files[0];
+            if (!file || !window.storage || !window.db) return;
+
+            const type = document.getElementById('pdfType').value;
+            const level = document.getElementById('pdfLevel').value;
+            const classe = document.getElementById('pdfClasse').value;
+
+            try {
+                const storageRef = window.storage.ref(`pdfs/${level}/${type}/${classe}/${file.name}`);
+                const snapshot = await storageRef.put(file);
+                const downloadURL = await snapshot.ref.getDownloadURL();
+
+                await window.db.collection('pdfs').add({
+                    fileName: file.name,
+                    publicPath: downloadURL,
+                    type: type,
+                    level: level,
+                    classe: classe,
+                    size: file.size,
+                    uploadedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('PDF uploadé avec succès !');
+                document.getElementById('uploadForm').reset();
+                loadPDFs();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'upload');
+            }
+        }
+
+        async function deletePDF(pdfId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce PDF ?')) return;
+
+            try {
+                await window.db.collection('pdfs').doc(pdfId).delete();
+                alert('PDF supprimé avec succès !');
+                loadPDFs();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression');
+            }
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

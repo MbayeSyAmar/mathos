@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Tuteur - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../../../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                    <a href="seances.html" class="nav-link">Séances</a>
+                    <a href="../professeur/messages.html" class="nav-link">Messages</a>
+                </nav>
+                <button class="btn btn-outline btn-sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section class="section py-5">
+        <div class="container">
+            <div class="mb-4">
+                <h1 class="display-5 fw-bold mb-2">Dashboard Tuteur</h1>
+                <p class="text-muted">Bienvenue, <span id="userName">Tuteur</span></p>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Étudiants</h6>
+                                <i class="fas fa-users text-primary" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="studentsCount">0</h2>
+                            <small class="text-muted">Étudiants encadrés</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Séances</h6>
+                                <i class="fas fa-calendar text-success" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="sessionsCount">0</h2>
+                            <small class="text-muted">Séances planifiées</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Messages</h6>
+                                <i class="fas fa-envelope text-warning" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="messagesCount">0</h2>
+                            <small class="text-muted">Messages non lus</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Demandes</h6>
+                                <i class="fas fa-clipboard-list text-info" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="requestsCount">0</h2>
+                            <small class="text-muted">Demandes en attente</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-transparent border-0 pb-3">
+                    <h3 class="h5 fw-bold mb-0">Actions rapides</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="seances.html" class="btn btn-primary w-100">
+                                <i class="fas fa-calendar-plus me-2"></i>Planifier une séance
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="../professeur/messages.html" class="btn btn-success w-100">
+                                <i class="fas fa-envelope me-2"></i>Voir les messages
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!requireRole('tuteur', ['tuteur', 'tutor'])) {
+                return;
+            }
+            
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (user && document.getElementById('userName')) {
+                document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
+            }
+        });
+        
+        function logout() {
+            if (window.AuthService) {
+                window.AuthService.logout();
+            } else {
+                localStorage.removeItem('mathosUser');
+            }
+            window.location.href = '../../../index.html';
+        }
+    </script>
+</body>
+</html>
+

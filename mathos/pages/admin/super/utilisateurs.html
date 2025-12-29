@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Utilisateurs - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Super Admin</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="utilisateurs.html"><i class="fas fa-users me-2"></i>Utilisateurs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="demandes.html"><i class="fas fa-file-alt me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item"><a class="nav-link" href="boutique.html"><i class="fas fa-shopping-bag me-2"></i>Boutique</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contenu.html"><i class="fas fa-book me-2"></i>Contenu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="statistiques.html"><i class="fas fa-chart-line me-2"></i>Statistiques</a></li>
+                    <li class="nav-item"><a class="nav-link" href="parametres.html"><i class="fas fa-cog me-2"></i>Paramètres</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 fw-bold">Gestion des Utilisateurs</h1>
+                    <p class="text-muted mb-0">Gérez tous les utilisateurs de la plateforme</p>
+                </div>
+                <button class="btn btn-primary" onclick="openUserModal()">
+                    <i class="fas fa-user-plus me-2"></i>Nouvel utilisateur
+                </button>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0" id="totalUsers">0</h3>
+                            <small class="text-muted">Total utilisateurs</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0 text-primary" id="studentCount">0</h3>
+                            <small class="text-muted">Étudiants</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0 text-success" id="teacherCount">0</h3>
+                            <small class="text-muted">Professeurs</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0 text-info" id="newUsersMonth">0</h3>
+                            <small class="text-muted">Nouveaux ce mois</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Rechercher par nom ou email...">
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="roleFilter">
+                                <option value="all">Tous les rôles</option>
+                                <option value="student">Étudiant</option>
+                                <option value="professeur">Professeur</option>
+                                <option value="tuteur">Tuteur</option>
+                                <option value="redacteur">Rédacteur</option>
+                                <option value="super_admin">Super Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="nav nav-pills">
+                                <li class="nav-item">
+                                    <button class="nav-link active" onclick="filterUsers('recent')">Récents</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" onclick="filterUsers('all')">Tous</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des utilisateurs -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="loadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-3 text-muted">Chargement des utilisateurs...</p>
+                    </div>
+                    <div id="usersList" style="display: none;">
+                        <!-- Les utilisateurs seront chargés ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour créer/modifier un utilisateur -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalTitle">Nouvel utilisateur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <div class="mb-3">
+                            <label class="form-label">Nom complet *</label>
+                            <input type="text" class="form-control" id="userDisplayName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="userEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mot de passe *</label>
+                            <input type="password" class="form-control" id="userPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rôle *</label>
+                            <select class="form-select" id="userRole" required>
+                                <option value="">Sélectionner...</option>
+                                <option value="student">Étudiant</option>
+                                <option value="professeur">Professeur</option>
+                                <option value="tuteur">Tuteur</option>
+                                <option value="redacteur">Rédacteur</option>
+                                <option value="super_admin">Super Admin</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUser()">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let users = [];
+        let currentUserId = null;
+        let currentFilter = 'recent';
+        const userModal = new bootstrap.Modal(document.getElementById('userModal'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['super_admin']);
+            loadUsers();
+            
+            document.getElementById('searchInput').addEventListener('input', filterUsers);
+            document.getElementById('roleFilter').addEventListener('change', filterUsers);
+        });
+
+        async function loadUsers() {
+            if (!window.db) return;
+
+            try {
+                const usersRef = window.db.collection('users');
+                const snapshot = await usersRef.get();
+
+                users = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    users.push({
+                        id: doc.id,
+                        ...data,
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : new Date())
+                    });
+                });
+
+                users.sort((a, b) => b.createdAt - a.createdAt);
+                updateStats();
+                filterUsers('recent');
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('usersList').style.display = 'block';
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalUsers').textContent = users.length;
+            document.getElementById('studentCount').textContent = users.filter(u => u.role === 'student' || !u.role).length;
+            document.getElementById('teacherCount').textContent = users.filter(u => u.role === 'professeur').length;
+            
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
+            document.getElementById('newUsersMonth').textContent = users.filter(u => u.createdAt >= startOfMonth).length;
+        }
+
+        function filterUsers(filter) {
+            currentFilter = filter;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const roleFilter = document.getElementById('roleFilter').value;
+
+            let filtered = users;
+            
+            if (filter === 'recent') {
+                filtered = filtered.slice(0, 10);
+            }
+            
+            filtered = filtered.filter(user => {
+                const matchesSearch = (user.displayName || user.email || '').toLowerCase().includes(searchTerm);
+                const matchesRole = roleFilter === 'all' || user.role === roleFilter || (!user.role && roleFilter === 'student');
+                return matchesSearch && matchesRole;
+            });
+
+            renderUsers(filtered);
+        }
+
+        function renderUsers(usersToRender) {
+            if (usersToRender.length === 0) {
+                document.getElementById('usersList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-users text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucun utilisateur trouvé</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const usersHtml = usersToRender.map(user => {
+                const roleBadge = {
+                    'student': '<span class="badge bg-primary">Étudiant</span>',
+                    'professeur': '<span class="badge bg-success">Professeur</span>',
+                    'tuteur': '<span class="badge bg-info">Tuteur</span>',
+                    'redacteur': '<span class="badge bg-warning">Rédacteur</span>',
+                    'super_admin': '<span class="badge bg-danger">Super Admin</span>'
+                }[user.role] || '<span class="badge bg-secondary">Étudiant</span>';
+
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <h6 class="fw-bold mb-1">${user.displayName || user.email || 'N/A'}</h6>
+                                    <p class="text-muted small mb-0">${user.email || ''}</p>
+                                    <small class="text-muted">Inscrit le ${formatDate(user.createdAt)}</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    ${roleBadge}
+                                </div>
+                                <div class="col-md-5 text-end">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editUser('${user.id}')">
+                                        <i class="fas fa-edit me-1"></i>Modifier
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${user.id}')">
+                                        <i class="fas fa-trash me-1"></i>Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('usersList').innerHTML = usersHtml;
+        }
+
+        function openUserModal(userId = null) {
+            currentUserId = userId;
+            document.getElementById('userModalTitle').textContent = userId ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur';
+            document.getElementById('userForm').reset();
+            
+            if (userId) {
+                const user = users.find(u => u.id === userId);
+                if (user) {
+                    document.getElementById('userDisplayName').value = user.displayName || '';
+                    document.getElementById('userEmail').value = user.email || '';
+                    document.getElementById('userPassword').required = false;
+                    document.getElementById('userRole').value = user.role || 'student';
+                }
+            } else {
+                document.getElementById('userPassword').required = true;
+            }
+            
+            userModal.show();
+        }
+
+        async function saveUser() {
+            if (!window.db) return;
+
+            const userData = {
+                displayName: document.getElementById('userDisplayName').value.trim(),
+                email: document.getElementById('userEmail').value.trim(),
+                role: document.getElementById('userRole').value,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (currentUserId) {
+                    await window.db.collection('users').doc(currentUserId).update(userData);
+                    alert('Utilisateur modifié avec succès !');
+                } else {
+                    // Créer un nouvel utilisateur avec Firebase Auth
+                    const password = document.getElementById('userPassword').value;
+                    const userCredential = await firebase.auth().createUserWithEmailAndPassword(userData.email, password);
+                    
+                    await userCredential.user.updateProfile({
+                        displayName: userData.displayName
+                    });
+
+                    userData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await window.db.collection('users').doc(userCredential.user.uid).set(userData);
+                    alert('Utilisateur créé avec succès !');
+                }
+                
+                userModal.hide();
+                loadUsers();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'enregistrement: ' + error.message);
+            }
+        }
+
+        function editUser(userId) {
+            openUserModal(userId);
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return;
+
+            try {
+                await window.db.collection('users').doc(userId).delete();
+                alert('Utilisateur supprimé avec succès !');
+                loadUsers();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression');
+            }
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }).format(date);
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

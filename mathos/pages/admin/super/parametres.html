@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramètres - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Super Admin</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="utilisateurs.html"><i class="fas fa-users me-2"></i>Utilisateurs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="demandes.html"><i class="fas fa-file-alt me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item"><a class="nav-link" href="boutique.html"><i class="fas fa-shopping-bag me-2"></i>Boutique</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contenu.html"><i class="fas fa-book me-2"></i>Contenu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="statistiques.html"><i class="fas fa-chart-line me-2"></i>Statistiques</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="parametres.html"><i class="fas fa-cog me-2"></i>Paramètres</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 fw-bold">Paramètres de la Plateforme</h1>
+                    <p class="text-muted mb-0">Configuration générale de Mathosphère</p>
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()">
+                    <i class="fas fa-save me-2"></i>Enregistrer
+                </button>
+            </div>
+
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#general">Général</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#notifications">Notifications</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#maintenance">Maintenance</button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="general">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Informations générales</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Nom du site</label>
+                                <input type="text" class="form-control" id="siteName" value="Mathosphère">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" id="siteDescription" rows="3">Plateforme d'apprentissage des mathématiques</textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email de contact</label>
+                                    <input type="email" class="form-control" id="contactEmail" value="contact@mathosphere.com">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email de support</label>
+                                    <input type="email" class="form-control" id="supportEmail" value="support@mathosphere.com">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="notifications">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Paramètres de notifications</h5>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notificationsEnabled" checked>
+                                <label class="form-check-label" for="notificationsEnabled">Activer les notifications</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                <label class="form-check-label" for="emailNotifications">Notifications par email</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="maintenance">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Mode maintenance</h5>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="maintenanceMode">
+                                <label class="form-check-label" for="maintenanceMode">Activer le mode maintenance</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="registrationOpen" checked>
+                                <label class="form-check-label" for="registrationOpen">Inscriptions ouvertes</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['super_admin']);
+            loadSettings();
+        });
+
+        async function loadSettings() {
+            if (!window.db) return;
+
+            try {
+                const settingsDoc = await window.db.collection('platform_settings').doc('general').get();
+                if (settingsDoc.exists()) {
+                    const data = settingsDoc.data();
+                    document.getElementById('siteName').value = data.siteName || 'Mathosphère';
+                    document.getElementById('siteDescription').value = data.siteDescription || '';
+                    document.getElementById('contactEmail').value = data.contactEmail || '';
+                    document.getElementById('supportEmail').value = data.supportEmail || '';
+                    document.getElementById('notificationsEnabled').checked = data.notificationsEnabled !== false;
+                    document.getElementById('emailNotifications').checked = data.emailNotifications !== false;
+                    document.getElementById('maintenanceMode').checked = data.maintenanceMode || false;
+                    document.getElementById('registrationOpen').checked = data.registrationOpen !== false;
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        async function saveSettings() {
+            if (!window.db) return;
+
+            const settings = {
+                siteName: document.getElementById('siteName').value.trim(),
+                siteDescription: document.getElementById('siteDescription').value.trim(),
+                contactEmail: document.getElementById('contactEmail').value.trim(),
+                supportEmail: document.getElementById('supportEmail').value.trim(),
+                notificationsEnabled: document.getElementById('notificationsEnabled').checked,
+                emailNotifications: document.getElementById('emailNotifications').checked,
+                maintenanceMode: document.getElementById('maintenanceMode').checked,
+                registrationOpen: document.getElementById('registrationOpen').checked,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await window.db.collection('platform_settings').doc('general').set(settings, { merge: true });
+                alert('Paramètres enregistrés avec succès !');
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'enregistrement');
+            }
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

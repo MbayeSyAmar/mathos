@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Rédacteur - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../../../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                    <a href="articles.html" class="nav-link">Articles</a>
+                </nav>
+                <button class="btn btn-outline btn-sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section class="section py-5">
+        <div class="container">
+            <div class="mb-4">
+                <h1 class="display-5 fw-bold mb-2">Dashboard Rédacteur</h1>
+                <p class="text-muted">Bienvenue, <span id="userName">Rédacteur</span></p>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Articles</h6>
+                                <i class="fas fa-file-alt text-primary" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="articlesCount">0</h2>
+                            <small class="text-muted">Articles créés</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Publiés</h6>
+                                <i class="fas fa-check-circle text-success" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="publishedCount">0</h2>
+                            <small class="text-muted">Articles publiés</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Brouillons</h6>
+                                <i class="fas fa-edit text-warning" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="draftsCount">0</h2>
+                            <small class="text-muted">Articles en brouillon</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-transparent border-0 pb-3">
+                    <h3 class="h5 fw-bold mb-0">Actions rapides</h3>
+                </div>
+                <div class="card-body">
+                    <a href="articles.html?action=create" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Créer un article
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!requireRole('redacteur', ['redacteur', 'editor'])) {
+                return;
+            }
+            
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (user && document.getElementById('userName')) {
+                document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
+            }
+            
+            loadDashboardData();
+        });
+        
+        async function loadDashboardData() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user) return;
+            
+            if (window.db) {
+                try {
+                    const articlesSnapshot = await window.db.collection('blog_posts').where('authorId', '==', user.uid).get();
+                    const articles = [];
+                    articlesSnapshot.forEach(doc => {
+                        articles.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    document.getElementById('articlesCount').textContent = articles.length;
+                    document.getElementById('publishedCount').textContent = articles.filter(a => a.status === 'published').length;
+                    document.getElementById('draftsCount').textContent = articles.filter(a => a.status === 'draft').length;
+                } catch (error) {
+                    console.error('Erreur:', error);
+                }
+            }
+        }
+        
+        function logout() {
+            if (window.AuthService) {
+                window.AuthService.logout();
+            } else {
+                localStorage.removeItem('mathosUser');
+            }
+            window.location.href = '../../../index.html';
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion du Contenu - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Super Admin</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="utilisateurs.html"><i class="fas fa-users me-2"></i>Utilisateurs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="demandes.html"><i class="fas fa-file-alt me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item"><a class="nav-link" href="boutique.html"><i class="fas fa-shopping-bag me-2"></i>Boutique</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="contenu.html"><i class="fas fa-book me-2"></i>Contenu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="statistiques.html"><i class="fas fa-chart-line me-2"></i>Statistiques</a></li>
+                    <li class="nav-item"><a class="nav-link" href="parametres.html"><i class="fas fa-cog me-2"></i>Paramètres</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="mb-4">
+                <h1 class="h3 fw-bold">Gestion du Contenu</h1>
+                <p class="text-muted mb-0">Vue d'ensemble de tout le contenu de la plateforme</p>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0" id="totalCourses">0</h3>
+                            <small class="text-muted">Cours</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0" id="totalExercises">0</h3>
+                            <small class="text-muted">Exercices</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0" id="totalVideos">0</h3>
+                            <small class="text-muted">Vidéos</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0" id="totalProducts">0</h3>
+                            <small class="text-muted">Produits</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglets -->
+            <ul class="nav nav-tabs mb-4" id="contentTabs">
+                <li class="nav-item">
+                    <button class="nav-link active" onclick="showTab('courses')">Cours</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showTab('exercises')">Exercices</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showTab('videos')">Vidéos</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showTab('products')">Produits</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" onclick="showTab('blog')">Articles Blog</button>
+                </li>
+            </ul>
+
+            <!-- Contenu -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="contentArea">
+                        <!-- Le contenu sera chargé ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let currentTab = 'courses';
+        let allContent = {
+            courses: [],
+            exercises: [],
+            videos: [],
+            products: [],
+            blog: []
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['super_admin']);
+            loadAllContent();
+        });
+
+        async function loadAllContent() {
+            if (!window.db) return;
+
+            try {
+                // Charger tous les contenus
+                const [coursesSnap, exercisesSnap, videosSnap, productsSnap, blogSnap] = await Promise.all([
+                    window.db.collection('courses').get(),
+                    window.db.collection('exercises').get(),
+                    window.db.collection('videos').get(),
+                    window.db.collection('products').get(),
+                    window.db.collection('blog_posts').get()
+                ]);
+
+                allContent.courses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allContent.exercises = exercisesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allContent.videos = videosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allContent.products = productsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                allContent.blog = blogSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                document.getElementById('totalCourses').textContent = allContent.courses.length;
+                document.getElementById('totalExercises').textContent = allContent.exercises.length;
+                document.getElementById('totalVideos').textContent = allContent.videos.length;
+                document.getElementById('totalProducts').textContent = allContent.products.length;
+
+                showTab('courses');
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function showTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('#contentTabs .nav-link').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderContent();
+        }
+
+        function renderContent() {
+            const content = allContent[currentTab] || [];
+            
+            if (content.length === 0) {
+                document.getElementById('contentArea').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucun contenu trouvé</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const contentHtml = content.map(item => {
+                const title = item.title || item.nom || item.titre || 'Sans titre';
+                const status = item.status || 'published';
+                const statusBadge = status === 'published' 
+                    ? '<span class="badge bg-success">Publié</span>'
+                    : '<span class="badge bg-secondary">Brouillon</span>';
+
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">${title}</h6>
+                                    <small class="text-muted">${formatDate(item.createdAt || item.datePublication)}</small>
+                                </div>
+                                ${statusBadge}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('contentArea').innerHTML = contentHtml;
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            const d = date.toDate ? date.toDate() : new Date(date);
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }).format(d);
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

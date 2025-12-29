@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Cours - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Professeur</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="cours.html"><i class="fas fa-book-open me-2"></i>Cours</a></li>
+                    <li class="nav-item"><a class="nav-link" href="exercices.html"><i class="fas fa-dumbbell me-2"></i>Exercices</a></li>
+                    <li class="nav-item"><a class="nav-link" href="quiz.html"><i class="fas fa-file-alt me-2"></i>Quiz</a></li>
+                    <li class="nav-item"><a class="nav-link" href="soumissions.html"><i class="fas fa-clipboard-list me-2"></i>Soumissions</a></li>
+                    <li class="nav-item"><a class="nav-link" href="demandes.html"><i class="fas fa-paper-plane me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 fw-bold">Mes Cours</h1>
+                    <p class="text-muted mb-0">Gérez vos cours et contenus pédagogiques</p>
+                </div>
+                <button class="btn btn-primary" onclick="openNewCourseDialog()">
+                    <i class="fas fa-plus me-2"></i>Nouveau cours
+                </button>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted d-block">Total Cours</small>
+                                    <h3 class="fw-bold mb-0" id="totalCourses">0</h3>
+                                </div>
+                                <i class="fas fa-book-open text-primary" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted d-block">Publiés</small>
+                                    <h3 class="fw-bold mb-0" id="publishedCourses">0</h3>
+                                </div>
+                                <i class="fas fa-eye text-success" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted d-block">Brouillons</small>
+                                    <h3 class="fw-bold mb-0" id="draftCourses">0</h3>
+                                </div>
+                                <i class="fas fa-edit text-warning" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted d-block">Étudiants</small>
+                                    <h3 class="fw-bold mb-0" id="totalStudents">0</h3>
+                                </div>
+                                <i class="fas fa-users text-info" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Rechercher un cours...">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="statusFilter">
+                                <option value="all">Tous les statuts</option>
+                                <option value="published">Publiés</option>
+                                <option value="draft">Brouillons</option>
+                                <option value="archived">Archivés</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des cours -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="loadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-3 text-muted">Chargement des cours...</p>
+                    </div>
+                    <div id="coursesList" style="display: none;">
+                        <!-- Les cours seront chargés ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour créer/éditer un cours -->
+    <div class="modal fade" id="courseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="courseModalTitle">Nouveau cours</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="courseForm">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Titre *</label>
+                                <input type="text" class="form-control" id="courseTitle" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Description *</label>
+                                <textarea class="form-control" id="courseDescription" rows="3" required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Niveau *</label>
+                                <select class="form-select" id="courseLevel" required>
+                                    <option value="">Sélectionner</option>
+                                    <option value="6ème">6ème</option>
+                                    <option value="5ème">5ème</option>
+                                    <option value="4ème">4ème</option>
+                                    <option value="3ème">3ème</option>
+                                    <option value="2nde">2nde</option>
+                                    <option value="1ère">1ère</option>
+                                    <option value="Terminale">Terminale</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Matière *</label>
+                                <select class="form-select" id="courseSubject" required>
+                                    <option value="">Sélectionner</option>
+                                    <option value="Mathématiques">Mathématiques</option>
+                                    <option value="Algèbre">Algèbre</option>
+                                    <option value="Géométrie">Géométrie</option>
+                                    <option value="Analyse">Analyse</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Durée (minutes) *</label>
+                                <input type="number" class="form-control" id="courseDuration" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Statut *</label>
+                                <select class="form-select" id="courseStatus" required>
+                                    <option value="draft">Brouillon</option>
+                                    <option value="published">Publié</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Contenu (HTML)</label>
+                                <textarea class="form-control" id="courseContent" rows="10"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCourse()">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let courses = [];
+        let editingCourseId = null;
+        const courseModal = new bootstrap.Modal(document.getElementById('courseModal'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['professeur', 'super_admin']);
+            loadCourses();
+            
+            document.getElementById('searchInput').addEventListener('input', filterCourses);
+            document.getElementById('statusFilter').addEventListener('change', filterCourses);
+        });
+
+        async function loadCourses() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const coursesRef = window.db.collection('courses');
+                const query = coursesRef.where('teacherId', '==', user.uid);
+                const snapshot = await query.get();
+
+                courses = [];
+                snapshot.forEach(doc => {
+                    courses.push({ id: doc.id, ...doc.data() });
+                });
+
+                updateStats();
+                renderCourses();
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('coursesList').style.display = 'block';
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalCourses').textContent = courses.length;
+            document.getElementById('publishedCourses').textContent = courses.filter(c => c.status === 'published').length;
+            document.getElementById('draftCourses').textContent = courses.filter(c => c.status === 'draft').length;
+            document.getElementById('totalStudents').textContent = courses.reduce((sum, c) => sum + (c.studentsEnrolled || 0), 0);
+        }
+
+        function renderCourses(coursesToRender = courses) {
+            if (coursesToRender.length === 0) {
+                document.getElementById('coursesList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-book-open text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucun cours trouvé</p>
+                        <button class="btn btn-primary" onclick="openNewCourseDialog()">
+                            <i class="fas fa-plus me-2"></i>Créer votre premier cours
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const coursesHtml = coursesToRender.map(course => {
+                const statusBadge = course.status === 'published' 
+                    ? '<span class="badge bg-success">Publié</span>'
+                    : course.status === 'draft'
+                    ? '<span class="badge bg-warning">Brouillon</span>'
+                    : '<span class="badge bg-secondary">Archivé</span>';
+
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h5 class="fw-bold mb-2">${course.title}</h5>
+                                    <p class="text-muted small mb-2">${course.description || ''}</p>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-primary">${course.level}</span>
+                                        <span class="badge bg-secondary">${course.subject}</span>
+                                        ${statusBadge}
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <div class="small text-muted">Étudiants</div>
+                                    <div class="fw-bold">${course.studentsEnrolled || 0}</div>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-2" onclick="editCourse('${course.id}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteCourse('${course.id}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('coursesList').innerHTML = coursesHtml;
+        }
+
+        function filterCourses() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            const filtered = courses.filter(course => {
+                const matchesSearch = course.title.toLowerCase().includes(searchTerm) ||
+                                    (course.description || '').toLowerCase().includes(searchTerm);
+                const matchesStatus = statusFilter === 'all' || course.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+
+            renderCourses(filtered);
+        }
+
+        function openNewCourseDialog() {
+            editingCourseId = null;
+            document.getElementById('courseModalTitle').textContent = 'Nouveau cours';
+            document.getElementById('courseForm').reset();
+            courseModal.show();
+        }
+
+        function editCourse(courseId) {
+            const course = courses.find(c => c.id === courseId);
+            if (!course) return;
+
+            editingCourseId = courseId;
+            document.getElementById('courseModalTitle').textContent = 'Modifier le cours';
+            document.getElementById('courseTitle').value = course.title || '';
+            document.getElementById('courseDescription').value = course.description || '';
+            document.getElementById('courseLevel').value = course.level || '';
+            document.getElementById('courseSubject').value = course.subject || '';
+            document.getElementById('courseDuration').value = course.duration || '';
+            document.getElementById('courseStatus').value = course.status || 'draft';
+            document.getElementById('courseContent').value = course.content || '';
+            courseModal.show();
+        }
+
+        async function saveCourse() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            const formData = {
+                title: document.getElementById('courseTitle').value,
+                description: document.getElementById('courseDescription').value,
+                level: document.getElementById('courseLevel').value,
+                subject: document.getElementById('courseSubject').value,
+                duration: parseInt(document.getElementById('courseDuration').value),
+                status: document.getElementById('courseStatus').value,
+                content: document.getElementById('courseContent').value,
+                teacherId: user.uid,
+                teacherName: user.displayName || user.email.split('@')[0],
+                studentsEnrolled: 0,
+                rating: 0,
+                totalRatings: 0
+            };
+
+            try {
+                if (editingCourseId) {
+                    await window.db.collection('courses').doc(editingCourseId).update(formData);
+                    alert('Cours mis à jour avec succès !');
+                } else {
+                    formData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await window.db.collection('courses').add(formData);
+                    alert('Cours créé avec succès !');
+                }
+                courseModal.hide();
+                loadCourses();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la sauvegarde');
+            }
+        }
+
+        async function deleteCourse(courseId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce cours ?')) return;
+
+            try {
+                await window.db.collection('courses').doc(courseId).delete();
+                alert('Cours supprimé avec succès !');
+                loadCourses();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression');
+            }
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

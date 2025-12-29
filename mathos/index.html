@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mathosphère - Découvrez les mathématiques autrement</title>
+    <meta name="description" content="Plateforme d'apprentissage des mathématiques pour tous les niveaux. Cours, exercices, quiz et vidéos interactives.">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                
+                <nav class="nav">
+                    <a href="index.html" class="nav-link">Accueil</a>
+                    <a href="pages/cours.html" class="nav-link">Cours</a>
+                    <a href="pages/exercices.html" class="nav-link">Exercices</a>
+                    <a href="pages/quiz.html" class="nav-link">Quiz</a>
+                    <a href="pages/videos.html" class="nav-link">Vidéos</a>
+                    <a href="pages/forum.html" class="nav-link">Forum</a>
+                    <a href="pages/blog.html" class="nav-link">Blog</a>
+                    <a href="pages/boutique.html" class="nav-link">Boutique</a>
+                    <div class="nav-link" style="position: relative;">
+                        À propos
+                        <div class="dropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 0.5rem; background: white; border-radius: 0.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 0.5rem; min-width: 200px;">
+                            <a href="pages/encadrement.html" style="display: block; padding: 0.75rem; color: var(--text-primary); border-radius: 0.375rem;">Encadrement personnalisé</a>
+                            <a href="pages/contact.html" style="display: block; padding: 0.75rem; color: var(--text-primary); border-radius: 0.375rem;">Contact</a>
+                        </div>
+                    </div>
+                </nav>
+                
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="btn-icon" onclick="toggleCart()" style="position: relative;">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span class="badge badge-error" id="cart-count" style="position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; display: none;">0</span>
+                    </button>
+                    <a href="pages/connexion.html" class="btn btn-outline btn-sm">Connexion</a>
+                    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <nav class="mobile-nav">
+            <a href="index.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Accueil</a>
+            <a href="pages/cours.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Cours</a>
+            <a href="pages/exercices.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Exercices</a>
+            <a href="pages/quiz.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Quiz</a>
+            <a href="pages/videos.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Vidéos</a>
+            <a href="pages/forum.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Forum</a>
+            <a href="pages/blog.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Blog</a>
+            <a href="pages/boutique.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Boutique</a>
+            <a href="pages/encadrement.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Encadrement</a>
+            <a href="pages/contact.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Contact</a>
+            <a href="pages/connexion.html" class="mobile-nav-link" onclick="toggleMobileMenu()">Connexion</a>
+        </nav>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero position-relative overflow-hidden" style="min-height: 95vh; display: flex; align-items: center;">
+        <!-- Éléments flottants décoratifs -->
+        <div class="floating-element" style="width: 80px; height: 80px; right: 10%; top: 20%; animation-delay: 0s; background: rgba(59, 130, 246, 0.15);"></div>
+        <div class="floating-element" style="width: 60px; height: 60px; left: 15%; bottom: 30%; animation-delay: 2s; background: rgba(16, 185, 129, 0.15);"></div>
+        <div class="floating-element" style="width: 100px; height: 100px; right: 20%; bottom: 20%; animation-delay: 4s; background: rgba(245, 158, 11, 0.12);"></div>
+        
+        <div class="container">
+            <div class="row align-items-center min-vh-90 py-5">
+                <div class="col-lg-6 mb-5 mb-lg-0">
+                    <div class="mb-4 fade-in-up">
+                        <span class="badge rounded-pill px-4 py-2 bg-white bg-opacity-10 text-white border border-white border-opacity-20 backdrop-filter-blur" style="font-size: 0.95rem; font-weight: 500;">
+                            <i class="fas fa-graduation-cap me-2"></i>Plateforme d'apprentissage
+                        </span>
+                    </div>
+                    <h1 class="hero-title fade-in-up mb-4 display-2 fw-bold" style="line-height: 1.2;">
+                        Maîtrisez les mathématiques avec confiance
+                    </h1>
+                    <p class="hero-subtitle fade-in-up mb-5 fs-5" style="color: rgba(255,255,255,0.95); line-height: 1.8;">
+                        Cours interactifs, exercices corrigés, quiz et vidéos pour tous les niveaux. Une approche moderne qui rend les mathématiques accessibles et passionnantes.
+                    </p>
+                    
+                    <!-- Stats rapides -->
+                    <div class="row g-4 mt-5 fade-in-up">
+                        <div class="col-4">
+                            <div class="text-center">
+                                <div class="h2 fw-bold text-white mb-1" style="font-size: 2.5rem;">100+</div>
+                                <div class="small text-white-50 fw-medium">Cours</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <div class="h2 fw-bold text-white mb-1" style="font-size: 2.5rem;">500+</div>
+                                <div class="small text-white-50 fw-medium">Exercices</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <div class="h2 fw-bold text-white mb-1" style="font-size: 2.5rem;">30+</div>
+                                <div class="small text-white-50 fw-medium">Quiz</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="position-relative fade-in-up" style="animation-delay: 0.3s;">
+                        <div class="position-absolute top-0 start-0 w-100 h-100 bg-primary bg-opacity-10 rounded-4" style="transform: rotate(-3deg); z-index: -1;"></div>
+                        <div class="bg-white bg-opacity-5 backdrop-filter-blur rounded-4 p-4 border border-white border-opacity-10 shadow-lg">
+                            <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&h=600&fit=crop" alt="Mathématiques" class="img-fluid rounded-3 shadow">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Pourquoi nous choisir -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-4 fw-bold mb-3 gradient-text">Pourquoi choisir Mathosphère ?</h2>
+                <p class="lead text-muted">Une plateforme complète pour votre réussite en mathématiques</p>
+            </div>
+            <div class="row g-4 mt-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="text-center p-4 h-100">
+                        <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-book-open text-primary" style="font-size: 2rem;"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Cours complets</h4>
+                        <p class="text-muted">Des cours structurés et progressifs pour tous les niveaux, de la 6ème à la terminale.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="text-center p-4 h-100">
+                        <div class="bg-success bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-chart-line text-success" style="font-size: 2rem;"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Suivi personnalisé</h4>
+                        <p class="text-muted">Suivez votre progression en temps réel et identifiez vos points forts et faiblesses.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="text-center p-4 h-100">
+                        <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-users text-warning" style="font-size: 2rem;"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Communauté active</h4>
+                        <p class="text-muted">Rejoignez une communauté d'apprenants et échangez avec des professeurs expérimentés.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="text-center p-4 h-100">
+                        <div class="bg-info bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-clock text-info" style="font-size: 2rem;"></i>
+                        </div>
+                        <h4 class="fw-bold mb-3">Apprentissage flexible</h4>
+                        <p class="text-muted">Apprenez à votre rythme, quand vous voulez et où vous voulez.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sections Preview -->
+    <section class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-4 fw-bold mb-3 gradient-text">Explorez nos ressources</h2>
+                <p class="lead text-muted">
+                    Découvrez toutes les ressources disponibles pour votre apprentissage des mathématiques
+                </p>
+            </div>
+            
+            <div class="row g-4 align-items-stretch">
+                <div class="col-md-6 col-lg-4 d-flex">
+                <div class="card hover-lift fade-in-up card-shine border-0 shadow-lg w-100 d-flex flex-column">
+                    <div class="image-container position-relative overflow-hidden" style="height: 200px; flex-shrink: 0;">
+                        <img src="https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&h=600&fit=crop" alt="Cours" class="w-100 h-100" style="object-fit: cover;">
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, rgba(59,130,246,0.85), rgba(30,64,175,0.85));"></div>
+                        <div class="particles">
+                            <div class="particle" style="left: 20%; animation-delay: 0s;"></div>
+                            <div class="particle" style="left: 60%; animation-delay: 2s;"></div>
+                        </div>
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="z-index: 1;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-white bg-opacity-95 rounded-3 p-3 shadow" style="backdrop-filter: blur(10px);">
+                                    <i class="fas fa-book text-primary" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <h3 class="text-white fw-bold mb-0" style="font-size: 1.5rem; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">Cours</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body d-flex flex-column flex-grow-1">
+                        <p class="text-muted mb-3">
+                            Des cours complets pour tous les niveaux, de la 6ème à la terminale
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pb-3 mt-auto">
+                        <a href="pages/cours.html" class="btn btn-primary w-100">
+                            Explorer
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4 d-flex">
+                <div class="card hover-lift fade-in-up card-shine border-0 shadow-lg w-100 d-flex flex-column">
+                    <div class="image-container position-relative overflow-hidden" style="height: 200px; flex-shrink: 0;">
+                        <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&h=600&fit=crop" alt="Exercices" class="w-100 h-100" style="object-fit: cover;">
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, rgba(16,185,129,0.85), rgba(5,150,105,0.85));"></div>
+                        <div class="particles">
+                            <div class="particle" style="left: 30%; animation-delay: 1s;"></div>
+                            <div class="particle" style="left: 60%; animation-delay: 3s;"></div>
+                        </div>
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="z-index: 1;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-white bg-opacity-95 rounded-3 p-3 shadow" style="backdrop-filter: blur(10px);">
+                                    <i class="fas fa-pen text-success" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <h3 class="text-white fw-bold mb-0" style="font-size: 1.5rem; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">Exercices</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body d-flex flex-column flex-grow-1">
+                        <p class="text-muted mb-3">
+                            Des exercices variés avec corrections détaillées
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pb-3 mt-auto">
+                        <a href="pages/exercices.html" class="btn btn-success w-100">
+                            Explorer
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4 d-flex">
+                <div class="card hover-lift fade-in-up card-shine border-0 shadow-lg w-100 d-flex flex-column">
+                    <div class="image-container position-relative overflow-hidden" style="height: 200px; flex-shrink: 0;">
+                        <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&h=600&fit=crop" alt="Quiz" class="w-100 h-100" style="object-fit: cover;">
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, rgba(245,158,11,0.85), rgba(249,115,22,0.85));"></div>
+                        <div class="particles">
+                            <div class="particle" style="left: 25%; animation-delay: 0.5s;"></div>
+                            <div class="particle" style="left: 75%; animation-delay: 2.5s;"></div>
+                        </div>
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="z-index: 1;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-white bg-opacity-95 rounded-3 p-3 shadow" style="backdrop-filter: blur(10px);">
+                                    <i class="fas fa-brain text-warning" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <h3 class="text-white fw-bold mb-0" style="font-size: 1.5rem; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">Quiz</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body d-flex flex-column flex-grow-1">
+                        <p class="text-muted mb-3">
+                            Testez vos connaissances avec nos quiz interactifs
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pb-3 mt-auto">
+                        <a href="pages/quiz.html" class="btn btn-warning w-100 text-white">
+                            Explorer
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4 d-flex">
+                <div class="card hover-lift fade-in-up card-shine border-0 shadow-lg w-100 d-flex flex-column">
+                    <div class="image-container position-relative overflow-hidden" style="height: 200px; flex-shrink: 0;">
+                        <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=600&fit=crop" alt="Blog" class="w-100 h-100" style="object-fit: cover;">
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, rgba(6,182,212,0.85), rgba(8,145,178,0.85));"></div>
+                        <div class="particles">
+                            <div class="particle" style="left: 40%; animation-delay: 1.5s;"></div>
+                            <div class="particle" style="left: 70%; animation-delay: 3.5s;"></div>
+                        </div>
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="z-index: 1;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-white bg-opacity-95 rounded-3 p-3 shadow" style="backdrop-filter: blur(10px);">
+                                    <i class="fas fa-newspaper text-info" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <h3 class="text-white fw-bold mb-0" style="font-size: 1.5rem; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">Blog</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body d-flex flex-column flex-grow-1">
+                        <p class="text-muted mb-3">
+                            Articles sur les mathématiques, concours et méthodes d'apprentissage
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pb-3 mt-auto">
+                        <a href="pages/blog.html" class="btn btn-info w-100 text-white">
+                            Explorer
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4 d-flex">
+                <div class="card hover-lift fade-in-up card-shine border-0 shadow-lg w-100 d-flex flex-column">
+                    <div class="image-container position-relative overflow-hidden" style="height: 200px; flex-shrink: 0;">
+                        <img src="https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&h=600&fit=crop" alt="Vidéos" class="w-100 h-100" style="object-fit: cover;">
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, rgba(239,68,68,0.85), rgba(220,38,38,0.85));"></div>
+                        <div class="particles">
+                            <div class="particle" style="left: 15%; animation-delay: 0.8s;"></div>
+                            <div class="particle" style="left: 85%; animation-delay: 2.8s;"></div>
+                        </div>
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="z-index: 1;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-white bg-opacity-95 rounded-3 p-3 shadow" style="backdrop-filter: blur(10px);">
+                                    <i class="fab fa-youtube text-danger" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <h3 class="text-white fw-bold mb-0" style="font-size: 1.5rem; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">Vidéos YouTube</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body d-flex flex-column flex-grow-1">
+                        <p class="text-muted mb-3">
+                            Vidéos explicatives sur divers sujets mathématiques
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pb-3 mt-auto">
+                        <a href="pages/videos.html" class="btn btn-danger w-100">
+                            Explorer
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+                </div>
+
+                <div class="col-md-6 col-lg-4 d-flex">
+                <div class="card hover-lift fade-in-up card-shine border-0 shadow-lg w-100 d-flex flex-column">
+                    <div class="image-container position-relative overflow-hidden" style="height: 200px; flex-shrink: 0;">
+                        <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&h=600&fit=crop" alt="Contact" class="w-100 h-100" style="object-fit: cover;">
+                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, rgba(59,130,246,0.85), rgba(6,182,212,0.85));"></div>
+                        <div class="particles">
+                            <div class="particle" style="left: 35%; animation-delay: 1.2s;"></div>
+                            <div class="particle" style="left: 65%; animation-delay: 3.2s;"></div>
+                        </div>
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="z-index: 1;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-white bg-opacity-95 rounded-3 p-3 shadow" style="backdrop-filter: blur(10px);">
+                                    <i class="fas fa-envelope text-primary" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <h3 class="text-white fw-bold mb-0" style="font-size: 1.5rem; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">Contact</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body d-flex flex-column flex-grow-1">
+                        <p class="text-muted mb-3">
+                            Besoin d'aide ? Contactez-nous pour toute question
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0 pb-3 mt-auto">
+                        <a href="pages/contact.html" class="btn btn-primary w-100">
+                            Explorer
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Encadrement personnalisé -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6 order-2 order-lg-1">
+                    <span class="badge bg-primary rounded-pill px-3 py-2 mb-3">Nouveau</span>
+                    <h2 class="display-5 fw-bold mb-4">Encadrement personnalisé</h2>
+                    <p class="lead text-muted mb-4">
+                        Bénéficiez d'un suivi individuel pour progresser plus rapidement et atteindre vos objectifs en mathématiques.
+                    </p>
+                    <ul class="list-unstyled mb-4">
+                        <li class="d-flex align-items-start gap-3 mb-3">
+                            <i class="fas fa-check-circle text-success mt-1" style="font-size: 1.25rem;"></i>
+                            <span class="fs-5">Cours particuliers adaptés à votre niveau</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-3 mb-3">
+                            <i class="fas fa-check-circle text-success mt-1" style="font-size: 1.25rem;"></i>
+                            <span class="fs-5">Suivi régulier de votre progression</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-3 mb-3">
+                            <i class="fas fa-check-circle text-success mt-1" style="font-size: 1.25rem;"></i>
+                            <span class="fs-5">Préparation aux examens et concours</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-3">
+                            <i class="fas fa-check-circle text-success mt-1" style="font-size: 1.25rem;"></i>
+                            <span class="fs-5">Méthodes personnalisées pour surmonter vos difficultés</span>
+                        </li>
+                    </ul>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="pages/dashboard.html" class="btn btn-primary btn-lg px-4">Demander un encadrement</a>
+                        <a href="pages/encadrement.html" class="btn btn-outline-primary btn-lg px-4">En savoir plus</a>
+                    </div>
+                </div>
+                <div class="col-lg-6 order-1 order-lg-2">
+                    <div class="position-relative">
+                        <div class="position-absolute top-0 start-0 w-100 h-100 bg-primary bg-opacity-10 rounded-4" style="transform: rotate(3deg); z-index: -1;"></div>
+                        <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=600&fit=crop" alt="Encadrement" class="img-fluid rounded-4 shadow-lg">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Témoignages -->
+    <section class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-4 fw-bold mb-3 gradient-text">Ce que disent nos étudiants</h2>
+                <p class="lead text-muted">Découvrez les témoignages de ceux qui ont réussi avec Mathosphère</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-lg h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex gap-2 mb-3">
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                            </div>
+                            <p class="card-text text-muted mb-4" style="font-size: 1.05rem; line-height: 1.7;">
+                                "Grâce à Mathosphère, j'ai enfin compris les concepts qui me posaient problème. Les cours sont clairs et les exercices m'aident vraiment à progresser."
+                            </p>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <span class="text-primary fw-bold">AM</span>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">Amadou M.</div>
+                                    <small class="text-muted">Étudiant en Terminale</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-lg h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex gap-2 mb-3">
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                            </div>
+                            <p class="card-text text-muted mb-4" style="font-size: 1.05rem; line-height: 1.7;">
+                                "La plateforme est excellente ! Les quiz sont très utiles pour réviser et le forum permet d'échanger avec d'autres étudiants."
+                            </p>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <span class="text-success fw-bold">FK</span>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">Fatou K.</div>
+                                    <small class="text-muted">Étudiante en 1ère</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-lg h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex gap-2 mb-3">
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                                <i class="fas fa-star text-warning"></i>
+                            </div>
+                            <p class="card-text text-muted mb-4" style="font-size: 1.05rem; line-height: 1.7;">
+                                "L'encadrement personnalisé m'a beaucoup aidé. Mon professeur a su identifier mes difficultés et m'a donné des méthodes adaptées."
+                            </p>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                    <span class="text-warning fw-bold">IB</span>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">Ibrahima B.</div>
+                                    <small class="text-muted">Étudiant en 3ème</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Groupe Mathosphère -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6">
+                    <div class="position-relative">
+                        <div class="position-absolute top-0 start-0 w-100 h-100 bg-success bg-opacity-10 rounded-4" style="transform: rotate(-3deg); z-index: -1;"></div>
+                        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&h=600&fit=crop" alt="Communauté" class="img-fluid rounded-4 shadow-lg">
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <h2 class="display-5 fw-bold mb-4">Rejoignez le groupe Mathosphère</h2>
+                    <p class="lead text-muted mb-4">
+                        Intégrez notre communauté d'apprenants et d'enseignants passionnés par les mathématiques.
+                    </p>
+                    <ul class="list-unstyled mb-4">
+                        <li class="d-flex align-items-start gap-3 mb-3">
+                            <i class="fas fa-check-circle text-success mt-1" style="font-size: 1.25rem;"></i>
+                            <span class="fs-5">Échangez avec d'autres étudiants et professeurs</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-3 mb-3">
+                            <i class="fas fa-check-circle text-success mt-1" style="font-size: 1.25rem;"></i>
+                            <span class="fs-5">Participez à des sessions d'étude collectives</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-3 mb-3">
+                            <i class="fas fa-check-circle text-success mt-1" style="font-size: 1.25rem;"></i>
+                            <span class="fs-5">Accédez à des ressources exclusives</span>
+                        </li>
+                        <li class="d-flex align-items-start gap-3">
+                            <i class="fas fa-check-circle text-success mt-1" style="font-size: 1.25rem;"></i>
+                            <span class="fs-5">Restez informé des dernières actualités mathématiques</span>
+                        </li>
+                    </ul>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="https://chat.whatsapp.com/FhVX5a3kGfv3PN0uTIna8E" target="_blank" class="btn btn-success btn-lg px-4">
+                            <i class="fab fa-whatsapp me-2"></i>Rejoindre le groupe
+                        </a>
+                        <a href="pages/forum.html" class="btn btn-outline-success btn-lg px-4">En savoir plus</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="py-5 position-relative overflow-hidden" style="background: linear-gradient(135deg, #1e293b 0%, #3b82f6 100%);">
+        <div class="container position-relative">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center text-white">
+                    <h2 class="display-4 fw-bold mb-4">Prêt à commencer votre voyage mathématique ?</h2>
+                    <p class="lead mb-5" style="color: rgba(255,255,255,0.95);">
+                        Inscrivez-vous gratuitement et accédez à toutes nos ressources pour progresser en mathématiques.
+                    </p>
+                    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                        <a href="pages/inscription.html" class="btn btn-light btn-lg px-5 py-3 rounded-pill fw-semibold" style="font-size: 1.1rem;">
+                            <i class="fas fa-rocket me-2"></i>S'inscrire gratuitement
+                        </a>
+                        <a href="pages/contact.html" class="btn btn-outline-light btn-lg px-5 py-3 rounded-pill fw-semibold" style="font-size: 1.1rem; border-width: 2px;">
+                            En savoir plus
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Mathosphère</h3>
+                    <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        Plateforme d'apprentissage des mathématiques pour tous les niveaux.
+                    </p>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <a href="#" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--bg-muted); border-radius: 50%; color: var(--text-secondary);"><i class="fab fa-facebook"></i></a>
+                        <a href="#" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--bg-muted); border-radius: 50%; color: var(--text-secondary);"><i class="fab fa-twitter"></i></a>
+                        <a href="#" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--bg-muted); border-radius: 50%; color: var(--text-secondary);"><i class="fab fa-instagram"></i></a>
+                        <a href="#" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: var(--bg-muted); border-radius: 50%; color: var(--text-secondary);"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>Liens rapides</h3>
+                    <ul class="footer-links">
+                        <li><a href="pages/cours.html" class="footer-link">Cours</a></li>
+                        <li><a href="pages/exercices.html" class="footer-link">Exercices</a></li>
+                        <li><a href="pages/quiz.html" class="footer-link">Quiz</a></li>
+                        <li><a href="pages/blog.html" class="footer-link">Blog</a></li>
+                        <li><a href="pages/videos.html" class="footer-link">Vidéos YouTube</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Ressources</h3>
+                    <ul class="footer-links">
+                        <li><a href="pages/encadrement.html" class="footer-link">Encadrement personnalisé</a></li>
+                        <li><a href="https://chat.whatsapp.com/FhVX5a3kGfv3PN0uTIna8E" target="_blank" class="footer-link">Groupe Mathosphère</a></li>
+                        <li><a href="pages/forum.html" class="footer-link">Forum</a></li>
+                        <li><a href="pages/contact.html" class="footer-link">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Légal</h3>
+                    <ul class="footer-links">
+                        <li><a href="pages/contact.html" class="footer-link">Conditions d'utilisation</a></li>
+                        <li><a href="pages/contact.html" class="footer-link">Politique de confidentialité</a></li>
+                        <li><a href="pages/contact.html" class="footer-link">Politique de cookies</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cart Modal -->
+    <div id="cartModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: var(--radius-xl); max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; padding: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3>Panier</h3>
+                <button onclick="toggleCart()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div id="cartItems" style="margin-bottom: 1.5rem;">
+                <p style="text-align: center; color: var(--text-muted); padding: 2rem;">Votre panier est vide</p>
+            </div>
+            <div style="border-top: 1px solid var(--bg-muted); padding-top: 1rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; font-weight: 600;">
+                    <span>Total:</span>
+                    <span id="cartTotal">0 FCFA</span>
+                </div>
+                <a href="pages/checkout.html" class="btn btn-primary" style="width: 100%;">Passer la commande</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/firebase.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
+

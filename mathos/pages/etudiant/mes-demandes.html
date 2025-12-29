@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Demandes - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="../dashboard.html" class="nav-link">Dashboard</a>
+                    <a href="mes-professeurs.html" class="nav-link">Mes Professeurs</a>
+                    <a href="mes-demandes.html" class="nav-link active">Mes Demandes</a>
+                    <a href="mon-profil.html" class="nav-link">Mon Profil</a>
+                </nav>
+                <a href="../dashboard.html" class="btn btn-outline btn-sm">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="section py-5">
+        <div class="container">
+            <div class="mb-4">
+                <h1 class="display-5 fw-bold mb-2">Mes Demandes d'Encadrement</h1>
+                <p class="text-muted">Suivez l'état de vos demandes d'encadrement</p>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0" id="totalRequests">0</h3>
+                            <small class="text-muted">Total</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0 text-warning" id="pendingRequests">0</h3>
+                            <small class="text-muted">En attente</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0 text-success" id="approvedRequests">0</h3>
+                            <small class="text-muted">Approuvées</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0 text-danger" id="rejectedRequests">0</h3>
+                            <small class="text-muted">Refusées</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-body">
+                    <ul class="nav nav-pills" id="filterTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="all-tab" data-bs-toggle="pill" data-bs-target="#all" type="button" onclick="filterRequests('all')">
+                                Toutes
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="pending-tab" data-bs-toggle="pill" data-bs-target="#pending" type="button" onclick="filterRequests('pending')">
+                                En attente
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="approved-tab" data-bs-toggle="pill" data-bs-target="#approved" type="button" onclick="filterRequests('approved')">
+                                Approuvées
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="rejected-tab" data-bs-toggle="pill" data-bs-target="#rejected" type="button" onclick="filterRequests('rejected')">
+                                Refusées
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Liste des demandes -->
+            <div id="loadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-3 text-muted">Chargement de vos demandes...</p>
+            </div>
+
+            <div id="requestsList" style="display: none;">
+                <!-- Les demandes seront chargées ici -->
+            </div>
+
+            <div id="noRequestsState" style="display: none;" class="text-center py-5">
+                <i class="fas fa-inbox text-muted mb-3" style="font-size: 4rem;"></i>
+                <h3 class="h4 fw-bold mb-2">Aucune demande</h3>
+                <p class="text-muted mb-4">Vous n'avez pas encore fait de demande d'encadrement.</p>
+                <a href="../encadrement.html" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Faire une demande
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script src="../../js/firebase.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/auth-guard.js"></script>
+    <script>
+        let allRequests = [];
+        let currentFilter = 'all';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadRequests();
+        });
+
+        async function loadRequests() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user) {
+                window.location.href = '../connexion.html';
+                return;
+            }
+
+            try {
+                if (window.db) {
+                    const requestsRef = window.db.collection('encadrement_requests');
+                    const query = requestsRef.where('studentId', '==', user.uid);
+                    const snapshot = await query.get();
+
+                    allRequests = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        allRequests.push({
+                            id: doc.id,
+                            ...data,
+                            createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+                            processedAt: data.processedAt?.toDate ? data.processedAt.toDate() : (data.processedAt ? new Date(data.processedAt) : null)
+                        });
+                    });
+
+                    // Trier par date de création (plus récent en premier)
+                    allRequests.sort((a, b) => b.createdAt - a.createdAt);
+
+                    updateStats();
+                    filterRequests('all');
+                }
+
+                document.getElementById('loadingState').style.display = 'none';
+                if (allRequests.length === 0) {
+                    document.getElementById('noRequestsState').style.display = 'block';
+                } else {
+                    document.getElementById('requestsList').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('noRequestsState').style.display = 'block';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalRequests').textContent = allRequests.length;
+            document.getElementById('pendingRequests').textContent = allRequests.filter(r => r.status === 'pending').length;
+            document.getElementById('approvedRequests').textContent = allRequests.filter(r => r.status === 'approved').length;
+            document.getElementById('rejectedRequests').textContent = allRequests.filter(r => r.status === 'rejected').length;
+        }
+
+        function filterRequests(status) {
+            currentFilter = status;
+            const filtered = status === 'all' 
+                ? allRequests 
+                : allRequests.filter(r => r.status === status);
+
+            if (filtered.length === 0) {
+                document.getElementById('requestsList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucune demande ${status === 'all' ? '' : getStatusLabel(status)}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const requestsHtml = filtered.map(request => {
+                const statusBadge = getStatusBadge(request.status);
+                const dateStr = formatDate(request.createdAt);
+                
+                return `
+                    <div class="card border-0 shadow-lg mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="fw-bold mb-2">${request.subject || 'Demande d\'encadrement'}</h5>
+                                    <p class="text-muted mb-0">${request.description || ''}</p>
+                                </div>
+                                ${statusBadge}
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Niveau</small>
+                                    <span class="fw-semibold">${request.level || '-'}</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Date de demande</small>
+                                    <span class="fw-semibold">${dateStr}</span>
+                                </div>
+                                ${request.processedAt ? `
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">Date de traitement</small>
+                                        <span class="fw-semibold">${formatDate(request.processedAt)}</span>
+                                    </div>
+                                ` : ''}
+                                ${request.teacherName ? `
+                                    <div class="col-md-6">
+                                        <small class="text-muted d-block">Professeur assigné</small>
+                                        <span class="fw-semibold">${request.teacherName}</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            ${request.feedback ? `
+                                <div class="alert alert-info mt-3 mb-0">
+                                    <strong>Feedback :</strong> ${request.feedback}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('requestsList').innerHTML = requestsHtml;
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                pending: '<span class="badge bg-warning"><i class="fas fa-clock me-1"></i>En attente</span>',
+                approved: '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Approuvée</span>',
+                rejected: '<span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i>Refusée</span>',
+                cancelled: '<span class="badge bg-secondary"><i class="fas fa-ban me-1"></i>Annulée</span>'
+            };
+            return badges[status] || '<span class="badge bg-secondary">' + status + '</span>';
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                pending: 'en attente',
+                approved: 'approuvée',
+                rejected: 'refusée'
+            };
+            return labels[status] || status;
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        }
+    </script>
+</body>
+</html>
+

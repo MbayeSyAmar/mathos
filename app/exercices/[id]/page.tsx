@@ -89,7 +89,7 @@ export default function ExerciseDetailPage() {
             isLycee
           })
           
-          const content = await getExerciseContent(numericId, levelType, exerciseData.level)
+          const content = await getExerciseContent(numericId, levelType, exerciseData.level, exerciseData.title)
           
           console.log('[ExercicePage] Content result:', content)
           
@@ -147,7 +147,7 @@ export default function ExerciseDetailPage() {
               isLycee
             })
             
-            const content = await getExerciseContent(numericId, levelType, classe)
+            const content = await getExerciseContent(numericId, levelType, classe, staticExercise.title)
             
             console.log('[ExercicePage - Static] Content result:', content)
             

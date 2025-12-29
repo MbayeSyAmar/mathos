@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Détail du cours - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="../index.html" class="nav-link">Accueil</a>
+                    <a href="cours.html" class="nav-link">Cours</a>
+                    <a href="exercices.html" class="nav-link">Exercices</a>
+                    <a href="quiz.html" class="nav-link">Quiz</a>
+                </nav>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <a href="dashboard.html" class="btn btn-outline btn-sm">
+                        <i class="fas fa-user"></i> Mon compte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="section py-5">
+        <div class="container">
+            <a href="cours.html" class="btn btn-outline-secondary mb-4">
+                <i class="fas fa-arrow-left me-2"></i>Retour aux cours
+            </a>
+
+            <div id="loadingState" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-3 text-muted">Chargement du cours...</p>
+            </div>
+
+            <div id="courseContent" style="display: none;">
+                <div class="row g-4">
+                    <!-- Contenu principal -->
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-lg mb-4">
+                            <div class="card-header bg-transparent border-0 pb-3">
+                                <h1 class="h2 fw-bold mb-2" id="courseTitle">Titre du cours</h1>
+                                <p class="text-muted mb-0" id="courseDescription">Description du cours</p>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-lg">
+                            <div class="card-header bg-transparent border-0 pb-3">
+                                <ul class="nav nav-tabs border-0" id="courseTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="content-tab" data-bs-toggle="tab" data-bs-target="#content" type="button" role="tab">
+                                            <i class="fas fa-book me-2"></i>Contenu
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="objectives-tab" data-bs-toggle="tab" data-bs-target="#objectives" type="button" role="tab">
+                                            <i class="fas fa-bullseye me-2"></i>Objectifs
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="prerequisites-tab" data-bs-toggle="tab" data-bs-target="#prerequisites" type="button" role="tab">
+                                            <i class="fas fa-check-circle me-2"></i>Prérequis
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="card-body">
+                                <div class="tab-content" id="courseTabsContent">
+                                    <div class="tab-pane fade show active" id="content" role="tabpanel">
+                                        <div id="courseContentArea">
+                                            <p class="text-muted">Chargement du contenu...</p>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="objectives" role="tabpanel">
+                                        <div id="objectivesList">
+                                            <p class="text-muted">Chargement des objectifs...</p>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="prerequisites" role="tabpanel">
+                                        <div id="prerequisitesList">
+                                            <p class="text-muted">Chargement des prérequis...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="col-lg-4">
+                        <div class="card border-0 shadow-lg mb-4">
+                            <div class="card-header bg-transparent border-0 pb-3">
+                                <h3 class="h5 fw-bold mb-0">Informations</h3>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center gap-3 mb-2">
+                                        <i class="fas fa-user text-primary"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Professeur</small>
+                                            <span class="fw-semibold" id="courseTeacher">Équipe Mathosphère</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center gap-3 mb-2">
+                                        <i class="fas fa-clock text-success"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Durée</small>
+                                            <span class="fw-semibold" id="courseDuration">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center gap-3 mb-2">
+                                        <i class="fas fa-graduation-cap text-warning"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Niveau</small>
+                                            <span class="fw-semibold" id="courseLevel">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <div>
+                                    <small class="text-muted d-block mb-2">Matière</small>
+                                    <span class="badge bg-primary" id="courseSubject">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-lg">
+                            <div class="card-body">
+                                <button class="btn btn-primary w-100 mb-2" id="startCourseBtn">
+                                    <i class="fas fa-play me-2"></i>Commencer le cours
+                                </button>
+                                <button class="btn btn-outline-primary w-100" id="markCompleteBtn" style="display: none;">
+                                    <i class="fas fa-check me-2"></i>Marquer comme terminé
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorState" style="display: none;" class="text-center py-5">
+                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
+                <h3 class="h4 fw-bold mb-2">Cours introuvable</h3>
+                <p class="text-muted mb-4">Le cours demandé n'existe pas ou n'est plus disponible.</p>
+                <a href="cours.html" class="btn btn-primary">Retour aux cours</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/firebase.js"></script>
+    <script src="../js/static-data.js"></script>
+    <script src="../js/pdf-mapping.js"></script>
+    <script src="../js/enriched-content.js"></script>
+    <script src="../js/enriched-content-extended.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        let currentCourse = null;
+        let courseStarted = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Récupérer l'ID du cours depuis l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const courseId = urlParams.get('id');
+            
+            if (!courseId) {
+                showError();
+                return;
+            }
+
+            loadCourse(courseId);
+        });
+
+        async function loadCourse(courseId) {
+            try {
+                // Essayer de charger depuis Firebase d'abord
+                let course = null;
+                if (window.CourseService) {
+                    try {
+                        course = await window.CourseService.getCourseById(courseId);
+                    } catch (error) {
+                        console.log('Cours non trouvé dans Firebase, recherche dans les données statiques');
+                    }
+                }
+
+                // Si pas trouvé dans Firebase, chercher dans les données statiques
+                if (!course) {
+                    const numericId = parseInt(courseId);
+                    if (!isNaN(numericId) && window.getStaticCourseById) {
+                        course = window.getStaticCourseById(numericId);
+                        if (course) {
+                            course.isStatic = true;
+                        }
+                    }
+                }
+
+                if (!course) {
+                    showError();
+                    return;
+                }
+
+                currentCourse = course;
+                displayCourse(course);
+                
+                // Vérifier si l'utilisateur a déjà commencé ce cours
+                checkCourseProgress(courseId);
+            } catch (error) {
+                console.error('Erreur lors du chargement du cours:', error);
+                showError();
+            }
+        }
+
+        function displayCourse(course) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('courseContent').style.display = 'block';
+
+            // Titre et description
+            document.getElementById('courseTitle').textContent = course.title || 'Titre du cours';
+            document.getElementById('courseDescription').textContent = course.description || 'Description du cours';
+            
+            // Informations sidebar
+            document.getElementById('courseTeacher').textContent = course.teacherName || 'Équipe Mathosphère';
+            document.getElementById('courseDuration').textContent = course.duration || '-';
+            document.getElementById('courseLevel').textContent = course.level || course.classe || '-';
+            document.getElementById('courseSubject').textContent = course.subject || 'Mathématiques';
+
+            // Objectifs
+            const objectives = course.objectives || [];
+            const objectivesHtml = objectives.length > 0 
+                ? objectives.map(obj => `<div class="d-flex align-items-start gap-2 mb-2"><i class="fas fa-check-circle text-success mt-1"></i><span>${obj}</span></div>`).join('')
+                : '<p class="text-muted">Aucun objectif défini</p>';
+            document.getElementById('objectivesList').innerHTML = objectivesHtml;
+
+            // Prérequis
+            const prerequisites = course.prerequisites || [];
+            const prerequisitesHtml = prerequisites.length > 0
+                ? prerequisites.map(pre => `<div class="d-flex align-items-start gap-2 mb-2"><i class="fas fa-bullseye text-primary mt-1"></i><span>${pre}</span></div>`).join('')
+                : '<p class="text-muted">Aucun prérequis</p>';
+            document.getElementById('prerequisitesList').innerHTML = prerequisitesHtml;
+
+            // Vérifier si un PDF existe pour ce cours
+            const pdfInfo = window.getCoursePDF(course.id);
+            const enrichedContent = window.getEnrichedCourseContent(course.id);
+            
+            let contentHtml = '';
+            
+            if (pdfInfo && pdfInfo.pdfPath) {
+                // Afficher le PDF dans un iframe
+                contentHtml = `
+                    <div class="pdf-viewer-container">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-file-pdf me-2"></i>
+                            <strong>Document PDF disponible :</strong> ${pdfInfo.title}
+                            <a href="${pdfInfo.pdfPath}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="fas fa-external-link-alt me-1"></i>Ouvrir dans un nouvel onglet
+                            </a>
+                        </div>
+                        <iframe src="${pdfInfo.pdfPath}" class="w-100" style="height: 800px; border: 1px solid #dee2e6; border-radius: 0.375rem;" title="PDF du cours"></iframe>
+                    </div>
+                `;
+            } else if (enrichedContent) {
+                // Afficher le contenu enrichi HTML
+                contentHtml = enrichedContent;
+            } else {
+                // Contenu par défaut
+                contentHtml = `
+                    <div class="prose max-w-none">
+                        <h3>Bienvenue dans le cours "${course.title}"</h3>
+                        <p>Ce cours vous permettra de maîtriser ${course.description.toLowerCase()}.</p>
+                        <p>Le contenu complet sera disponible une fois que vous aurez commencé le cours.</p>
+                        <div class="alert alert-info mt-4">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Cliquez sur "Commencer le cours" pour accéder au contenu complet.
+                        </div>
+                    </div>
+                `;
+            }
+            
+            document.getElementById('courseContentArea').innerHTML = contentHtml;
+        }
+
+        async function checkCourseProgress(courseId) {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user) return;
+
+            // Vérifier dans Firebase si l'utilisateur a commencé ce cours
+            if (window.db) {
+                try {
+                    const progressRef = window.db.collection('course_progress');
+                    const query = progressRef.where('userId', '==', user.uid).where('courseId', '==', courseId);
+                    const snapshot = await query.get();
+                    
+                    if (!snapshot.empty) {
+                        courseStarted = true;
+                        document.getElementById('startCourseBtn').style.display = 'none';
+                        document.getElementById('markCompleteBtn').style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Erreur lors de la vérification de la progression:', error);
+                }
+            }
+        }
+
+        document.getElementById('startCourseBtn').addEventListener('click', async () => {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            
+            if (!user) {
+                alert('Vous devez être connecté pour commencer un cours');
+                window.location.href = 'connexion.html';
+                return;
+            }
+
+            if (!currentCourse) return;
+
+            try {
+                // Enregistrer le début du cours dans Firebase
+                if (window.db) {
+                    const progressRef = window.db.collection('course_progress');
+                    await progressRef.add({
+                        userId: user.uid,
+                        courseId: currentCourse.id.toString(),
+                        courseTitle: currentCourse.title,
+                        startedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        progress: 0,
+                        completed: false
+                    });
+                }
+
+                // Enregistrer une activité
+                if (window.db) {
+                    const activitiesRef = window.db.collection('activities');
+                    await activitiesRef.add({
+                        userId: user.uid,
+                        type: 'course_started',
+                        title: `Cours "${currentCourse.title}" commencé`,
+                        description: `Vous avez commencé le cours ${currentCourse.title}`,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                courseStarted = true;
+                document.getElementById('startCourseBtn').style.display = 'none';
+                document.getElementById('markCompleteBtn').style.display = 'block';
+
+                // Charger le contenu complet
+                loadCourseContent(currentCourse.id);
+                
+                alert('Cours commencé avec succès !');
+            } catch (error) {
+                console.error('Erreur lors du démarrage du cours:', error);
+                alert('Erreur lors du démarrage du cours. Veuillez réessayer.');
+            }
+        });
+
+        async function loadCourseContent(courseId) {
+            // Ici, charger le contenu enrichi depuis Firebase ou les données statiques
+            // Pour l'instant, afficher un message
+            const contentHtml = `
+                <div class="prose max-w-none">
+                    <h3>Contenu du cours</h3>
+                    <p>Le contenu complet du cours sera chargé ici.</p>
+                    <p>Pour l'instant, vous pouvez consulter les objectifs et prérequis dans les onglets ci-dessus.</p>
+                </div>
+            `;
+            document.getElementById('courseContentArea').innerHTML = contentHtml;
+        }
+
+        function showError() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+

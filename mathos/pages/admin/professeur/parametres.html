@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramètres - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Professeur</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cours.html"><i class="fas fa-book-open me-2"></i>Cours</a></li>
+                    <li class="nav-item"><a class="nav-link" href="exercices.html"><i class="fas fa-dumbbell me-2"></i>Exercices</a></li>
+                    <li class="nav-item"><a class="nav-link" href="quiz.html"><i class="fas fa-file-alt me-2"></i>Quiz</a></li>
+                    <li class="nav-item"><a class="nav-link" href="videos.html"><i class="fas fa-video me-2"></i>Vidéos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="soumissions.html"><i class="fas fa-clipboard-list me-2"></i>Soumissions</a></li>
+                    <li class="nav-item"><a class="nav-link" href="demandes.html"><i class="fas fa-paper-plane me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item"><a class="nav-link" href="notifications.html"><i class="fas fa-bell me-2"></i>Notifications</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="parametres.html"><i class="fas fa-cog me-2"></i>Paramètres</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 fw-bold">Paramètres</h1>
+                    <p class="text-muted mb-0">Gérez vos préférences et informations personnelles</p>
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()">
+                    <i class="fas fa-save me-2"></i>Enregistrer
+                </button>
+            </div>
+
+            <ul class="nav nav-tabs mb-4" id="settingsTabs">
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile">Profil</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#notifications">Notifications</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#security">Sécurité</button>
+                </li>
+            </ul>
+
+            <div class="tab-content">
+                <!-- Onglet Profil -->
+                <div class="tab-pane fade show active" id="profile">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Informations personnelles</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Nom complet *</label>
+                                    <input type="text" class="form-control" id="displayName" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Téléphone</label>
+                                    <input type="tel" class="form-control" id="phone">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Spécialité</label>
+                                    <input type="text" class="form-control" id="speciality" value="Mathématiques">
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">Titre</label>
+                                    <input type="text" class="form-control" id="title" value="Professeur de mathématiques">
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">Biographie</label>
+                                    <textarea class="form-control" id="bio" rows="4"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet Notifications -->
+                <div class="tab-pane fade" id="notifications">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Préférences de notifications</h5>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="notificationsEnabled" checked>
+                                <label class="form-check-label" for="notificationsEnabled">Activer les notifications</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                                <label class="form-check-label" for="emailNotifications">Notifications par email</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="newRequestNotifications" checked>
+                                <label class="form-check-label" for="newRequestNotifications">Nouvelles demandes d'encadrement</label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="newMessageNotifications" checked>
+                                <label class="form-check-label" for="newMessageNotifications">Nouveaux messages</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet Sécurité -->
+                <div class="tab-pane fade" id="security">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Changer le mot de passe</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Mot de passe actuel</label>
+                                <input type="password" class="form-control" id="currentPassword">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Nouveau mot de passe</label>
+                                <input type="password" class="form-control" id="newPassword">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Confirmer le nouveau mot de passe</label>
+                                <input type="password" class="form-control" id="confirmPassword">
+                            </div>
+                            <button class="btn btn-warning" onclick="changePassword()">
+                                <i class="fas fa-key me-2"></i>Changer le mot de passe
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['professeur', 'super_admin']);
+            loadSettings();
+        });
+
+        async function loadSettings() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const userDoc = await window.db.collection('users').doc(user.uid).get();
+                if (userDoc.exists()) {
+                    const data = userDoc.data();
+                    document.getElementById('displayName').value = data.displayName || data.name || '';
+                    document.getElementById('email').value = data.email || user.email || '';
+                    document.getElementById('phone').value = data.phone || '';
+                    document.getElementById('speciality').value = data.speciality || 'Mathématiques';
+                    document.getElementById('title').value = data.title || 'Professeur de mathématiques';
+                    document.getElementById('bio').value = data.bio || '';
+                    document.getElementById('notificationsEnabled').checked = data.notificationsEnabled !== false;
+                    document.getElementById('emailNotifications').checked = data.emailNotifications !== false;
+                    document.getElementById('newRequestNotifications').checked = data.newRequestNotifications !== false;
+                    document.getElementById('newMessageNotifications').checked = data.newMessageNotifications !== false;
+                } else {
+                    document.getElementById('email').value = user.email || '';
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        async function saveSettings() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            const settings = {
+                displayName: document.getElementById('displayName').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                speciality: document.getElementById('speciality').value.trim(),
+                title: document.getElementById('title').value.trim(),
+                bio: document.getElementById('bio').value.trim(),
+                notificationsEnabled: document.getElementById('notificationsEnabled').checked,
+                emailNotifications: document.getElementById('emailNotifications').checked,
+                newRequestNotifications: document.getElementById('newRequestNotifications').checked,
+                newMessageNotifications: document.getElementById('newMessageNotifications').checked,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await window.db.collection('users').doc(user.uid).set(settings, { merge: true });
+                alert('Paramètres enregistrés avec succès !');
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'enregistrement');
+            }
+        }
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (!newPassword || newPassword.length < 6) {
+                alert('Le nouveau mot de passe doit contenir au moins 6 caractères');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert('Les mots de passe ne correspondent pas');
+                return;
+            }
+
+            try {
+                const user = firebase.auth().currentUser;
+                if (user) {
+                    await user.updatePassword(newPassword);
+                    alert('Mot de passe changé avec succès !');
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                    document.getElementById('confirmPassword').value = '';
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors du changement de mot de passe');
+            }
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Articles - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Rédacteur</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="articles.html"><i class="fas fa-newspaper me-2"></i>Articles</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 fw-bold">Gestion des Articles</h1>
+                    <p class="text-muted mb-0">Créez et gérez vos articles de blog</p>
+                </div>
+                <button class="btn btn-primary" onclick="openArticleModal()">
+                    <i class="fas fa-plus me-2"></i>Nouvel article
+                </button>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Rechercher un article...">
+                        </div>
+                        <div class="col-md-6">
+                            <select class="form-select" id="statusFilter">
+                                <option value="all">Tous les statuts</option>
+                                <option value="published">Publiés</option>
+                                <option value="draft">Brouillons</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des articles -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="articlesList">
+                        <!-- Les articles seront chargés ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour créer/éditer un article -->
+    <div class="modal fade" id="articleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="articleModalTitle">Nouvel article</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="articleForm">
+                        <div class="mb-3">
+                            <label class="form-label">Titre *</label>
+                            <input type="text" class="form-control" id="articleTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="articleDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Contenu *</label>
+                            <textarea class="form-control" id="articleContent" rows="10" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Catégorie</label>
+                                <select class="form-select" id="articleCategory">
+                                    <option value="general">Général</option>
+                                    <option value="methodes">Méthodes</option>
+                                    <option value="concours">Concours</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Statut</label>
+                                <select class="form-select" id="articleStatus">
+                                    <option value="draft">Brouillon</option>
+                                    <option value="published">Publié</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Image URL</label>
+                            <input type="url" class="form-control" id="articleImage">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="saveArticle()">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let articles = [];
+        let currentArticleId = null;
+        const articleModal = new bootstrap.Modal(document.getElementById('articleModal'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['redacteur', 'super_admin']);
+            loadArticles();
+            
+            document.getElementById('searchInput').addEventListener('input', filterArticles);
+            document.getElementById('statusFilter').addEventListener('change', filterArticles);
+        });
+
+        async function loadArticles() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const articlesRef = window.db.collection('blog_posts');
+                const query = articlesRef.where('authorId', '==', user.uid);
+                const snapshot = await query.get();
+
+                articles = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    articles.push({
+                        id: doc.id,
+                        ...data,
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt)
+                    });
+                });
+
+                articles.sort((a, b) => b.createdAt - a.createdAt);
+                renderArticles();
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function renderArticles(articlesToRender = articles) {
+            if (articlesToRender.length === 0) {
+                document.getElementById('articlesList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-newspaper text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucun article trouvé</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const articlesHtml = articlesToRender.map(article => {
+                const statusBadge = article.status === 'published'
+                    ? '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Publié</span>'
+                    : '<span class="badge bg-secondary"><i class="fas fa-file-alt me-1"></i>Brouillon</span>';
+
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">${article.titre || article.title || 'Sans titre'}</h5>
+                                ${statusBadge}
+                            </div>
+                            <p class="card-text text-muted small">${(article.description || article.contenu || '').substring(0, 150)}${(article.description || article.contenu || '').length > 150 ? '...' : ''}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">${formatDate(article.createdAt)}</small>
+                                <div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editArticle('${article.id}')">
+                                        <i class="fas fa-edit me-1"></i>Modifier
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteArticle('${article.id}')">
+                                        <i class="fas fa-trash me-1"></i>Supprimer
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('articlesList').innerHTML = articlesHtml;
+        }
+
+        function filterArticles() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            const filtered = articles.filter(article => {
+                const matchesSearch = (article.titre || article.title || '').toLowerCase().includes(searchTerm) ||
+                                    (article.description || article.contenu || '').toLowerCase().includes(searchTerm);
+                const matchesStatus = statusFilter === 'all' || article.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+
+            renderArticles(filtered);
+        }
+
+        function openArticleModal(articleId = null) {
+            currentArticleId = articleId;
+            document.getElementById('articleModalTitle').textContent = articleId ? 'Modifier l\'article' : 'Nouvel article';
+            document.getElementById('articleForm').reset();
+            
+            if (articleId) {
+                const article = articles.find(a => a.id === articleId);
+                if (article) {
+                    document.getElementById('articleTitle').value = article.titre || article.title || '';
+                    document.getElementById('articleDescription').value = article.description || '';
+                    document.getElementById('articleContent').value = article.contenu || article.content || '';
+                    document.getElementById('articleCategory').value = article.categorie || article.category || 'general';
+                    document.getElementById('articleStatus').value = article.status || 'draft';
+                    document.getElementById('articleImage').value = article.image || '';
+                }
+            }
+            
+            articleModal.show();
+        }
+
+        async function saveArticle() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            const articleData = {
+                titre: document.getElementById('articleTitle').value.trim(),
+                title: document.getElementById('articleTitle').value.trim(),
+                description: document.getElementById('articleDescription').value.trim(),
+                contenu: document.getElementById('articleContent').value.trim(),
+                content: document.getElementById('articleContent').value.trim(),
+                categorie: document.getElementById('articleCategory').value,
+                category: document.getElementById('articleCategory').value,
+                status: document.getElementById('articleStatus').value,
+                image: document.getElementById('articleImage').value.trim(),
+                authorId: user.uid,
+                author: user.displayName || user.email,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                if (currentArticleId) {
+                    await window.db.collection('blog_posts').doc(currentArticleId).update(articleData);
+                } else {
+                    articleData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await window.db.collection('blog_posts').add(articleData);
+                }
+                
+                alert('Article enregistré avec succès !');
+                articleModal.hide();
+                loadArticles();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'enregistrement');
+            }
+        }
+
+        function editArticle(articleId) {
+            openArticleModal(articleId);
+        }
+
+        async function deleteArticle(articleId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cet article ?')) return;
+
+            try {
+                await window.db.collection('blog_posts').doc(articleId).delete();
+                alert('Article supprimé avec succès !');
+                loadArticles();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression');
+            }
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }).format(date);
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

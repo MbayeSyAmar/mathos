@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Encadrement - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <section class="section py-5">
+        <div class="container">
+            <h1 class="h3 fw-bold mb-4">Mon Encadrement</h1>
+
+            <div id="encadrementContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-3 text-muted">Chargement...</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script src="../../js/firebase.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/auth-guard.js"></script>
+    <script src="../../js/role-guard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['student']);
+            loadEncadrement();
+        });
+
+        async function loadEncadrement() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const requestsRef = window.db.collection('encadrement_requests');
+                const query = requestsRef.where('studentId', '==', user.uid).where('status', '==', 'approved');
+                const snapshot = await query.get();
+
+                if (snapshot.empty) {
+                    document.getElementById('encadrementContent').innerHTML = `
+                        <div class="card border-0 shadow-lg">
+                            <div class="card-body text-center py-5">
+                                <i class="fas fa-user-graduate text-muted mb-3" style="font-size: 3rem;"></i>
+                                <h5 class="mb-3">Aucun encadrement actif</h5>
+                                <p class="text-muted mb-4">Vous n'avez pas encore d'encadrement actif. Demandez un encadrement pour commencer.</p>
+                                <a href="../../encadrement.html" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Demander un encadrement
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const encadrement = snapshot.docs[0].data();
+                const teacherDoc = await window.db.collection('users').doc(encadrement.teacherId).get();
+                const teacher = teacherDoc.exists() ? teacherDoc.data() : {};
+
+                document.getElementById('encadrementContent').innerHTML = `
+                    <div class="card border-0 shadow-lg mb-4">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Votre encadrement</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Professeur:</strong> ${teacher.displayName || 'N/A'}</p>
+                                    <p><strong>Sujet:</strong> ${encadrement.subject || '-'}</p>
+                                    <p><strong>Niveau:</strong> ${encadrement.level || '-'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Statut:</strong> <span class="badge bg-success">Actif</span></p>
+                                    <p><strong>Date de début:</strong> ${formatDate(encadrement.createdAt?.toDate || encadrement.createdAt)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Messages avec votre professeur</h5>
+                            <div id="messagesArea" style="max-height: 400px; overflow-y: auto; background-color: #f8f9fa; padding: 1rem; border-radius: 0.5rem;">
+                                <!-- Messages -->
+                            </div>
+                            <div class="mt-3">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="messageInput" placeholder="Tapez votre message...">
+                                    <button class="btn btn-primary" onclick="sendMessage()">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                loadMessages(encadrement.teacherId);
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function loadMessages(teacherId) {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            // Charger les conversations
+            const conversationsRef = window.db.collection('conversations');
+            const query = conversationsRef.where('studentId', '==', user.uid).where('teacherId', '==', teacherId);
+            
+            query.get().then(snapshot => {
+                if (!snapshot.empty) {
+                    const conversationId = snapshot.docs[0].id;
+                    const messagesRef = window.db.collection('messages');
+                    const messagesQuery = messagesRef.where('conversationId', '==', conversationId).orderBy('createdAt', 'asc');
+                    
+                    messagesQuery.onSnapshot(messagesSnapshot => {
+                        const messagesHtml = messagesSnapshot.docs.map(doc => {
+                            const data = doc.data();
+                            const isOwn = data.senderId === user.uid;
+                            const alignClass = isOwn ? 'text-end' : 'text-start';
+                            const bgClass = isOwn ? 'bg-primary text-white' : 'bg-white';
+                            
+                            return `
+                                <div class="mb-2 ${alignClass}">
+                                    <div class="d-inline-block p-2 rounded ${bgClass}" style="max-width: 70%;">
+                                        <p class="mb-0 small">${data.content || ''}</p>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        document.getElementById('messagesArea').innerHTML = messagesHtml;
+                        document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;
+                    });
+                }
+            });
+        }
+
+        async function sendMessage() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            const content = document.getElementById('messageInput').value.trim();
+            if (!content) return;
+
+            // Trouver ou créer la conversation
+            const requestsRef = window.db.collection('encadrement_requests');
+            const query = requestsRef.where('studentId', '==', user.uid).where('status', '==', 'approved');
+            const snapshot = await query.get();
+            
+            if (snapshot.empty) return;
+            
+            const encadrement = snapshot.docs[0].data();
+            const teacherId = encadrement.teacherId;
+
+            try {
+                // Trouver la conversation
+                const conversationsRef = window.db.collection('conversations');
+                const convQuery = conversationsRef.where('studentId', '==', user.uid).where('teacherId', '==', teacherId);
+                const convSnapshot = await convQuery.get();
+
+                let conversationId;
+                if (convSnapshot.empty) {
+                    // Créer une nouvelle conversation
+                    const teacherDoc = await window.db.collection('users').doc(teacherId).get();
+                    const teacher = teacherDoc.exists() ? teacherDoc.data() : {};
+                    
+                    const newConv = await window.db.collection('conversations').add({
+                        studentId: user.uid,
+                        studentName: user.displayName || user.email,
+                        teacherId: teacherId,
+                        teacherName: teacher.displayName || 'Professeur',
+                        lastMessage: content,
+                        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    conversationId = newConv.id;
+                } else {
+                    conversationId = convSnapshot.docs[0].id;
+                }
+
+                // Envoyer le message
+                await window.db.collection('messages').add({
+                    conversationId: conversationId,
+                    senderId: user.uid,
+                    senderName: user.displayName || user.email,
+                    senderRole: 'student',
+                    content: content,
+                    read: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Mettre à jour la conversation
+                await window.db.collection('conversations').doc(conversationId).update({
+                    lastMessage: content,
+                    lastMessageAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                document.getElementById('messageInput').value = '';
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'envoi du message');
+            }
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            const d = date.toDate ? date.toDate() : new Date(date);
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }).format(d);
+        }
+    </script>
+</body>
+</html>
+

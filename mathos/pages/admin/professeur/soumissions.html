@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soumissions d'Exercices - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Professeur</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cours.html"><i class="fas fa-book-open me-2"></i>Cours</a></li>
+                    <li class="nav-item"><a class="nav-link" href="exercices.html"><i class="fas fa-dumbbell me-2"></i>Exercices</a></li>
+                    <li class="nav-item"><a class="nav-link" href="quiz.html"><i class="fas fa-file-alt me-2"></i>Quiz</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="soumissions.html"><i class="fas fa-clipboard-list me-2"></i>Soumissions</a></li>
+                    <li class="nav-item"><a class="nav-link" href="demandes.html"><i class="fas fa-paper-plane me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 fw-bold">Soumissions d'Exercices</h1>
+                    <p class="text-muted mb-0">Corrigez les exercices soumis par vos étudiants</p>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <select class="form-select" id="statusFilter">
+                                <option value="all">Tous les statuts</option>
+                                <option value="pending" selected>En attente</option>
+                                <option value="reviewed">Corrigés</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Rechercher par étudiant ou exercice...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des soumissions -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="loadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-3 text-muted">Chargement des soumissions...</p>
+                    </div>
+                    <div id="submissionsList" style="display: none;">
+                        <!-- Les soumissions seront chargées ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour corriger -->
+    <div class="modal fade" id="reviewModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Corriger la soumission</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Étudiant</label>
+                        <input type="text" class="form-control" id="reviewStudentName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Exercice</label>
+                        <input type="text" class="form-control" id="reviewExerciseTitle" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Réponse de l'étudiant</label>
+                        <textarea class="form-control" id="reviewAnswer" rows="6" readonly></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Note (sur 20) *</label>
+                        <input type="number" class="form-control" id="reviewScore" min="0" max="20" step="0.5" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Feedback *</label>
+                        <textarea class="form-control" id="reviewFeedback" rows="4" required placeholder="Commentaires et corrections..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="submitReview()">
+                        <i class="fas fa-check me-2"></i>Enregistrer la correction
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let submissions = [];
+        let currentSubmissionId = null;
+        const reviewModal = new bootstrap.Modal(document.getElementById('reviewModal'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['professeur', 'super_admin']);
+            loadSubmissions();
+            
+            document.getElementById('statusFilter').addEventListener('change', filterSubmissions);
+            document.getElementById('searchInput').addEventListener('input', filterSubmissions);
+        });
+
+        async function loadSubmissions() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const submissionsRef = window.db.collection('exercise_submissions');
+                const query = submissionsRef.where('teacherId', '==', user.uid);
+                const snapshot = await query.get();
+
+                submissions = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    submissions.push({
+                        id: doc.id,
+                        ...data,
+                        submittedAt: data.submittedAt?.toDate ? data.submittedAt.toDate() : new Date(data.submittedAt)
+                    });
+                });
+
+                submissions.sort((a, b) => b.submittedAt - a.submittedAt);
+                renderSubmissions();
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('submissionsList').style.display = 'block';
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function renderSubmissions(submissionsToRender = submissions) {
+            if (submissionsToRender.length === 0) {
+                document.getElementById('submissionsList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-clipboard-list text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucune soumission trouvée</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const submissionsHtml = submissionsToRender.map(submission => {
+                const statusBadge = submission.status === 'reviewed'
+                    ? '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Corrigé</span>'
+                    : '<span class="badge bg-warning"><i class="fas fa-clock me-1"></i>En attente</span>';
+
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <h6 class="fw-bold mb-1">${submission.exerciseTitle || 'Exercice'}</h6>
+                                    <p class="text-muted small mb-0">
+                                        <i class="fas fa-user me-1"></i>${submission.userName || 'Étudiant'}
+                                    </p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>${formatDate(submission.submittedAt)}
+                                    </small>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="small text-muted mb-1">Réponse</div>
+                                    <p class="mb-0 small">${(submission.answer || '').substring(0, 100)}${(submission.answer || '').length > 100 ? '...' : ''}</p>
+                                </div>
+                                <div class="col-md-2 text-center">
+                                    ${submission.score !== null ? `
+                                        <div class="small text-muted">Note</div>
+                                        <div class="fw-bold">${submission.score}/20</div>
+                                    ` : '<span class="badge bg-secondary">Non noté</span>'}
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    ${statusBadge}
+                                    ${submission.status === 'pending' ? `
+                                        <button class="btn btn-sm btn-primary mt-2 w-100" onclick="openReview('${submission.id}')">
+                                            <i class="fas fa-check me-1"></i>Corriger
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-sm btn-outline-primary mt-2 w-100" onclick="openReview('${submission.id}')">
+                                            <i class="fas fa-eye me-1"></i>Voir
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('submissionsList').innerHTML = submissionsHtml;
+        }
+
+        function filterSubmissions() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            const filtered = submissions.filter(submission => {
+                const matchesStatus = statusFilter === 'all' || submission.status === statusFilter;
+                const matchesSearch = (submission.userName || '').toLowerCase().includes(searchTerm) ||
+                                    (submission.exerciseTitle || '').toLowerCase().includes(searchTerm);
+                return matchesStatus && matchesSearch;
+            });
+
+            renderSubmissions(filtered);
+        }
+
+        function openReview(submissionId) {
+            const submission = submissions.find(s => s.id === submissionId);
+            if (!submission) return;
+
+            currentSubmissionId = submissionId;
+            document.getElementById('reviewStudentName').value = submission.userName || '';
+            document.getElementById('reviewExerciseTitle').value = submission.exerciseTitle || '';
+            document.getElementById('reviewAnswer').value = submission.answer || '';
+            document.getElementById('reviewScore').value = submission.score || '';
+            document.getElementById('reviewFeedback').value = submission.feedback || '';
+            reviewModal.show();
+        }
+
+        async function submitReview() {
+            const score = parseFloat(document.getElementById('reviewScore').value);
+            const feedback = document.getElementById('reviewFeedback').value.trim();
+
+            if (!feedback) {
+                alert('Veuillez écrire un feedback');
+                return;
+            }
+
+            if (isNaN(score) || score < 0 || score > 20) {
+                alert('La note doit être entre 0 et 20');
+                return;
+            }
+
+            try {
+                await window.db.collection('exercise_submissions').doc(currentSubmissionId).update({
+                    score: score,
+                    feedback: feedback,
+                    status: 'reviewed',
+                    reviewedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Mettre à jour la progression de l'étudiant
+                const submission = submissions.find(s => s.id === currentSubmissionId);
+                if (submission && window.db) {
+                    const normalizedScore = Math.round((score / 20) * 100);
+                    await window.db.collection('exercise_progress').add({
+                        userId: submission.userId,
+                        exerciseId: submission.exerciseId,
+                        exerciseTitle: submission.exerciseTitle,
+                        score: normalizedScore,
+                        completed: normalizedScore >= 50,
+                        lastAttemptAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                alert('Correction enregistrée avec succès !');
+                reviewModal.hide();
+                loadSubmissions();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'enregistrement');
+            }
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

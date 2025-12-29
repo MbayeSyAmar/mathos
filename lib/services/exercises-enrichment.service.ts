@@ -325,13 +325,13 @@ const enrichedExercisesData: { [key: number]: string } = {
  * @param exerciseId - ID de l'exercice (1-21)
  * @returns Objet contenant hasPDF, pdfUrl (si PDF), et content (contenu HTML enrichi)
  */
-export async function getExerciseContent(exerciseId: number, level?: string, classe?: string): Promise<{
+export async function getExerciseContent(exerciseId: number, level?: string, classe?: string, exerciseTitle?: string): Promise<{
   hasPDF: boolean
   pdfUrl?: string
   content?: string
 }> {
   try {
-    console.log('[getExerciseContent] Params:', { exerciseId, level, classe });
+    console.log('[getExerciseContent] Params:', { exerciseId, level, classe, exerciseTitle });
     
     // Convertir level en format attendu
     const levelFormatted = level?.toLowerCase().includes('lycée') || level?.toLowerCase().includes('lycee') 
@@ -342,7 +342,7 @@ export async function getExerciseContent(exerciseId: number, level?: string, cla
 
     // D'abord, vérifier s'il y a un PDF dans le mapping pour les exercices du lycée
     if (levelFormatted === 'lycee' && classe) {
-      const mappedPDF = getPDFForExercise(exerciseId, classe);
+      const mappedPDF = getPDFForExercise(exerciseId, classe, exerciseTitle);
       if (mappedPDF) {
         console.log('[getExerciseContent] PDF found in mapping:', mappedPDF);
         return {

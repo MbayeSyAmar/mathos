@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="../dashboard.html" class="nav-link">Dashboard</a>
+                    <a href="mes-professeurs.html" class="nav-link">Mes Professeurs</a>
+                    <a href="mes-demandes.html" class="nav-link">Mes Demandes</a>
+                    <a href="mon-profil.html" class="nav-link active">Mon Profil</a>
+                </nav>
+                <a href="../dashboard.html" class="btn btn-outline btn-sm">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="section py-5">
+        <div class="container">
+            <div class="mb-4">
+                <h1 class="display-5 fw-bold mb-2">Mon Profil</h1>
+                <p class="text-muted">Gérez vos informations personnelles</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <div class="avatar-circle mx-auto" style="width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #10b981); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; font-weight: bold;" id="userAvatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </div>
+                            <h4 class="fw-bold mb-2" id="userDisplayName">Nom de l'utilisateur</h4>
+                            <p class="text-muted mb-3" id="userEmail">email@example.com</p>
+                            <div class="d-flex gap-2 justify-content-center mb-3">
+                                <span class="badge bg-primary" id="userRole">Étudiant</span>
+                                <span class="badge bg-secondary" id="userLevel">Niveau</span>
+                            </div>
+                            <button class="btn btn-outline-primary btn-sm" onclick="toggleEditMode()">
+                                <i class="fas fa-edit me-2"></i>Modifier le profil
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-lg mt-4">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <h5 class="fw-bold mb-0">Statistiques</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted">Cours complétés</span>
+                                <span class="fw-bold" id="completedCourses">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted">Exercices complétés</span>
+                                <span class="fw-bold" id="completedExercises">0</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted">Quiz complétés</span>
+                                <span class="fw-bold" id="completedQuizzes">0</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Niveau</span>
+                                <span class="fw-bold" id="userLevelStat">1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <ul class="nav nav-tabs border-0" id="profileTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">
+                                        <i class="fas fa-user me-2"></i>Informations
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab">
+                                        <i class="fas fa-address-card me-2"></i>Contact
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">
+                                        <i class="fas fa-lock me-2"></i>Sécurité
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content" id="profileTabsContent">
+                                <!-- Informations -->
+                                <div class="tab-pane fade show active" id="info" role="tabpanel">
+                                    <form id="profileForm">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label">Prénom</label>
+                                                <input type="text" class="form-control" id="prenom" readonly>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Nom</label>
+                                                <input type="text" class="form-control" id="nom" readonly>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Email</label>
+                                                <input type="email" class="form-control" id="email" readonly>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Date de naissance</label>
+                                                <input type="date" class="form-control" id="dateNaissance" readonly>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Niveau</label>
+                                                <select class="form-select" id="niveau" readonly disabled>
+                                                    <option value="">Sélectionner un niveau</option>
+                                                    <option value="6ème">6ème</option>
+                                                    <option value="5ème">5ème</option>
+                                                    <option value="4ème">4ème</option>
+                                                    <option value="3ème">3ème</option>
+                                                    <option value="2nde">2nde</option>
+                                                    <option value="1ère">1ère</option>
+                                                    <option value="Terminale">Terminale</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Bio</label>
+                                                <textarea class="form-control" id="bio" rows="3" readonly></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4" id="saveButtonContainer" style="display: none;">
+                                            <button type="button" class="btn btn-primary" onclick="saveProfile()">
+                                                <i class="fas fa-save me-2"></i>Enregistrer les modifications
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary ms-2" onclick="cancelEdit()">
+                                                Annuler
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Contact -->
+                                <div class="tab-pane fade" id="contact" role="tabpanel">
+                                    <form>
+                                        <div class="row g-3">
+                                            <div class="col-12">
+                                                <label class="form-label">Téléphone</label>
+                                                <input type="tel" class="form-control" id="telephone" readonly>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label">Adresse</label>
+                                                <input type="text" class="form-control" id="adresse" readonly>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Ville</label>
+                                                <input type="text" class="form-control" id="ville" readonly>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label">Code postal</label>
+                                                <input type="text" class="form-control" id="codePostal" readonly>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Sécurité -->
+                                <div class="tab-pane fade" id="security" role="tabpanel">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Pour changer votre mot de passe, veuillez utiliser la fonctionnalité "Mot de passe oublié" sur la page de connexion.
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center p-3 border rounded mb-3">
+                                        <div>
+                                            <h6 class="mb-0">Authentification à deux facteurs</h6>
+                                            <small class="text-muted">Sécurisez votre compte avec 2FA</small>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="twoFactorAuth" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script src="../../js/firebase.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/auth-guard.js"></script>
+    <script>
+        let originalData = {};
+        let isEditing = false;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+            loadStats();
+        });
+
+        async function loadProfile() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user) {
+                window.location.href = '../connexion.html';
+                return;
+            }
+
+            try {
+                let userData = {};
+                if (window.db) {
+                    const userDoc = await window.db.collection('users').doc(user.uid).get();
+                    if (userDoc.exists()) {
+                        userData = userDoc.data();
+                    }
+                }
+
+                const displayName = userData.displayName || user.displayName || user.email.split('@')[0];
+                const nameParts = displayName.split(' ');
+                const prenom = userData.prenom || nameParts[0] || '';
+                const nom = userData.nom || nameParts.slice(1).join(' ') || '';
+
+                document.getElementById('userDisplayName').textContent = displayName;
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('email').value = user.email;
+                document.getElementById('prenom').value = prenom;
+                document.getElementById('nom').value = nom;
+                document.getElementById('telephone').value = userData.telephone || '';
+                document.getElementById('adresse').value = userData.adresse || '';
+                document.getElementById('ville').value = userData.ville || '';
+                document.getElementById('codePostal').value = userData.codePostal || '';
+                document.getElementById('dateNaissance').value = userData.dateNaissance || '';
+                document.getElementById('niveau').value = userData.niveau || '';
+                document.getElementById('bio').value = userData.bio || '';
+                document.getElementById('userRole').textContent = userData.role === 'student' ? 'Étudiant' : (userData.role || 'Étudiant');
+                document.getElementById('userLevel').textContent = userData.niveau || 'Non spécifié';
+
+                const initials = (prenom[0] || '') + (nom[0] || '') || displayName.substring(0, 2).toUpperCase();
+                document.getElementById('userAvatar').innerHTML = initials || '<i class="fas fa-user"></i>';
+
+                originalData = { ...userData, prenom, nom };
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        async function loadStats() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                // Compter les cours complétés
+                const coursesProgress = await window.db.collection('course_progress')
+                    .where('userId', '==', user.uid)
+                    .where('completed', '==', true)
+                    .get();
+                document.getElementById('completedCourses').textContent = coursesProgress.size;
+
+                // Compter les exercices complétés
+                const exercisesProgress = await window.db.collection('exercise_progress')
+                    .where('userId', '==', user.uid)
+                    .where('completed', '==', true)
+                    .get();
+                document.getElementById('completedExercises').textContent = exercisesProgress.size;
+
+                // Compter les quiz complétés
+                const quizzesProgress = await window.db.collection('quiz_progress')
+                    .where('userId', '==', user.uid)
+                    .get();
+                document.getElementById('completedQuizzes').textContent = quizzesProgress.size;
+
+                // Récupérer le niveau utilisateur
+                const userDoc = await window.db.collection('users').doc(user.uid).get();
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    document.getElementById('userLevelStat').textContent = userData.level || 1;
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des statistiques:', error);
+            }
+        }
+
+        function toggleEditMode() {
+            isEditing = !isEditing;
+            const inputs = document.querySelectorAll('#profileForm input, #profileForm select, #profileForm textarea');
+            inputs.forEach(input => {
+                input.readOnly = !isEditing;
+                if (input.tagName === 'SELECT') {
+                    input.disabled = !isEditing;
+                }
+            });
+            document.getElementById('saveButtonContainer').style.display = isEditing ? 'block' : 'none';
+        }
+
+        async function saveProfile() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user) return;
+
+            try {
+                const profileData = {
+                    prenom: document.getElementById('prenom').value,
+                    nom: document.getElementById('nom').value,
+                    telephone: document.getElementById('telephone').value,
+                    adresse: document.getElementById('adresse').value,
+                    ville: document.getElementById('ville').value,
+                    codePostal: document.getElementById('codePostal').value,
+                    dateNaissance: document.getElementById('dateNaissance').value,
+                    niveau: document.getElementById('niveau').value,
+                    bio: document.getElementById('bio').value,
+                    displayName: `${document.getElementById('prenom').value} ${document.getElementById('nom').value}`.trim()
+                };
+
+                if (window.db) {
+                    await window.db.collection('users').doc(user.uid).update(profileData);
+                }
+
+                alert('Profil mis à jour avec succès !');
+                toggleEditMode();
+                loadProfile();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la mise à jour du profil');
+            }
+        }
+
+        function cancelEdit() {
+            loadProfile();
+            toggleEditMode();
+        }
+    </script>
+</body>
+</html>
+

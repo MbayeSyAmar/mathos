@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ma Progression - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="../dashboard.html" class="nav-link">Dashboard</a>
+                    <a href="mes-professeurs.html" class="nav-link">Mes Professeurs</a>
+                    <a href="mes-demandes.html" class="nav-link">Mes Demandes</a>
+                    <a href="mon-profil.html" class="nav-link">Mon Profil</a>
+                    <a href="progression.html" class="nav-link active">Progression</a>
+                </nav>
+                <a href="../dashboard.html" class="btn btn-outline btn-sm">
+                    <i class="fas fa-arrow-left me-2"></i>Retour
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="section py-5">
+        <div class="container">
+            <div class="mb-4">
+                <h1 class="display-5 fw-bold mb-2">Ma Progression</h1>
+                <p class="text-muted">Suivez votre évolution et vos performances</p>
+            </div>
+
+            <!-- Statistiques globales -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body text-center">
+                            <i class="fas fa-trophy text-warning mb-3" style="font-size: 2.5rem;"></i>
+                            <h2 class="fw-bold mb-0" id="userLevel">1</h2>
+                            <small class="text-muted">Niveau</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body text-center">
+                            <i class="fas fa-star text-primary mb-3" style="font-size: 2.5rem;"></i>
+                            <h2 class="fw-bold mb-0" id="totalXP">0</h2>
+                            <small class="text-muted">Points XP</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body text-center">
+                            <i class="fas fa-percentage text-success mb-3" style="font-size: 2.5rem;"></i>
+                            <h2 class="fw-bold mb-0" id="successRate">0%</h2>
+                            <small class="text-muted">Taux de réussite</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body text-center">
+                            <i class="fas fa-clock text-info mb-3" style="font-size: 2.5rem;"></i>
+                            <h2 class="fw-bold mb-0" id="studyTime">0h</h2>
+                            <small class="text-muted">Temps d'étude</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graphiques -->
+            <div class="row g-4 mb-5">
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <h5 class="fw-bold mb-0">Activité hebdomadaire</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="weeklyActivityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <h5 class="fw-bold mb-0">Répartition des activités</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="activityDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs pour cours, exercices, quiz -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-header bg-transparent border-0 pb-3">
+                    <ul class="nav nav-tabs border-0" id="progressTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="cours-tab" data-bs-toggle="tab" data-bs-target="#cours" type="button" role="tab">
+                                <i class="fas fa-book me-2"></i>Cours
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="exercices-tab" data-bs-toggle="tab" data-bs-target="#exercices" type="button" role="tab">
+                                <i class="fas fa-pen me-2"></i>Exercices
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="quiz-tab" data-bs-toggle="tab" data-bs-target="#quiz" type="button" role="tab">
+                                <i class="fas fa-brain me-2"></i>Quiz
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="progressTabsContent">
+                        <div class="tab-pane fade show active" id="cours" role="tabpanel">
+                            <div id="coursesProgress">
+                                <p class="text-muted text-center py-5">Chargement...</p>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="exercices" role="tabpanel">
+                            <div id="exercisesProgress">
+                                <p class="text-muted text-center py-5">Chargement...</p>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="quiz" role="tabpanel">
+                            <div id="quizzesProgress">
+                                <p class="text-muted text-center py-5">Chargement...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../js/firebase-config.js"></script>
+    <script src="../../js/firebase.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../../js/auth-guard.js"></script>
+    <script>
+        let weeklyChart = null;
+        let distributionChart = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProgress();
+        });
+
+        async function loadProgress() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user) {
+                window.location.href = '../connexion.html';
+                return;
+            }
+
+            try {
+                if (window.db) {
+                    // Charger les statistiques globales
+                    const userDoc = await window.db.collection('users').doc(user.uid).get();
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+                        document.getElementById('userLevel').textContent = userData.level || 1;
+                        document.getElementById('totalXP').textContent = userData.xp || 0;
+                        document.getElementById('successRate').textContent = (userData.successRate || 0) + '%';
+                        document.getElementById('studyTime').textContent = (userData.totalStudyTimeHours || 0) + 'h';
+                    }
+
+                    // Charger la progression des cours
+                    const coursesProgress = await window.db.collection('course_progress')
+                        .where('userId', '==', user.uid)
+                        .get();
+                    
+                    const coursesHtml = coursesProgress.empty
+                        ? '<p class="text-muted text-center py-5">Aucun cours en cours</p>'
+                        : coursesProgress.docs.map(doc => {
+                            const progress = doc.data();
+                            const progressPercent = progress.progress || 0;
+                            return `
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="fw-bold mb-0">${progress.courseTitle || 'Cours'}</h6>
+                                            <span class="badge ${progress.completed ? 'bg-success' : 'bg-primary'}">${progressPercent}%</span>
+                                        </div>
+                                        <div class="progress mb-2" style="height: 8px;">
+                                            <div class="progress-bar" role="progressbar" style="width: ${progressPercent}%;"></div>
+                                        </div>
+                                        <small class="text-muted">
+                                            ${progress.completed ? 'Terminé' : 'En cours'} - 
+                                            ${formatDate(progress.startedAt)}
+                                        </small>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    document.getElementById('coursesProgress').innerHTML = coursesHtml;
+
+                    // Charger la progression des exercices
+                    const exercisesProgress = await window.db.collection('exercise_progress')
+                        .where('userId', '==', user.uid)
+                        .get();
+                    
+                    const exercisesHtml = exercisesProgress.empty
+                        ? '<p class="text-muted text-center py-5">Aucun exercice complété</p>'
+                        : exercisesProgress.docs.map(doc => {
+                            const progress = doc.data();
+                            return `
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="fw-bold mb-0">${progress.exerciseTitle || 'Exercice'}</h6>
+                                            <span class="badge bg-success">${progress.score || 0}%</span>
+                                        </div>
+                                        <small class="text-muted">
+                                            ${progress.completed ? 'Terminé' : 'En cours'} - 
+                                            ${formatDate(progress.lastAttemptAt)}
+                                        </small>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    document.getElementById('exercisesProgress').innerHTML = exercisesHtml;
+
+                    // Charger la progression des quiz
+                    const quizzesProgress = await window.db.collection('quiz_progress')
+                        .where('userId', '==', user.uid)
+                        .get();
+                    
+                    const quizzesHtml = quizzesProgress.empty
+                        ? '<p class="text-muted text-center py-5">Aucun quiz complété</p>'
+                        : quizzesProgress.docs.map(doc => {
+                            const progress = doc.data();
+                            return `
+                                <div class="card border-0 shadow-sm mb-3">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="fw-bold mb-0">${progress.quizTitle || 'Quiz'}</h6>
+                                            <span class="badge bg-warning">${progress.bestScore || 0}%</span>
+                                        </div>
+                                        <small class="text-muted">
+                                            ${progress.attempts || 0} tentative(s) - 
+                                            ${formatDate(progress.lastAttemptAt)}
+                                        </small>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    document.getElementById('quizzesProgress').innerHTML = quizzesHtml;
+
+                    // Charger les activités récentes pour les graphiques
+                    const activities = await window.db.collection('activities')
+                        .where('userId', '==', user.uid)
+                        .orderBy('createdAt', 'desc')
+                        .limit(50)
+                        .get();
+
+                    generateCharts(activities);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function generateCharts(activitiesSnapshot) {
+            // Générer les données hebdomadaires
+            const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+            const weeklyData = days.map(day => ({ day, value: 0 }));
+
+            activitiesSnapshot.forEach(doc => {
+                const activity = doc.data();
+                const date = activity.createdAt?.toDate ? activity.createdAt.toDate() : new Date(activity.createdAt);
+                const dayIndex = date.getDay() === 0 ? 6 : date.getDay() - 1;
+                if (dayIndex >= 0 && dayIndex < 7) {
+                    weeklyData[dayIndex].value++;
+                }
+            });
+
+            // Graphique d'activité hebdomadaire
+            const ctx1 = document.getElementById('weeklyActivityChart');
+            if (ctx1 && weeklyChart) {
+                weeklyChart.destroy();
+            }
+            weeklyChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: weeklyData.map(d => d.day),
+                    datasets: [{
+                        label: 'Activités',
+                        data: weeklyData.map(d => d.value),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // Compter les activités par type
+            let courses = 0, exercises = 0, quizzes = 0;
+            activitiesSnapshot.forEach(doc => {
+                const type = doc.data().type;
+                if (type.includes('course')) courses++;
+                else if (type.includes('exercise')) exercises++;
+                else if (type.includes('quiz')) quizzes++;
+            });
+
+            // Graphique de répartition
+            const ctx2 = document.getElementById('activityDistributionChart');
+            if (ctx2 && distributionChart) {
+                distributionChart.destroy();
+            }
+            distributionChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cours', 'Exercices', 'Quiz'],
+                    datasets: [{
+                        data: [courses, exercises, quizzes],
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b']
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }).format(date);
+        }
+    </script>
+</body>
+</html>
+

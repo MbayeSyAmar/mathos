@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Vidéos - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Professeur</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cours.html"><i class="fas fa-book-open me-2"></i>Cours</a></li>
+                    <li class="nav-item"><a class="nav-link" href="exercices.html"><i class="fas fa-dumbbell me-2"></i>Exercices</a></li>
+                    <li class="nav-item"><a class="nav-link" href="quiz.html"><i class="fas fa-file-alt me-2"></i>Quiz</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="videos.html"><i class="fas fa-video me-2"></i>Vidéos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="soumissions.html"><i class="fas fa-clipboard-list me-2"></i>Soumissions</a></li>
+                    <li class="nav-item"><a class="nav-link" href="demandes.html"><i class="fas fa-paper-plane me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 fw-bold">Gestion des Vidéos</h1>
+                    <p class="text-muted mb-0">Créez et gérez vos vidéos éducatives</p>
+                </div>
+                <button class="btn btn-primary" onclick="openVideoModal()">
+                    <i class="fas fa-plus me-2"></i>Nouvelle vidéo
+                </button>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchInput" placeholder="Rechercher une vidéo...">
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="statusFilter">
+                                <option value="all">Tous les statuts</option>
+                                <option value="published">Publiées</option>
+                                <option value="draft">Brouillons</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="levelFilter">
+                                <option value="all">Tous les niveaux</option>
+                                <option value="college">Collège</option>
+                                <option value="lycee">Lycée</option>
+                                <option value="superieur">Supérieur</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des vidéos -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="loadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-3 text-muted">Chargement des vidéos...</p>
+                    </div>
+                    <div id="videosList" style="display: none;">
+                        <!-- Les vidéos seront chargées ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour créer/éditer une vidéo -->
+    <div class="modal fade" id="videoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="videoModalTitle">Nouvelle vidéo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="videoForm">
+                        <div class="mb-3">
+                            <label class="form-label">Titre *</label>
+                            <input type="text" class="form-control" id="videoTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="videoDescription" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Niveau *</label>
+                                <select class="form-select" id="videoLevel" required>
+                                    <option value="">Sélectionner...</option>
+                                    <option value="college">Collège</option>
+                                    <option value="lycee">Lycée</option>
+                                    <option value="superieur">Supérieur</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Matière *</label>
+                                <select class="form-select" id="videoSubject" required>
+                                    <option value="">Sélectionner...</option>
+                                    <option value="algebre">Algèbre</option>
+                                    <option value="geometrie">Géométrie</option>
+                                    <option value="analyse">Analyse</option>
+                                    <option value="probabilites">Probabilités</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">URL YouTube *</label>
+                            <input type="url" class="form-control" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Durée (minutes)</label>
+                            <input type="number" class="form-control" id="videoDuration" min="1">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Statut</label>
+                            <select class="form-select" id="videoStatus">
+                                <option value="draft">Brouillon</option>
+                                <option value="published">Publié</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="saveVideo()">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let videos = [];
+        let currentVideoId = null;
+        const videoModal = new bootstrap.Modal(document.getElementById('videoModal'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['professeur', 'super_admin']);
+            loadVideos();
+            
+            document.getElementById('searchInput').addEventListener('input', filterVideos);
+            document.getElementById('statusFilter').addEventListener('change', filterVideos);
+            document.getElementById('levelFilter').addEventListener('change', filterVideos);
+        });
+
+        async function loadVideos() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const videosRef = window.db.collection('videos');
+                const query = videosRef.where('teacherId', '==', user.uid);
+                const snapshot = await query.get();
+
+                videos = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    videos.push({
+                        id: doc.id,
+                        ...data,
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt)
+                    });
+                });
+
+                videos.sort((a, b) => b.createdAt - a.createdAt);
+                renderVideos();
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('videosList').style.display = 'block';
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function renderVideos(videosToRender = videos) {
+            if (videosToRender.length === 0) {
+                document.getElementById('videosList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-video text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucune vidéo trouvée</p>
+                        <button class="btn btn-primary mt-3" onclick="openVideoModal()">
+                            <i class="fas fa-plus me-2"></i>Créer votre première vidéo
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const videosHtml = videosToRender.map(video => {
+                const statusBadge = video.status === 'published'
+                    ? '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Publiée</span>'
+                    : '<span class="badge bg-secondary"><i class="fas fa-file-alt me-1"></i>Brouillon</span>';
+
+                const youtubeId = extractYouTubeId(video.url || '');
+                const thumbnail = youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : 'https://via.placeholder.com/300x200';
+
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="row g-0">
+                            <div class="col-md-3">
+                                <img src="${thumbnail}" class="img-fluid rounded-start" alt="${video.title || ''}" style="height: 150px; width: 100%; object-fit: cover;">
+                            </div>
+                            <div class="col-md-9">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0">${video.title || 'Sans titre'}</h5>
+                                        ${statusBadge}
+                                    </div>
+                                    <p class="card-text text-muted small">${(video.description || '').substring(0, 150)}${(video.description || '').length > 150 ? '...' : ''}</p>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <span class="badge bg-primary">${video.level || '-'}</span>
+                                        <span class="badge bg-info">${video.subject || '-'}</span>
+                                        ${video.duration ? `<span class="badge bg-secondary"><i class="fas fa-clock me-1"></i>${video.duration} min</span>` : ''}
+                                    </div>
+                                    <div class="mt-3">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editVideo('${video.id}')">
+                                            <i class="fas fa-edit me-1"></i>Modifier
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteVideo('${video.id}')">
+                                            <i class="fas fa-trash me-1"></i>Supprimer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('videosList').innerHTML = videosHtml;
+        }
+
+        function extractYouTubeId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        function filterVideos() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const levelFilter = document.getElementById('levelFilter').value;
+
+            const filtered = videos.filter(video => {
+                const matchesSearch = (video.title || '').toLowerCase().includes(searchTerm) ||
+                                    (video.description || '').toLowerCase().includes(searchTerm);
+                const matchesStatus = statusFilter === 'all' || video.status === statusFilter;
+                const matchesLevel = levelFilter === 'all' || video.level === levelFilter;
+                return matchesSearch && matchesStatus && matchesLevel;
+            });
+
+            renderVideos(filtered);
+        }
+
+        function openVideoModal(videoId = null) {
+            currentVideoId = videoId;
+            document.getElementById('videoModalTitle').textContent = videoId ? 'Modifier la vidéo' : 'Nouvelle vidéo';
+            document.getElementById('videoForm').reset();
+            
+            if (videoId) {
+                const video = videos.find(v => v.id === videoId);
+                if (video) {
+                    document.getElementById('videoTitle').value = video.title || '';
+                    document.getElementById('videoDescription').value = video.description || '';
+                    document.getElementById('videoLevel').value = video.level || '';
+                    document.getElementById('videoSubject').value = video.subject || '';
+                    document.getElementById('videoUrl').value = video.url || '';
+                    document.getElementById('videoDuration').value = video.duration || '';
+                    document.getElementById('videoStatus').value = video.status || 'draft';
+                }
+            }
+            
+            videoModal.show();
+        }
+
+        async function saveVideo() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            const videoData = {
+                title: document.getElementById('videoTitle').value.trim(),
+                description: document.getElementById('videoDescription').value.trim(),
+                level: document.getElementById('videoLevel').value,
+                subject: document.getElementById('videoSubject').value,
+                url: document.getElementById('videoUrl').value.trim(),
+                duration: parseInt(document.getElementById('videoDuration').value) || 0,
+                status: document.getElementById('videoStatus').value,
+                teacherId: user.uid,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (!currentVideoId) {
+                videoData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+            }
+
+            try {
+                if (currentVideoId) {
+                    await window.db.collection('videos').doc(currentVideoId).update(videoData);
+                } else {
+                    await window.db.collection('videos').add(videoData);
+                }
+                
+                alert('Vidéo enregistrée avec succès !');
+                videoModal.hide();
+                loadVideos();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'enregistrement');
+            }
+        }
+
+        function editVideo(videoId) {
+            openVideoModal(videoId);
+        }
+
+        async function deleteVideo(videoId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette vidéo ?')) return;
+
+            try {
+                await window.db.collection('videos').doc(videoId).delete();
+                alert('Vidéo supprimée avec succès !');
+                loadVideos();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression');
+            }
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

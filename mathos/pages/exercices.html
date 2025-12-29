@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exercices - Mathosphère</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header" id="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="../index.html" class="nav-link">Accueil</a>
+                    <a href="cours.html" class="nav-link">Cours</a>
+                    <a href="exercices.html" class="nav-link" style="color: var(--primary);">Exercices</a>
+                    <a href="quiz.html" class="nav-link">Quiz</a>
+                </nav>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <a href="connexion.html" class="btn btn-outline btn-sm">Connexion</a>
+                    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section style="background: linear-gradient(135deg, rgba(0,0,0,0.05), rgba(16,185,129,0.1)); padding: 4rem 0;">
+        <div class="container">
+            <div class="text-center fade-in-up">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 80px; height: 80px; background: linear-gradient(135deg, #10b981, #34d399); border-radius: var(--radius-xl); margin-bottom: 1.5rem;">
+                    <i class="fas fa-pen" style="font-size: 2rem; color: white;"></i>
+                </div>
+                <h1 class="gradient-text" style="margin-bottom: 1rem;">Exercices de Mathématiques</h1>
+                <p style="font-size: 1.125rem; color: var(--text-secondary); max-width: 700px; margin: 0 auto;">
+                    Pratiquez avec nos exercices interactifs et téléchargeables pour renforcer vos connaissances. Plus de 50 séries d'exercices disponibles.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <div class="container" style="margin-top: -2rem; margin-bottom: 2rem; position: relative; z-index: 10;">
+        <div class="card" style="box-shadow: var(--shadow-xl);">
+            <div class="card-content">
+                <div class="input-group">
+                    <i class="fas fa-search input-icon"></i>
+                    <input type="text" class="input search-input" placeholder="Rechercher un exercice...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="margin-bottom: 3rem;">
+        <div class="tabs">
+            <div class="tabs-list">
+                <button class="tab active" data-target="college">📚 Collège</button>
+                <button class="tab" data-target="lycee">🎓 Lycée</button>
+            </div>
+
+            <div id="college" class="tab-content active">
+                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-bottom: 2rem;">
+                    <button class="btn btn-outline btn-sm class-filter" data-class="6ème">6ème</button>
+                    <button class="btn btn-outline btn-sm class-filter" data-class="5ème">5ème</button>
+                    <button class="btn btn-outline btn-sm class-filter" data-class="4ème">4ème</button>
+                    <button class="btn btn-outline btn-sm class-filter" data-class="3ème">3ème</button>
+                </div>
+                <div id="college-exercises-container" class="row g-4">
+                    <!-- Les exercices seront chargés dynamiquement ici -->
+                </div>
+            </div>
+
+            <div id="lycee" class="tab-content">
+                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-bottom: 2rem;">
+                    <button class="btn btn-outline btn-sm class-filter" data-class="2nde">2nde</button>
+                    <button class="btn btn-outline btn-sm class-filter" data-class="1ère">1ère</button>
+                    <button class="btn btn-outline btn-sm class-filter" data-class="Terminale">Terminale</button>
+                </div>
+                <div id="lycee-exercises-container" class="row g-4">
+                    <!-- Les exercices seront chargés dynamiquement ici -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/firebase.js"></script>
+    <script src="../js/static-data.js"></script>
+    <script src="../js/exercises-loader.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        let allExercises = [];
+        let currentFilter = null;
+
+        // Gestion de la recherche
+        document.querySelector('.search-input')?.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.exercise-card');
+            cards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                card.closest('.col-md-6')?.style.setProperty('display', text.includes(query) ? '' : 'none');
+            });
+        });
+
+        // Gestion des filtres par classe
+        document.querySelectorAll('.class-filter').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.class-filter').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentFilter = this.dataset.class;
+                renderExercises();
+            });
+        });
+
+        // Gestion des onglets
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById(this.dataset.target).classList.add('active');
+                currentFilter = null;
+                document.querySelectorAll('.class-filter').forEach(b => b.classList.remove('active'));
+                renderExercises();
+            });
+        });
+
+        // Fonction pour rendre les exercices
+        async function renderExercises() {
+            const activeTab = document.querySelector('.tab-content.active');
+            const containerId = activeTab.id + '-exercises-container';
+            const container = document.getElementById(containerId);
+            
+            if (!container) return;
+
+            // Filtrer les exercices selon le niveau et la classe
+            let filteredExercises = allExercises.filter(exercise => {
+                const level = exercise.level || '';
+                
+                if (activeTab.id === 'college') {
+                    return level === 'Collège';
+                } else if (activeTab.id === 'lycee') {
+                    return level === 'Lycée';
+                }
+                return false;
+            });
+
+            // Filtrer par classe si un filtre est actif
+            if (currentFilter) {
+                filteredExercises = filteredExercises.filter(e => 
+                    (e.classe || '').includes(currentFilter) || 
+                    (e.level || '').includes(currentFilter)
+                );
+            }
+
+            // Grouper par classe
+            const exercisesByClass = {};
+            filteredExercises.forEach(exercise => {
+                const classe = exercise.classe || exercise.level || 'Autre';
+                if (!exercisesByClass[classe]) {
+                    exercisesByClass[classe] = [];
+                }
+                exercisesByClass[classe].push(exercise);
+            });
+
+            // Rendre les exercices groupés par classe
+            let html = '';
+            Object.keys(exercisesByClass).sort().forEach(classe => {
+                html += `<div class="col-12 mb-4">
+                    <h2 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #34d399); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-pen" style="color: white;"></i>
+                        </div>
+                        <span class="gradient-text">Classe de ${classe}</span>
+                    </h2>
+                    <div class="row g-4">
+                        ${window.renderExercisesByClass(exercisesByClass[classe], classe)}
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html || '<p class="text-muted text-center py-5">Aucun exercice disponible pour ce niveau.</p>';
+        }
+
+        // Charger tous les exercices
+        async function loadExercises() {
+            try {
+                allExercises = await window.loadAllExercises();
+                console.log(`${allExercises.length} exercices chargés`);
+                renderExercises();
+            } catch (error) {
+                console.error('Erreur lors du chargement des exercices:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadExercises);
+    </script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

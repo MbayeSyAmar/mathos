@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Professeur - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../../../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                    <a href="cours.html" class="nav-link">Cours</a>
+                    <a href="exercices.html" class="nav-link">Exercices</a>
+                    <a href="quiz.html" class="nav-link">Quiz</a>
+                    <a href="videos.html" class="nav-link">Vidéos</a>
+                    <a href="demandes.html" class="nav-link">Demandes</a>
+                    <a href="messages.html" class="nav-link">Messages</a>
+                </nav>
+                <button class="btn btn-outline btn-sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section class="section py-5">
+        <div class="container">
+            <div class="mb-4">
+                <h1 class="display-5 fw-bold mb-2">Dashboard Professeur</h1>
+                <p class="text-muted">Bienvenue, <span id="userName">Professeur</span></p>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Cours</h6>
+                                <i class="fas fa-book text-primary" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="coursesCount">0</h2>
+                            <small class="text-muted">Cours créés</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Exercices</h6>
+                                <i class="fas fa-pen text-success" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="exercisesCount">0</h2>
+                            <small class="text-muted">Exercices créés</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Quiz</h6>
+                                <i class="fas fa-brain text-warning" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="quizzesCount">0</h2>
+                            <small class="text-muted">Quiz créés</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Étudiants</h6>
+                                <i class="fas fa-users text-info" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="studentsCount">0</h2>
+                            <small class="text-muted">Étudiants encadrés</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenu récent -->
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3 d-flex justify-content-between align-items-center">
+                            <h3 class="h5 fw-bold mb-0">Contenu récent</h3>
+                            <a href="cours.html" class="btn btn-sm btn-outline-primary">Voir tout</a>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentContent">
+                                <p class="text-muted text-center">Aucun contenu créé pour le moment</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <h3 class="h5 fw-bold mb-0">Actions rapides</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="cours.html?action=create" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Créer un cours
+                                </a>
+                                <a href="exercices.html?action=create" class="btn btn-success">
+                                    <i class="fas fa-plus me-2"></i>Créer un exercice
+                                </a>
+                                <a href="quiz.html?action=create" class="btn btn-warning text-white">
+                                    <i class="fas fa-plus me-2"></i>Créer un quiz
+                                </a>
+                                <a href="videos.html?action=create" class="btn btn-info text-white">
+                                    <i class="fas fa-plus me-2"></i>Ajouter une vidéo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (user && document.getElementById('userName')) {
+                document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
+            }
+            
+            // Vérifier le rôle
+            if (user && user.role !== 'professeur' && user.role !== 'teacher') {
+                alert('Accès réservé aux professeurs');
+                window.location.href = '../../../index.html';
+                return;
+            }
+            
+            loadDashboardData();
+        });
+        
+        async function loadDashboardData() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user) return;
+            
+            if (window.CourseService) {
+                try {
+                    const courses = await window.CourseService.getAllCourses();
+                    const myCourses = courses.filter(c => c.createdBy === user.uid);
+                    document.getElementById('coursesCount').textContent = myCourses.length;
+                } catch (error) {
+                    console.error('Erreur:', error);
+                }
+            }
+            
+            if (window.ExerciseService) {
+                try {
+                    const exercises = await window.ExerciseService.getAllExercises();
+                    const myExercises = exercises.filter(e => e.createdBy === user.uid);
+                    document.getElementById('exercisesCount').textContent = myExercises.length;
+                } catch (error) {
+                    console.error('Erreur:', error);
+                }
+            }
+            
+            if (window.QuizService) {
+                try {
+                    const quizzes = await window.QuizService.getAllQuizzes();
+                    const myQuizzes = quizzes.filter(q => q.createdBy === user.uid);
+                    document.getElementById('quizzesCount').textContent = myQuizzes.length;
+                } catch (error) {
+                    console.error('Erreur:', error);
+                }
+            }
+        }
+        
+        function logout() {
+            if (window.AuthService) {
+                window.AuthService.logout();
+            } else {
+                localStorage.removeItem('mathosUser');
+            }
+            window.location.href = '../../../index.html';
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Super Admin - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../../../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                    <a href="utilisateurs.html" class="nav-link">Utilisateurs</a>
+                    <a href="demandes.html" class="nav-link">Demandes</a>
+                    <a href="messages.html" class="nav-link">Messages</a>
+                    <a href="boutique.html" class="nav-link">Boutique</a>
+                    <a href="contenu.html" class="nav-link">Contenu</a>
+                    <a href="statistiques.html" class="nav-link">Statistiques</a>
+                    <a href="parametres.html" class="nav-link">Paramètres</a>
+                </nav>
+                <button class="btn btn-outline btn-sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section class="section py-5">
+        <div class="container">
+            <div class="mb-4">
+                <h1 class="display-5 fw-bold mb-2">Dashboard Super Admin</h1>
+                <p class="text-muted">Vue d'ensemble complète de la plateforme</p>
+            </div>
+
+            <!-- Statistiques principales -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Utilisateurs</h6>
+                                <i class="fas fa-users text-primary" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="usersCount">0</h2>
+                            <small class="text-muted">Total inscrits</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Cours</h6>
+                                <i class="fas fa-book text-success" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="coursesCount">0</h2>
+                            <small class="text-muted">Publiés</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Ventes</h6>
+                                <i class="fas fa-shopping-bag text-warning" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="salesCount">0</h2>
+                            <small class="text-muted">Commandes totales</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h6 class="text-muted mb-0">Revenus</h6>
+                                <i class="fas fa-dollar-sign text-info" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <h2 class="fw-bold mb-0" id="revenueCount">0</h2>
+                            <small class="text-muted">Total des ventes</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques secondaires -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Exercices</h6>
+                            <h3 class="fw-bold mb-0" id="exercisesCount">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Produits</h6>
+                            <h3 class="fw-bold mb-0" id="productsCount">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Articles</h6>
+                            <h3 class="fw-bold mb-0" id="articlesCount">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Demandes</h6>
+                            <h3 class="fw-bold mb-0" id="requestsCount">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activités récentes -->
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <h3 class="h5 fw-bold mb-0">Utilisateurs récents</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentUsers">
+                                <p class="text-muted text-center">Chargement...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <h3 class="h5 fw-bold mb-0">Commandes récentes</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="recentOrders">
+                                <p class="text-muted text-center">Chargement...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            
+            // Vérifier le rôle
+            if (user && user.role !== 'super_admin' && user.role !== 'admin') {
+                alert('Accès réservé au super administrateur');
+                window.location.href = '../../../index.html';
+                return;
+            }
+            
+            loadDashboardData();
+        });
+        
+        async function loadDashboardData() {
+            // Charger les statistiques depuis Firebase
+            if (window.db) {
+                try {
+                    // Utilisateurs
+                    const usersSnapshot = await window.db.collection('users').get();
+                    document.getElementById('usersCount').textContent = usersSnapshot.size;
+                    
+                    // Cours
+                    const coursesSnapshot = await window.db.collection('courses').where('status', '==', 'published').get();
+                    document.getElementById('coursesCount').textContent = coursesSnapshot.size;
+                    
+                    // Exercices
+                    const exercisesSnapshot = await window.db.collection('exercises').where('status', '==', 'published').get();
+                    document.getElementById('exercisesCount').textContent = exercisesSnapshot.size;
+                    
+                    // Commandes
+                    const ordersSnapshot = await window.db.collection('orders').get();
+                    document.getElementById('salesCount').textContent = ordersSnapshot.size;
+                    
+                    let totalRevenue = 0;
+                    ordersSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        totalRevenue += data.total || 0;
+                    });
+                    document.getElementById('revenueCount').textContent = totalRevenue.toLocaleString() + ' FCFA';
+                    
+                    // Produits
+                    const productsSnapshot = await window.db.collection('products').get();
+                    document.getElementById('productsCount').textContent = productsSnapshot.size;
+                    
+                    // Articles
+                    const articlesSnapshot = await window.db.collection('blog_posts').get();
+                    document.getElementById('articlesCount').textContent = articlesSnapshot.size;
+                    
+                    // Demandes
+                    const requestsSnapshot = await window.db.collection('encadrement_requests').get();
+                    document.getElementById('requestsCount').textContent = requestsSnapshot.size;
+                    
+                    // Utilisateurs récents
+                    const recentUsers = [];
+                    usersSnapshot.forEach(doc => {
+                        recentUsers.push({ id: doc.id, ...doc.data() });
+                    });
+                    recentUsers.sort((a, b) => {
+                        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
+                        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
+                        return dateB - dateA;
+                    });
+                    
+                    const recentUsersHtml = recentUsers.slice(0, 5).map(u => `
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                            <div>
+                                <div class="fw-semibold">${u.displayName || u.email}</div>
+                                <small class="text-muted">${u.email}</small>
+                            </div>
+                            <span class="badge bg-secondary">${u.role || 'student'}</span>
+                        </div>
+                    `).join('');
+                    document.getElementById('recentUsers').innerHTML = recentUsersHtml || '<p class="text-muted text-center">Aucun utilisateur</p>';
+                    
+                } catch (error) {
+                    console.error('Erreur:', error);
+                }
+            }
+        }
+        
+        function logout() {
+            if (window.AuthService) {
+                window.AuthService.logout();
+            } else {
+                localStorage.removeItem('mathosUser');
+            }
+            window.location.href = '../../../index.html';
+        }
+    </script>
+</body>
+</html>
+

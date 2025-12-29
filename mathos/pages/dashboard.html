@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de bord - Mathosphère</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <style>
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { 
+            background: var(--bg-card); 
+            border-radius: var(--radius-xl); 
+            padding: 1.5rem; 
+            border: 1px solid rgba(0,0,0,0.08);
+            transition: all var(--transition-base);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+            transform: scaleY(0);
+            transition: transform var(--transition-base);
+        }
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+        }
+        .stat-card:hover::before {
+            transform: scaleY(1);
+        }
+        .stat-value { font-size: 2.5rem; font-weight: 800; margin-bottom: 0.5rem; background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .stat-label { color: var(--text-muted); font-size: 0.875rem; font-weight: 500; }
+        .nav-tabs .nav-link.active { color: var(--primary) !important; border-bottom-color: var(--primary) !important; }
+        .nav-tabs .nav-link:hover { color: var(--primary) !important; }
+        .level-card { 
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); 
+            color: white; 
+            border-radius: var(--radius-xl); 
+            padding: 2.5rem; 
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-2xl);
+        }
+        .level-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .level-number { font-size: 5rem; font-weight: 900; line-height: 1; text-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .progress-bar { width: 100%; height: 12px; background: rgba(255,255,255,0.2); border-radius: var(--radius-full); overflow: hidden; margin-top: 1rem; position: relative; }
+        .progress-fill { height: 100%; background: white; transition: width 0.5s ease; border-radius: var(--radius-full); box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        .course-card { position: relative; overflow: hidden; }
+        .course-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+            opacity: 0;
+            transition: opacity var(--transition-base);
+        }
+        .course-card:hover::after {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <header class="header" id="header">
+        <div class="container">
+            <div class="header-content">
+                <a href="../index.html" class="logo">
+                    <div class="logo-icon">M</div>
+                    <span>Mathosphère</span>
+                </a>
+                <nav class="nav">
+                    <a href="../index.html" class="nav-link">Accueil</a>
+                    <a href="cours.html" class="nav-link">Cours</a>
+                    <a href="exercices.html" class="nav-link">Exercices</a>
+                    <a href="quiz.html" class="nav-link">Quiz</a>
+                </nav>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="btn-icon" onclick="toggleCart()">
+                        <i class="fas fa-shopping-bag"></i>
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Déconnexion
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="section" style="background: linear-gradient(135deg, rgba(102,126,234,0.05), rgba(118,75,162,0.05));">
+        <div class="container">
+            <div style="margin-bottom: 2rem;">
+                <h1 class="gradient-text" style="margin-bottom: 0.5rem; font-size: clamp(2rem, 5vw, 3rem);">Tableau de bord</h1>
+                <p style="color: var(--text-muted); font-size: 1.125rem;">Bienvenue, <span id="userName" style="font-weight: 600; color: var(--text-primary);">Étudiant</span></p>
+            </div>
+
+            <!-- Niveau et XP -->
+            <div class="level-card fade-in-up">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; position: relative; z-index: 1;">
+                    <div style="display: flex; align-items: center; gap: 1.5rem;">
+                        <div style="position: relative;">
+                            <div class="level-number" id="userLevel" style="position: relative; z-index: 1;">5</div>
+                            <div style="position: absolute; top: -12px; right: -12px; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #92400e; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251,191,36,0.5); z-index: 2;">
+                                <i class="fas fa-trophy" style="font-size: 1.5rem;"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.75rem; margin-bottom: 0.25rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">Niveau <span id="levelNumber">5</span></h3>
+                            <p style="opacity: 0.95; font-size: 1.125rem;"><span id="currentXP">3500</span> / <span id="nextLevelXP">5000</span> XP</p>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="opacity: 0.95; margin-bottom: 0.25rem; font-size: 0.9375rem;">Taux de réussite</p>
+                        <div style="font-size: 3rem; font-weight: 800; text-shadow: 0 2px 8px rgba(0,0,0,0.3);">85%</div>
+                    </div>
+                </div>
+                <div class="progress-bar" style="position: relative; z-index: 1;">
+                    <div class="progress-fill" id="xpProgress" style="width: 70%;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 1.5rem; font-size: 0.9375rem; opacity: 0.95; position: relative; z-index: 1;">
+                    <span><i class="fas fa-clock"></i> 24h étudiées</span>
+                    <span><i class="fas fa-award"></i> 8 badges</span>
+                    <span><i class="fas fa-fire"></i> 180 min cette semaine</span>
+                </div>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="stats-grid">
+                <div class="stat-card hover-lift fade-in-up">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; color: var(--text-secondary);">Cours</h3>
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(96,165,250,0.1)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-book" style="color: #3b82f6; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" style="color: #3b82f6;">12</div>
+                    <p class="stat-label">5 en cours</p>
+                </div>
+
+                <div class="stat-card hover-lift fade-in-up">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; color: var(--text-secondary);">Exercices</h3>
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(52,211,153,0.1)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-pen" style="color: #10b981; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" style="color: #10b981;">45</div>
+                    <p class="stat-label">120 au total</p>
+                </div>
+
+                <div class="stat-card hover-lift fade-in-up">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; color: var(--text-secondary);">Quiz</h3>
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(167,139,250,0.1)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-brain" style="color: #8b5cf6; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" style="color: #8b5cf6;">18</div>
+                    <p class="stat-label">Moyenne: 85%</p>
+                </div>
+
+                <div class="stat-card hover-lift fade-in-up">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                        <h3 style="font-size: 0.9375rem; font-weight: 600; color: var(--text-secondary);">Temps d'étude</h3>
+                        <div style="width: 48px; height: 48px; background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,191,36,0.1)); border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-clock" style="color: #f59e0b; font-size: 1.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" style="color: #f59e0b;">24h</div>
+                    <p class="stat-label">30 min</p>
+                </div>
+            </div>
+
+            <!-- Tabs pour cours, exercices, quiz, favoris -->
+            <div class="mb-5">
+                <ul class="nav nav-tabs border-0 mb-4" id="dashboardTabs" role="tablist" style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--bg-muted);">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-semibold px-4 py-3 border-0 rounded-top" id="cours-tab" data-bs-toggle="tab" data-bs-target="#cours" type="button" role="tab" style="background: transparent; color: var(--text-secondary); border-bottom: 3px solid transparent !important;">
+                            <i class="fas fa-book me-2"></i>Mes cours
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold px-4 py-3 border-0 rounded-top" id="exercices-tab" data-bs-toggle="tab" data-bs-target="#exercices" type="button" role="tab" style="background: transparent; color: var(--text-secondary); border-bottom: 3px solid transparent !important;">
+                            <i class="fas fa-pen me-2"></i>Mes exercices
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold px-4 py-3 border-0 rounded-top" id="quiz-tab" data-bs-toggle="tab" data-bs-target="#quiz" type="button" role="tab" style="background: transparent; color: var(--text-secondary); border-bottom: 3px solid transparent !important;">
+                            <i class="fas fa-brain me-2"></i>Mes quiz
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold px-4 py-3 border-0 rounded-top" id="favoris-tab" data-bs-toggle="tab" data-bs-target="#favoris" type="button" role="tab" style="background: transparent; color: var(--text-secondary); border-bottom: 3px solid transparent !important;">
+                            <i class="fas fa-heart me-2"></i>Mes favoris
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="dashboardTabsContent">
+                    <!-- Tab Mes cours -->
+                    <div class="tab-pane fade show active" id="cours" role="tabpanel" aria-labelledby="cours-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 fw-bold mb-0">Mes cours</h2>
+                            <a href="cours.html" class="btn btn-outline-primary btn-sm">Voir tout</a>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card border-0 shadow-lg h-100 course-card">
+                                    <div class="image-container position-relative overflow-hidden" style="height: 200px;">
+                                        <img src="https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&h=600&fit=crop" alt="Nombres décimaux" class="w-100 h-100" style="object-fit: cover;">
+                                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, rgba(59,130,246,0.85), rgba(96,165,250,0.85));"></div>
+                                        <div class="position-absolute top-0 end-0 m-3 bg-white bg-opacity-95 rounded-pill px-3 py-2 fw-bold shadow" style="backdrop-filter: blur(10px); z-index: 1;">65%</div>
+                                        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="z-index: 1;">
+                                            <h3 class="text-white fw-bold mb-2" style="font-size: 1.375rem; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">Nombres décimaux</h3>
+                                            <span class="badge bg-white bg-opacity-95 text-primary">En cours</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between small mb-2">
+                                                <span class="text-muted fw-medium">Progression</span>
+                                                <span class="fw-bold text-primary">65%</span>
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" style="width: 65%;"></div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between small text-muted">
+                                            <span><i class="fas fa-check-circle text-success me-1"></i>8/12 leçons</span>
+                                            <span><i class="fas fa-clock me-1"></i>Il y a 2 jours</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-transparent border-0 pb-3">
+                                        <a href="cours-detail.html?id=1" class="btn btn-primary w-100">
+                                            Continuer <i class="fas fa-arrow-right ms-2"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card border-0 shadow-lg h-100 course-card">
+                                    <div class="image-container position-relative overflow-hidden" style="height: 200px;">
+                                        <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&h=600&fit=crop" alt="Fractions" class="w-100 h-100" style="object-fit: cover;">
+                                        <div class="position-absolute top-0 start-0 w-100 h-100" style="background: linear-gradient(135deg, rgba(16,185,129,0.85), rgba(52,211,153,0.85));"></div>
+                                        <div class="position-absolute top-0 end-0 m-3 bg-white bg-opacity-95 rounded-pill px-3 py-2 fw-bold shadow" style="backdrop-filter: blur(10px); z-index: 1;">90%</div>
+                                        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="z-index: 1;">
+                                            <h3 class="text-white fw-bold mb-2" style="font-size: 1.375rem; text-shadow: 0 2px 8px rgba(0,0,0,0.4);">Fractions</h3>
+                                            <span class="badge bg-white bg-opacity-95 text-success">En cours</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between small mb-2">
+                                                <span class="text-muted fw-medium">Progression</span>
+                                                <span class="fw-bold text-success">90%</span>
+                                            </div>
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: 90%;"></div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-between small text-muted">
+                                            <span><i class="fas fa-check-circle text-success me-1"></i>11/12 leçons</span>
+                                            <span><i class="fas fa-clock me-1"></i>Aujourd'hui</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-transparent border-0 pb-3">
+                                        <a href="cours-detail.html?id=2" class="btn btn-success w-100">
+                                            Continuer <i class="fas fa-arrow-right ms-2"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab Mes exercices -->
+                    <div class="tab-pane fade" id="exercices" role="tabpanel" aria-labelledby="exercices-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 fw-bold mb-0">Mes exercices</h2>
+                            <a href="exercices.html" class="btn btn-outline-success btn-sm">Voir tout</a>
+                        </div>
+                        <div class="row g-4" id="exercisesList">
+                            <div class="col-12 text-center py-5">
+                                <i class="fas fa-pen text-muted mb-3" style="font-size: 3rem;"></i>
+                                <p class="h5 fw-bold mb-2">Aucun exercice commencé</p>
+                                <p class="text-muted mb-4">Entraînez-vous avec nos exercices</p>
+                                <a href="exercices.html" class="btn btn-success">Découvrir les exercices</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab Mes quiz -->
+                    <div class="tab-pane fade" id="quiz" role="tabpanel" aria-labelledby="quiz-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 fw-bold mb-0">Mes quiz</h2>
+                            <a href="quiz.html" class="btn btn-outline-warning btn-sm">Voir tout</a>
+                        </div>
+                        <div class="row g-4" id="quizzesList">
+                            <div class="col-12 text-center py-5">
+                                <i class="fas fa-brain text-muted mb-3" style="font-size: 3rem;"></i>
+                                <p class="h5 fw-bold mb-2">Aucun quiz tenté</p>
+                                <p class="text-muted mb-4">Testez vos connaissances</p>
+                                <a href="quiz.html" class="btn btn-warning text-white">Découvrir les quiz</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab Mes favoris -->
+                    <div class="tab-pane fade" id="favoris" role="tabpanel" aria-labelledby="favoris-tab">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 fw-bold mb-0">Mes favoris</h2>
+                        </div>
+                        <div class="row g-4" id="favoritesList">
+                            <div class="col-12 text-center py-5">
+                                <i class="fas fa-heart text-muted mb-3" style="font-size: 3rem;"></i>
+                                <p class="h5 fw-bold mb-2">Aucun favori</p>
+                                <p class="text-muted mb-4">Ajoutez des cours, exercices ou quiz à vos favoris</p>
+                                <a href="cours.html" class="btn btn-primary">Découvrir le contenu</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graphiques et statistiques -->
+            <div class="row g-4 mb-5">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <h3 class="h5 fw-bold mb-0">Activité hebdomadaire</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="weeklyChart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: var(--bg-muted); border-radius: var(--radius-lg);">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-chart-line mb-3" style="font-size: 3rem;"></i>
+                                    <p>Graphique d'activité hebdomadaire</p>
+                                    <small>Les données seront affichées ici</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <h3 class="h5 fw-bold mb-0">Répartition</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="pieChart" style="height: 300px; display: flex; align-items: center; justify-content: center; background: var(--bg-muted); border-radius: var(--radius-lg);">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-chart-pie mb-3" style="font-size: 3rem;"></i>
+                                    <p>Graphique en secteurs</p>
+                                    <small>Les données seront affichées ici</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activités récentes et Badges -->
+            <div class="row g-4 mb-5">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3 d-flex justify-content-between align-items-center">
+                            <h3 class="h5 fw-bold mb-0">Activités récentes</h3>
+                            <a href="#" class="btn btn-sm btn-link text-decoration-none">Voir tout</a>
+                        </div>
+                        <div class="card-body">
+                            <div id="activitiesList" class="list-group list-group-flush">
+                                <div class="list-group-item border-0 px-0 py-3 d-flex align-items-start gap-3">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                                        <i class="fas fa-book text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <h6 class="mb-0 fw-semibold">Cours "Fractions" complété</h6>
+                                            <small class="text-muted">Il y a 2h</small>
+                                        </div>
+                                        <p class="mb-0 text-muted small">Vous avez terminé le cours sur les fractions</p>
+                                    </div>
+                                </div>
+                                <div class="list-group-item border-0 px-0 py-3 d-flex align-items-start gap-3">
+                                    <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                                        <i class="fas fa-pen text-success"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <h6 class="mb-0 fw-semibold">Exercice "Opérations" terminé</h6>
+                                            <small class="text-muted">Il y a 5h</small>
+                                        </div>
+                                        <p class="mb-0 text-muted small">Score : 85%</p>
+                                    </div>
+                                </div>
+                                <div class="list-group-item border-0 px-0 py-3 d-flex align-items-start gap-3">
+                                    <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; flex-shrink: 0;">
+                                        <i class="fas fa-brain text-warning"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <h6 class="mb-0 fw-semibold">Quiz "Algèbre" complété</h6>
+                                            <small class="text-muted">Hier</small>
+                                        </div>
+                                        <p class="mb-0 text-muted small">Score : 90%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-transparent border-0 pb-3">
+                            <h3 class="h5 fw-bold mb-0">Badges débloqués</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="badgesList" class="d-flex flex-wrap gap-3">
+                                <div class="text-center">
+                                    <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-trophy text-warning" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <small class="d-block fw-semibold">Premier pas</small>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-book text-primary" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <small class="d-block fw-semibold">Étudiant</small>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-fire text-success" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <small class="d-block fw-semibold">Série</small>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-star text-info" style="font-size: 1.5rem;"></i>
+                                    </div>
+                                    <small class="d-block fw-semibold">Excellent</small>
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-top text-center">
+                                <a href="#" class="btn btn-sm btn-outline-primary">Voir tous les badges</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages non lus -->
+            <div class="card border-0 shadow-lg mb-5">
+                <div class="card-header bg-transparent border-0 pb-3 d-flex justify-content-between align-items-center">
+                    <h3 class="h5 fw-bold mb-0">
+                        <i class="fas fa-envelope me-2 text-primary"></i>Messages
+                        <span class="badge bg-danger ms-2" id="unreadCount">0</span>
+                    </h3>
+                    <a href="#" class="btn btn-sm btn-link text-decoration-none">Voir tout</a>
+                </div>
+                <div class="card-body">
+                    <div id="messagesList">
+                        <p class="text-muted text-center mb-0">Aucun message pour le moment</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions rapides -->
+            <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white;">
+                <div class="card-header bg-transparent border-0 border-bottom border-white border-opacity-20 pb-3">
+                    <h3 class="h5 fw-bold mb-0 text-white">Actions rapides</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6 col-md-3">
+                            <a href="cours.html" class="btn w-100 text-white border border-white border-opacity-30 bg-white bg-opacity-10 backdrop-filter-blur">
+                                <i class="fas fa-book me-2"></i>Nouveaux cours
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="exercices.html" class="btn w-100 text-white border border-white border-opacity-30 bg-white bg-opacity-10 backdrop-filter-blur">
+                                <i class="fas fa-pen me-2"></i>Exercices
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="quiz.html" class="btn w-100 text-white border border-white border-opacity-30 bg-white bg-opacity-10 backdrop-filter-blur">
+                                <i class="fas fa-brain me-2"></i>Quiz
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="progression.html" class="btn w-100 text-white border border-white border-opacity-30 bg-white bg-opacity-10 backdrop-filter-blur">
+                                <i class="fas fa-chart-line me-2"></i>Progression
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>&copy; 2025 Mathosphère. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/firebase.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/auth-guard.js"></script>
+    <script src="../js/role-guard.js"></script>
+    <script>
+        // Vérifier l'authentification et le rôle
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!requireAuth()) {
+                return;
+            }
+            
+            // Vérifier que l'utilisateur est bien un étudiant
+            const user = getCurrentUser();
+            if (user && (user.role === 'professeur' || user.role === 'teacher' || user.role === 'super_admin' || user.role === 'admin' || user.role === 'tuteur' || user.role === 'tutor' || user.role === 'redacteur' || user.role === 'editor')) {
+                redirectToDashboard();
+                return;
+            }
+            
+            // Charger les informations utilisateur
+            if (user && document.getElementById('userName')) {
+                document.getElementById('userName').textContent = user.displayName || user.name || user.email.split('@')[0];
+            }
+            
+            // Initialiser les tabs Bootstrap
+            const triggerTabList = document.querySelectorAll('#dashboardTabs button[data-bs-toggle="tab"]');
+            triggerTabList.forEach(triggerEl => {
+                const tabTrigger = new bootstrap.Tab(triggerEl);
+                triggerEl.addEventListener('click', event => {
+                    event.preventDefault();
+                    tabTrigger.show();
+                });
+            });
+            
+            // Charger les données depuis Firebase si disponible
+            loadDashboardData();
+        });
+
+        async function loadDashboardData() {
+            // Charger les exercices
+            if (window.ExerciseService) {
+                try {
+                    const exercises = await window.ExerciseService.getAllExercises();
+                    renderExercises(exercises.slice(0, 6));
+                } catch (error) {
+                    console.error('Erreur lors du chargement des exercices:', error);
+                }
+            }
+            
+            // Charger les quiz
+            if (window.QuizService) {
+                try {
+                    const quizzes = await window.QuizService.getAllQuizzes();
+                    renderQuizzes(quizzes.slice(0, 6));
+                } catch (error) {
+                    console.error('Erreur lors du chargement des quiz:', error);
+                }
+            }
+        }
+        
+        function renderExercises(exercises) {
+            const container = document.getElementById('exercisesList');
+            if (!container) return;
+            
+            if (exercises.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-pen text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="h5 fw-bold mb-2">Aucun exercice commencé</p>
+                        <p class="text-muted mb-4">Entraînez-vous avec nos exercices</p>
+                        <a href="exercices.html" class="btn btn-success">Découvrir les exercices</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = exercises.map(ex => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-lg h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">${ex.title || 'Exercice'}</h5>
+                            <p class="card-text text-muted small">${ex.description || ''}</p>
+                            <a href="exercices.html" class="btn btn-success btn-sm">Voir l'exercice</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderQuizzes(quizzes) {
+            const container = document.getElementById('quizzesList');
+            if (!container) return;
+            
+            if (quizzes.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-brain text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="h5 fw-bold mb-2">Aucun quiz tenté</p>
+                        <p class="text-muted mb-4">Testez vos connaissances</p>
+                        <a href="quiz.html" class="btn btn-warning text-white">Découvrir les quiz</a>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = quizzes.map(q => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-lg h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">${q.title || 'Quiz'}</h5>
+                            <p class="card-text text-muted small">${q.description || ''}</p>
+                            <a href="quiz.html" class="btn btn-warning btn-sm text-white">Voir le quiz</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function logout() {
+            if (window.AuthService) {
+                window.AuthService.logout();
+            } else {
+                localStorage.removeItem('mathosUser');
+                window.location.href = '../index.html';
+            }
+        }
+    </script>
+</body>
+</html>

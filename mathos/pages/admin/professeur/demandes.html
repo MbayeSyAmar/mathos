@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demandes d'Encadrement - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Professeur</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cours.html"><i class="fas fa-book-open me-2"></i>Cours</a></li>
+                    <li class="nav-item"><a class="nav-link" href="exercices.html"><i class="fas fa-dumbbell me-2"></i>Exercices</a></li>
+                    <li class="nav-item"><a class="nav-link" href="quiz.html"><i class="fas fa-file-alt me-2"></i>Quiz</a></li>
+                    <li class="nav-item"><a class="nav-link" href="soumissions.html"><i class="fas fa-clipboard-list me-2"></i>Soumissions</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="demandes.html"><i class="fas fa-paper-plane me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 fw-bold">Demandes d'Encadrement</h1>
+                    <p class="text-muted mb-0">Gérez les demandes d'encadrement des étudiants</p>
+                </div>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0" id="totalRequests">0</h3>
+                            <small class="text-muted">Total</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0 text-warning" id="pendingRequests">0</h3>
+                            <small class="text-muted">En attente</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0 text-success" id="approvedRequests">0</h3>
+                            <small class="text-muted">Approuvées</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow">
+                        <div class="card-body text-center">
+                            <h3 class="fw-bold mb-0 text-danger" id="rejectedRequests">0</h3>
+                            <small class="text-muted">Refusées</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-body">
+                    <ul class="nav nav-pills" id="filterTabs">
+                        <li class="nav-item">
+                            <button class="nav-link active" onclick="filterRequests('all')">Toutes</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" onclick="filterRequests('pending')">En attente</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" onclick="filterRequests('approved')">Approuvées</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" onclick="filterRequests('rejected')">Refusées</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Liste des demandes -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="loadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-3 text-muted">Chargement des demandes...</p>
+                    </div>
+                    <div id="requestsList" style="display: none;">
+                        <!-- Les demandes seront chargées ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour approuver/refuser -->
+    <div class="modal fade" id="actionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="actionModalTitle">Action sur la demande</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="requestDetails">
+                        <!-- Détails de la demande -->
+                    </div>
+                    <div id="rejectionReasonContainer" style="display: none;" class="mt-3">
+                        <label class="form-label">Raison du refus *</label>
+                        <textarea class="form-control" id="rejectionReason" rows="3" placeholder="Expliquez pourquoi vous refusez cette demande..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-success" id="approveBtn" onclick="processRequest('approve')" style="display: none;">
+                        <i class="fas fa-check me-2"></i>Approuver
+                    </button>
+                    <button type="button" class="btn btn-danger" id="rejectBtn" onclick="processRequest('reject')" style="display: none;">
+                        <i class="fas fa-times me-2"></i>Refuser
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let requests = [];
+        let currentFilter = 'all';
+        let currentRequestId = null;
+        let currentAction = null;
+        const actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['professeur', 'super_admin']);
+            loadRequests();
+        });
+
+        async function loadRequests() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const requestsRef = window.db.collection('encadrement_requests');
+                const query = requestsRef.where('teacherId', '==', user.uid);
+                const snapshot = await query.get();
+
+                requests = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    requests.push({
+                        id: doc.id,
+                        ...data,
+                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt),
+                        processedAt: data.processedAt?.toDate ? data.processedAt.toDate() : (data.processedAt ? new Date(data.processedAt) : null)
+                    });
+                });
+
+                requests.sort((a, b) => b.createdAt - a.createdAt);
+                updateStats();
+                filterRequests('all');
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('requestsList').style.display = 'block';
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalRequests').textContent = requests.length;
+            document.getElementById('pendingRequests').textContent = requests.filter(r => r.status === 'pending').length;
+            document.getElementById('approvedRequests').textContent = requests.filter(r => r.status === 'approved').length;
+            document.getElementById('rejectedRequests').textContent = requests.filter(r => r.status === 'rejected').length;
+        }
+
+        function filterRequests(status) {
+            currentFilter = status;
+            const filtered = status === 'all' 
+                ? requests 
+                : requests.filter(r => r.status === status);
+
+            // Mettre à jour les tabs
+            document.querySelectorAll('#filterTabs .nav-link').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event?.target?.classList.add('active');
+
+            if (filtered.length === 0) {
+                document.getElementById('requestsList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucune demande ${status === 'all' ? '' : getStatusLabel(status)}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const requestsHtml = filtered.map(request => {
+                const statusBadge = request.status === 'pending'
+                    ? '<span class="badge bg-warning"><i class="fas fa-clock me-1"></i>En attente</span>'
+                    : request.status === 'approved'
+                    ? '<span class="badge bg-success"><i class="fas fa-check me-1"></i>Approuvée</span>'
+                    : '<span class="badge bg-danger"><i class="fas fa-times me-1"></i>Refusée</span>';
+
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-5">
+                                    <h6 class="fw-bold mb-2">${request.subject || 'Demande d\'encadrement'}</h6>
+                                    <p class="text-muted small mb-2">${request.description || ''}</p>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-primary">${request.level || '-'}</span>
+                                        ${statusBadge}
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted d-block">Étudiant</small>
+                                    <span class="fw-semibold">${request.studentName || 'N/A'}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <small class="text-muted d-block">Date</small>
+                                    <span class="small">${formatDate(request.createdAt)}</span>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    ${request.status === 'pending' ? `
+                                        <button class="btn btn-sm btn-success me-1" onclick="openActionModal('${request.id}', 'approve')">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="openActionModal('${request.id}', 'reject')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-sm btn-outline-primary" onclick="openActionModal('${request.id}', 'view')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('requestsList').innerHTML = requestsHtml;
+        }
+
+        function getStatusLabel(status) {
+            const labels = { pending: 'en attente', approved: 'approuvée', rejected: 'refusée' };
+            return labels[status] || status;
+        }
+
+        function openActionModal(requestId, action) {
+            const request = requests.find(r => r.id === requestId);
+            if (!request) return;
+
+            currentRequestId = requestId;
+            currentAction = action;
+
+            document.getElementById('requestDetails').innerHTML = `
+                <div class="mb-3">
+                    <strong>Étudiant:</strong> ${request.studentName || 'N/A'}<br>
+                    <strong>Sujet:</strong> ${request.subject || '-'}<br>
+                    <strong>Niveau:</strong> ${request.level || '-'}<br>
+                    <strong>Description:</strong> ${request.description || '-'}<br>
+                    <strong>Date de demande:</strong> ${formatDate(request.createdAt)}
+                </div>
+            `;
+
+            if (action === 'approve') {
+                document.getElementById('actionModalTitle').textContent = 'Approuver la demande';
+                document.getElementById('approveBtn').style.display = 'block';
+                document.getElementById('rejectBtn').style.display = 'none';
+                document.getElementById('rejectionReasonContainer').style.display = 'none';
+            } else if (action === 'reject') {
+                document.getElementById('actionModalTitle').textContent = 'Refuser la demande';
+                document.getElementById('approveBtn').style.display = 'none';
+                document.getElementById('rejectBtn').style.display = 'block';
+                document.getElementById('rejectionReasonContainer').style.display = 'block';
+            } else {
+                document.getElementById('actionModalTitle').textContent = 'Détails de la demande';
+                document.getElementById('approveBtn').style.display = 'none';
+                document.getElementById('rejectBtn').style.display = 'none';
+                document.getElementById('rejectionReasonContainer').style.display = 'none';
+            }
+
+            actionModal.show();
+        }
+
+        async function processRequest(action) {
+            if (action === 'reject' && !document.getElementById('rejectionReason').value.trim()) {
+                alert('Veuillez indiquer une raison de refus');
+                return;
+            }
+
+            try {
+                const updateData = {
+                    status: action === 'approve' ? 'approved' : 'rejected',
+                    processedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                if (action === 'reject') {
+                    updateData.feedback = document.getElementById('rejectionReason').value;
+                }
+
+                await window.db.collection('encadrement_requests').doc(currentRequestId).update(updateData);
+
+                // Si approuvé, créer l'accès étudiant
+                if (action === 'approve') {
+                    const request = requests.find(r => r.id === currentRequestId);
+                    await window.db.collection('student_accesses').add({
+                        studentId: request.studentId,
+                        teacherId: request.teacherId,
+                        status: 'approved',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+
+                alert(`Demande ${action === 'approve' ? 'approuvée' : 'refusée'} avec succès !`);
+                actionModal.hide();
+                loadRequests();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors du traitement de la demande');
+            }
+        }
+
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+

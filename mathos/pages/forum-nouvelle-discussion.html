@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouvelle Discussion - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <section class="section py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <a href="forum.html" class="btn btn-outline-primary mb-4">
+                        <i class="fas fa-arrow-left me-2"></i>Retour au forum
+                    </a>
+
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-body">
+                            <h1 class="h3 fw-bold mb-4">Créer une nouvelle discussion</h1>
+                            
+                            <form id="discussionForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Titre *</label>
+                                    <input type="text" class="form-control" id="discussionTitle" required placeholder="Titre de votre discussion">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Catégorie</label>
+                                    <select class="form-select" id="discussionCategory">
+                                        <option value="general">Général</option>
+                                        <option value="algebre">Algèbre</option>
+                                        <option value="geometrie">Géométrie</option>
+                                        <option value="analyse">Analyse</option>
+                                        <option value="probabilites">Probabilités</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Contenu *</label>
+                                    <textarea class="form-control" id="discussionContent" rows="10" required placeholder="Décrivez votre question ou votre sujet de discussion..."></textarea>
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="submitDiscussion()">
+                                    <i class="fas fa-paper-plane me-2"></i>Publier la discussion
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="footer-placeholder"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/firebase-config.js"></script>
+    <script src="../js/firebase.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        async function submitDiscussion() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) {
+                alert('Vous devez être connecté pour créer une discussion');
+                window.location.href = 'connexion.html';
+                return;
+            }
+
+            const title = document.getElementById('discussionTitle').value.trim();
+            const content = document.getElementById('discussionContent').value.trim();
+            const category = document.getElementById('discussionCategory').value;
+
+            if (!title || !content) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+
+            try {
+                const docRef = await window.db.collection('forum_discussions').add({
+                    titre: title,
+                    contenu: content,
+                    categorie: category,
+                    auteur: {
+                        id: user.uid,
+                        nom: user.displayName || user.email,
+                        avatar: user.photoURL || ''
+                    },
+                    dateCreation: firebase.firestore.FieldValue.serverTimestamp(),
+                    derniereReponse: firebase.firestore.FieldValue.serverTimestamp(),
+                    reponses: 0,
+                    vues: 0,
+                    likes: 0
+                });
+
+                window.location.href = `forum-detail.html?id=${docRef.id}`;
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la création de la discussion');
+            }
+        }
+    </script>
+</body>
+</html>
+

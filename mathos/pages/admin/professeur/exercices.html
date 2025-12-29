@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Exercices - Mathosphère</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar shadow-lg">
+            <h2 class="h4 fw-bold text-white mb-4">Professeur</h2>
+            <nav class="sidebar-nav">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="cours.html"><i class="fas fa-book-open me-2"></i>Cours</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="exercices.html"><i class="fas fa-dumbbell me-2"></i>Exercices</a></li>
+                    <li class="nav-item"><a class="nav-link" href="quiz.html"><i class="fas fa-file-alt me-2"></i>Quiz</a></li>
+                    <li class="nav-item"><a class="nav-link" href="soumissions.html"><i class="fas fa-clipboard-list me-2"></i>Soumissions</a></li>
+                    <li class="nav-item"><a class="nav-link" href="demandes.html"><i class="fas fa-paper-plane me-2"></i>Demandes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="messages.html"><i class="fas fa-comments me-2"></i>Messages</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 fw-bold">Mes Exercices</h1>
+                    <p class="text-muted mb-0">Gérez vos exercices et problèmes</p>
+                </div>
+                <button class="btn btn-success" onclick="openNewExerciseDialog()">
+                    <i class="fas fa-plus me-2"></i>Nouvel exercice
+                </button>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted d-block">Total Exercices</small>
+                                    <h3 class="fw-bold mb-0" id="totalExercises">0</h3>
+                                </div>
+                                <i class="fas fa-dumbbell text-success" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted d-block">Publiés</small>
+                                    <h3 class="fw-bold mb-0" id="publishedExercises">0</h3>
+                                </div>
+                                <i class="fas fa-eye text-success" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <small class="text-muted d-block">Soumissions</small>
+                                    <h3 class="fw-bold mb-0" id="totalSubmissions">0</h3>
+                                </div>
+                                <i class="fas fa-clipboard-list text-info" style="font-size: 2rem;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des exercices -->
+            <div class="card border-0 shadow-lg">
+                <div class="card-body">
+                    <div id="loadingState" class="text-center py-5">
+                        <div class="spinner-border text-success" role="status"></div>
+                        <p class="mt-3 text-muted">Chargement des exercices...</p>
+                    </div>
+                    <div id="exercisesList" style="display: none;">
+                        <!-- Les exercices seront chargés ici -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal pour créer/éditer un exercice -->
+    <div class="modal fade" id="exerciseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exerciseModalTitle">Nouvel exercice</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="exerciseForm">
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Titre *</label>
+                                <input type="text" class="form-control" id="exerciseTitle" required>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Description *</label>
+                                <textarea class="form-control" id="exerciseDescription" rows="2" required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Niveau *</label>
+                                <select class="form-select" id="exerciseLevel" required>
+                                    <option value="">Sélectionner</option>
+                                    <option value="6ème">6ème</option>
+                                    <option value="5ème">5ème</option>
+                                    <option value="4ème">4ème</option>
+                                    <option value="3ème">3ème</option>
+                                    <option value="2nde">2nde</option>
+                                    <option value="1ère">1ère</option>
+                                    <option value="Terminale">Terminale</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Difficulté *</label>
+                                <select class="form-select" id="exerciseDifficulty" required>
+                                    <option value="easy">Facile</option>
+                                    <option value="medium" selected>Moyen</option>
+                                    <option value="hard">Difficile</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Énoncé *</label>
+                                <textarea class="form-control" id="exerciseStatement" rows="5" required></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Solution</label>
+                                <textarea class="form-control" id="exerciseSolution" rows="5"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Points</label>
+                                <input type="number" class="form-control" id="exercisePoints" value="10">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Statut *</label>
+                                <select class="form-select" id="exerciseStatus" required>
+                                    <option value="draft">Brouillon</option>
+                                    <option value="published">Publié</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-success" onclick="saveExercise()">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../../../js/firebase-config.js"></script>
+    <script src="../../../js/firebase.js"></script>
+    <script src="../../../js/main.js"></script>
+    <script src="../../../js/auth-guard.js"></script>
+    <script src="../../../js/role-guard.js"></script>
+    <script>
+        let exercises = [];
+        let editingExerciseId = null;
+        const exerciseModal = new bootstrap.Modal(document.getElementById('exerciseModal'));
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.requireRole(['professeur', 'super_admin']);
+            loadExercises();
+        });
+
+        async function loadExercises() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            try {
+                const exercisesRef = window.db.collection('exercises');
+                const query = exercisesRef.where('teacherId', '==', user.uid);
+                const snapshot = await query.get();
+
+                exercises = [];
+                snapshot.forEach(doc => {
+                    exercises.push({ id: doc.id, ...doc.data() });
+                });
+
+                updateStats();
+                renderExercises();
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('exercisesList').style.display = 'block';
+            } catch (error) {
+                console.error('Erreur:', error);
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalExercises').textContent = exercises.length;
+            document.getElementById('publishedExercises').textContent = exercises.filter(e => e.status === 'published').length;
+            
+            // Compter les soumissions
+            if (window.db) {
+                const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+                window.db.collection('exercise_submissions')
+                    .where('teacherId', '==', user.uid)
+                    .get()
+                    .then(snapshot => {
+                        document.getElementById('totalSubmissions').textContent = snapshot.size;
+                    });
+            }
+        }
+
+        function renderExercises() {
+            if (exercises.length === 0) {
+                document.getElementById('exercisesList').innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-dumbbell text-muted mb-3" style="font-size: 3rem;"></i>
+                        <p class="text-muted">Aucun exercice trouvé</p>
+                        <button class="btn btn-success" onclick="openNewExerciseDialog()">
+                            <i class="fas fa-plus me-2"></i>Créer votre premier exercice
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const exercisesHtml = exercises.map(exercise => {
+                const difficultyBadge = exercise.difficulty === 'easy' 
+                    ? '<span class="badge bg-success">Facile</span>'
+                    : exercise.difficulty === 'medium'
+                    ? '<span class="badge bg-warning">Moyen</span>'
+                    : '<span class="badge bg-danger">Difficile</span>';
+                
+                const statusBadge = exercise.status === 'published' 
+                    ? '<span class="badge bg-success">Publié</span>'
+                    : '<span class="badge bg-warning">Brouillon</span>';
+
+                return `
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h5 class="fw-bold mb-2">${exercise.title}</h5>
+                                    <p class="text-muted small mb-2">${exercise.description || ''}</p>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-primary">${exercise.level}</span>
+                                        ${difficultyBadge}
+                                        ${statusBadge}
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <div class="small text-muted">Points</div>
+                                    <div class="fw-bold">${exercise.points || 10}</div>
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <button class="btn btn-sm btn-outline-success me-2" onclick="editExercise('${exercise.id}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteExercise('${exercise.id}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('exercisesList').innerHTML = exercisesHtml;
+        }
+
+        function openNewExerciseDialog() {
+            editingExerciseId = null;
+            document.getElementById('exerciseModalTitle').textContent = 'Nouvel exercice';
+            document.getElementById('exerciseForm').reset();
+            exerciseModal.show();
+        }
+
+        function editExercise(exerciseId) {
+            const exercise = exercises.find(e => e.id === exerciseId);
+            if (!exercise) return;
+
+            editingExerciseId = exerciseId;
+            document.getElementById('exerciseModalTitle').textContent = 'Modifier l\'exercice';
+            document.getElementById('exerciseTitle').value = exercise.title || '';
+            document.getElementById('exerciseDescription').value = exercise.description || '';
+            document.getElementById('exerciseLevel').value = exercise.level || '';
+            document.getElementById('exerciseDifficulty').value = exercise.difficulty || 'medium';
+            document.getElementById('exerciseStatement').value = exercise.statement || '';
+            document.getElementById('exerciseSolution').value = exercise.solution || '';
+            document.getElementById('exercisePoints').value = exercise.points || 10;
+            document.getElementById('exerciseStatus').value = exercise.status || 'draft';
+            exerciseModal.show();
+        }
+
+        async function saveExercise() {
+            const user = window.AuthService ? window.AuthService.getCurrentUser() : JSON.parse(localStorage.getItem('mathosUser'));
+            if (!user || !window.db) return;
+
+            const formData = {
+                title: document.getElementById('exerciseTitle').value,
+                description: document.getElementById('exerciseDescription').value,
+                level: document.getElementById('exerciseLevel').value,
+                difficulty: document.getElementById('exerciseDifficulty').value,
+                statement: document.getElementById('exerciseStatement').value,
+                solution: document.getElementById('exerciseSolution').value,
+                points: parseInt(document.getElementById('exercisePoints').value) || 10,
+                status: document.getElementById('exerciseStatus').value,
+                teacherId: user.uid,
+                teacherName: user.displayName || user.email.split('@')[0],
+                type: 'practice',
+                subject: 'Mathématiques',
+                hints: [],
+                studentsCompleted: 0,
+                successRate: 0
+            };
+
+            try {
+                if (editingExerciseId) {
+                    await window.db.collection('exercises').doc(editingExerciseId).update(formData);
+                    alert('Exercice mis à jour avec succès !');
+                } else {
+                    formData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+                    await window.db.collection('exercises').add(formData);
+                    alert('Exercice créé avec succès !');
+                }
+                exerciseModal.hide();
+                loadExercises();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la sauvegarde');
+            }
+        }
+
+        async function deleteExercise(exerciseId) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cet exercice ?')) return;
+
+            try {
+                await window.db.collection('exercises').doc(exerciseId).delete();
+                alert('Exercice supprimé avec succès !');
+                loadExercises();
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression');
+            }
+        }
+
+        function logout() {
+            window.logout();
+            window.location.href = '../../../connexion.html';
+        }
+    </script>
+</body>
+</html>
+
