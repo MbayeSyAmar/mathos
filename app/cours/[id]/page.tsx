@@ -21,6 +21,7 @@ import { getCourseById, type Course } from "@/lib/services/content-service"
 import { getStaticCourseById, type StaticCourse } from "@/lib/services/static-courses.service"
 import { hasAccessToTeacher } from "@/lib/services/student-access-service"
 import { getCourseContent } from "@/lib/services/content-enrichment.service"
+import { getCourseSummary } from "@/app/cours/page"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 
@@ -51,11 +52,19 @@ export default function CourseDetailPage() {
       
       if (courseData) {
         // Cours Firestore trouvé
-        setCourse(courseData)
+        // Récupérer le résumé depuis les données de la page cours si disponible
+        const numericId = parseInt(courseId)
+        const summary = !isNaN(numericId) ? getCourseSummary(numericId) : undefined
+        
+        const courseWithSummary = {
+          ...courseData,
+          summary: summary || ('summary' in courseData ? courseData.summary : undefined),
+        }
+        
+        setCourse(courseWithSummary)
         setIsStaticCourse(false)
 
         // Charger le contenu enrichi ou PDF
-        const numericId = parseInt(courseId)
         if (!isNaN(numericId)) {
           // Déterminer le niveau (college/lycee) à partir de la classe
           const isLycee = ['2nde', '1ère', '1ere', 'Terminale', 'Term'].some(l => courseData.level.includes(l))
@@ -92,6 +101,9 @@ export default function CourseDetailPage() {
           const staticCourse = getStaticCourseById(numericId)
           
           if (staticCourse) {
+            // Récupérer le résumé depuis les données de la page cours
+            const summary = getCourseSummary(numericId)
+            
             // Cours statique trouvé - adapter au format Course
             const adaptedCourse: any = {
               ...staticCourse,
@@ -103,6 +115,7 @@ export default function CourseDetailPage() {
               studentsEnrolled: 0,
               rating: 0,
               totalRatings: 0,
+              summary: summary,
             }
             setCourse(adaptedCourse)
             setIsStaticCourse(true)
@@ -210,12 +223,28 @@ export default function CourseDetailPage() {
                 <CardTitle>Contenu du cours</CardTitle>
               </CardHeader>
               <CardContent>
-                <Tabs defaultValue="content">
-                  <TabsList className="grid w-full grid-cols-3">
+                <Tabs defaultValue="summary">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="summary">Résumé</TabsTrigger>
                     <TabsTrigger value="content">Contenu</TabsTrigger>
                     <TabsTrigger value="objectives">Objectifs</TabsTrigger>
                     <TabsTrigger value="prerequisites">Prérequis</TabsTrigger>
                   </TabsList>
+
+                  <TabsContent value="summary" className="mt-6">
+                    {('summary' in course && course.summary) ? (
+                      <div className="prose prose-slate dark:prose-invert max-w-none">
+                        <div className="bg-primary/10 border-l-4 border-primary p-4 rounded-r-lg">
+                          <h3 className="text-lg font-semibold mb-2 text-primary">Concepts fondamentaux</h3>
+                          <p className="text-muted-foreground leading-relaxed">{course.summary}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-muted/50 border-l-4 border-muted-foreground p-4 rounded-r-lg">
+                        <p className="text-muted-foreground italic">Résumé en cours de préparation...</p>
+                      </div>
+                    )}
+                  </TabsContent>
 
                   <TabsContent value="content" className="mt-6">
                     {hasPDF ? (
@@ -240,7 +269,9 @@ export default function CourseDetailPage() {
                         dangerouslySetInnerHTML={{ __html: course.content }}
                       />
                     ) : (
-                      <p className="text-muted-foreground">Aucun contenu disponible</p>
+                      <div className="bg-muted/50 border-l-4 border-muted-foreground p-4 rounded-r-lg">
+                        <p className="text-muted-foreground italic">Contenu en cours de préparation...</p>
+                      </div>
                     )}
                   </TabsContent>
 

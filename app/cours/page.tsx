@@ -24,6 +24,8 @@ interface Course {
   description: string
   image: string
   duration: string
+  summary?: string // Résumé avec concepts fondamentaux
+  inProgress?: boolean // Indique si le cours est en cours de préparation
 }
 
 type ClasseKey = "6ème" | "5ème" | "4ème" | "3ème" | "2nde" | "1ère" | "Terminale" | "Licence" | "Master" | "Prépa"
@@ -36,6 +38,7 @@ const coursesData: Record<ClasseKey, Course[]> = {
       description: "Découvrez le monde fascinant des nombres décimaux ! Maîtrisez les opérations avec des exemples concrets de la vie quotidienne. Un cours interactif qui transforme les mathématiques en jeu passionnant.",
       image: "/placeholder.svg?height=200&width=400",
       duration: "2h30",
+      summary: "Concepts fondamentaux : Structure des nombres décimaux (partie entière, partie décimale), opérations (addition, soustraction, multiplication, division), comparaison et rangement, arrondis et troncatures. Ces bases sont essentielles pour aborder les fractions et les calculs plus complexes.",
     },
     {
       id: 2,
@@ -43,6 +46,7 @@ const coursesData: Record<ClasseKey, Course[]> = {
       description: "Plongez dans l'univers des fractions ! Apprenez à les manipuler avec aisance grâce à des méthodes visuelles et des exercices progressifs. Transformez ce qui semble complexe en jeu d'enfant.",
       image: "/placeholder.svg?height=200&width=400",
       duration: "3h",
+      summary: "Concepts fondamentaux : Notion de fraction (numérateur, dénominateur), fractions égales et simplification, comparaison de fractions, opérations (addition, soustraction, multiplication, division). Maîtrisez ces concepts pour résoudre les problèmes de proportionnalité et de partage.",
     },
     {
       id: 3,
@@ -50,6 +54,7 @@ const coursesData: Record<ClasseKey, Course[]> = {
       description: "Explorez les formes géométriques qui nous entourent ! De la construction à la mesure, découvrez les secrets des figures planes avec des activités pratiques et créatives.",
       image: "/placeholder.svg?height=200&width=400",
       duration: "4h",
+      summary: "Concepts fondamentaux : Figures géométriques de base (cercle, triangle, rectangle, carré), périmètres et aires, propriétés des figures (symétries, angles), constructions géométriques. Ces bases sont essentielles pour comprendre la géométrie dans l'espace et les transformations.",
     },
     {
       id: 70,
@@ -173,6 +178,7 @@ const coursesData: Record<ClasseKey, Course[]> = {
       description: "Découvrez l'un des théorèmes les plus célèbres de l'histoire ! Apprenez à l'appliquer dans des situations concrètes et à résoudre des problèmes fascinants. Géométrie et histoire combinées !",
       image: "/placeholder.svg?height=200&width=400",
       duration: "3h20",
+      summary: "Concepts fondamentaux : Triangle rectangle (hypoténuse, côtés de l'angle droit), théorème de Pythagore (a² + b² = c²), réciproque du théorème, calcul de longueurs manquantes. Ce théorème est fondamental pour la trigonométrie et la géométrie analytique.",
     },
     {
       id: 9,
@@ -224,6 +230,7 @@ const coursesData: Record<ClasseKey, Course[]> = {
       description: "Résolvez des équations comme un détective ! Découvrez les méthodes pour trouver l'inconnue et résoudre des problèmes passionnants. Devenez un expert en résolution d'équations !",
       image: "/placeholder.svg?height=200&width=400",
       duration: "3h10",
+      summary: "Concepts fondamentaux : Notion d'équation (membre de gauche, membre de droite), équations du premier degré, règles de transformation (addition, soustraction, multiplication, division), vérification d'une solution. Ces techniques sont essentielles pour résoudre des problèmes et étudier les fonctions.",
     },
     {
       id: 11,
@@ -282,6 +289,7 @@ const coursesData: Record<ClasseKey, Course[]> = {
       description: "Explorez l'univers des nombres réels ! Maîtrisez les opérations fondamentales et découvrez les propriétés fascinantes des nombres réels. Un cours essentiel pour comprendre les mathématiques modernes !",
       image: "/images/exo.jpg",
       duration: "2h",
+      summary: "Concepts fondamentaux : Ensemble des nombres réels ℝ, opérations et propriétés (commutativité, associativité, distributivité), valeurs absolues, intervalles et inégalités. Ces bases sont indispensables pour l'étude des fonctions et la résolution d'équations.",
     },
     {
       id: 14,
@@ -354,6 +362,7 @@ const coursesData: Record<ClasseKey, Course[]> = {
       description: "Explorez l'univers des polynômes ! Découvrez leurs propriétés fascinantes, apprenez à les factoriser et à résoudre des équations polynomiales. Algèbre passionnante qui ouvre de nombreuses portes !",
       image: "/images/exo.jpg",
       duration: "2h",
+      summary: "Concepts fondamentaux : Définition d'un polynôme (degré, coefficients), opérations sur les polynômes (addition, multiplication), factorisation (identités remarquables, racines), division euclidienne. Ces outils sont essentiels pour résoudre des équations polynomiales et étudier les fonctions.",
     },
     {
       id: 21,
@@ -510,6 +519,7 @@ const coursesData: Record<ClasseKey, Course[]> = {
       description: "Explorez les mystères des nombres entiers ! Découvrez la divisibilité, les nombres premiers et les congruences. Arithmétique moderne passionnante avec applications en cryptographie !",
       image: "/images/exo.jpg",
       duration: "3h30",
+      summary: "Concepts fondamentaux : Divisibilité dans ℤ (diviseurs, multiples), nombres premiers et décomposition en facteurs premiers, PGCD et PPCM, congruences modulo n. Ces concepts sont la base de la cryptographie moderne et de nombreux algorithmes.",
     },
     {
       id: 43,
@@ -784,6 +794,17 @@ const coursesData: Record<ClasseKey, Course[]> = {
       duration: "8h",
     },
   ],
+}
+
+// Fonction pour récupérer le résumé d'un cours par son ID
+export function getCourseSummary(courseId: number): string | undefined {
+  for (const courses of Object.values(coursesData)) {
+    const course = courses.find(c => c.id === courseId)
+    if (course && course.summary) {
+      return course.summary
+    }
+  }
+  return undefined
 }
 
 export default function CoursPage() {

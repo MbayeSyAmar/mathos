@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -37,11 +37,12 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 
-export default function ProductPage({ params }: { params: { id: string } }) {
+export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { user } = useAuth()
   const { toast } = useToast()
-  const productId = params.id
+  const resolvedParams = use(params)
+  const productId = resolvedParams.id
   const [product, setProduct] = useState<Produit | null>(null)
   const [similarProducts, setSimilarProducts] = useState<Produit[]>([])
   const [isLoading, setIsLoading] = useState(true)

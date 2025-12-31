@@ -14,6 +14,7 @@ import {
   Video,
   ClipboardCheck,
   Bell,
+  Package,
 } from "lucide-react"
 import {
   Sidebar,
@@ -31,6 +32,7 @@ const navigation = {
   super_admin: [
     { name: "Tableau de bord", href: "/admin/super/dashboard", icon: LayoutDashboard },
     { name: "Utilisateurs", href: "/admin/super/utilisateurs", icon: Users },
+    { name: "Commandes", href: "/admin/super/commandes", icon: Package },
     { name: "Demandes", href: "/admin/super/demandes", icon: FileText },
     { name: "Messages", href: "/admin/super/messages", icon: MessageSquare },
     { name: "Boutique", href: "/admin/super/boutique", icon: ShoppingCart },

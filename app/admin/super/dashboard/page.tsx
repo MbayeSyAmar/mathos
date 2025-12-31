@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { StatCard } from "@/components/admin/stat-card"
 import { TrendChart } from "@/components/admin/trend-chart"
 import { Users, BookOpen, ShoppingBag, DollarSign, MessageSquare, FileText, GraduationCap, UserCheck } from "lucide-react"
@@ -16,6 +18,16 @@ interface Order {
   createdAt: any
   userEmail?: string
   userName?: string
+  userInfo?: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    address: string
+    city: string
+    postalCode: string
+    country: string
+  }
   items: any[]
   status: string
 }
@@ -352,8 +364,15 @@ export default function SuperAdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Commandes récentes</CardTitle>
-            <CardDescription>Les 5 dernières ventes</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Commandes récentes</CardTitle>
+                <CardDescription>Les 5 dernières ventes</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/admin/super/commandes">Voir toutes</Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (

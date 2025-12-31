@@ -51,30 +51,26 @@ type DashboardContentItem = {
 
 const contentTypeMeta: Record<
   ContentKind,
-  { label: string; badgeClass: string; accent: string; icon: ComponentType<{ className?: string }> }
+  { label: string; badgeClass: string; icon: ComponentType<{ className?: string }> }
 > = {
   course: {
     label: "Cours",
-    badgeClass: "bg-primary/15 text-primary",
-    accent: "from-primary/30 to-primary/5",
+    badgeClass: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
     icon: BookOpen,
   },
   exercise: {
     label: "Exercice",
-    badgeClass: "bg-purple-500/15 text-purple-300",
-    accent: "from-purple-500/30 to-purple-500/5",
+    badgeClass: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
     icon: FileStack,
   },
   quiz: {
     label: "Quiz",
-    badgeClass: "bg-orange-500/15 text-orange-300",
-    accent: "from-orange-500/30 to-orange-500/5",
+    badgeClass: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
     icon: Sparkles,
   },
   video: {
     label: "Vidéo",
-    badgeClass: "bg-pink-500/15 text-pink-300",
-    accent: "from-pink-500/30 to-pink-500/5",
+    badgeClass: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
     icon: PlaySquare,
   },
 }
@@ -256,20 +252,20 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 -m-6 p-6 bg-slate-50 dark:bg-slate-950 min-h-[calc(100vh-4rem)]">
       {errorMessage && (
-        <Card className="border-red-500/30 bg-red-500/5">
+        <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/50 shadow-lg">
           <CardHeader className="flex flex-row items-center gap-3">
-            <div className="rounded-full bg-red-500/20 p-2 text-red-400">
+            <div className="rounded-full bg-red-100 p-2 text-red-600 dark:bg-red-900/50 dark:text-red-400">
               <AlertTriangle className="h-4 w-4" />
             </div>
             <div>
-              <CardTitle className="text-red-200">Données incomplètes</CardTitle>
-              <CardDescription className="text-red-100/70">{errorMessage}</CardDescription>
+              <CardTitle className="text-red-900 dark:text-red-200">Données incomplètes</CardTitle>
+              <CardDescription className="text-red-700 dark:text-red-300/80">{errorMessage}</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} className="border-red-300 text-red-700 hover:bg-red-100 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/50">
               {refreshing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Réessayer
             </Button>
@@ -277,51 +273,59 @@ export default function TeacherDashboard() {
         </Card>
       )}
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {[
           {
             label: "Cours actifs",
             value: contentStats.courses,
             subValue: `${courses.filter((c) => c.status === "published").length} publiés`,
             icon: BookOpen,
-            gradient: "from-primary/30 to-primary/5",
+            iconBg: "bg-blue-100 dark:bg-blue-900/50",
+            iconColor: "text-blue-600 dark:text-blue-400",
+            textColor: "text-slate-900 dark:text-slate-100",
           },
           {
             label: "Exercices",
             value: contentStats.exercises,
             subValue: `${exercises.filter((e) => e.status === "published").length} prêts`,
             icon: ClipboardList,
-            gradient: "from-purple-500/25 to-purple-500/5",
+            iconBg: "bg-purple-100 dark:bg-purple-900/50",
+            iconColor: "text-purple-600 dark:text-purple-400",
+            textColor: "text-slate-900 dark:text-slate-100",
           },
           {
             label: "Quiz",
             value: contentStats.quizzes,
             subValue: `${quizzes.filter((q) => q.status === "published").length} disponibles`,
             icon: Sparkles,
-            gradient: "from-orange-500/25 to-orange-500/5",
+            iconBg: "bg-orange-100 dark:bg-orange-900/50",
+            iconColor: "text-orange-600 dark:text-orange-400",
+            textColor: "text-slate-900 dark:text-slate-100",
           },
           {
             label: "Vidéos",
             value: contentStats.videos,
             subValue: `${videos.filter((v) => v.status === "published").length} publiées`,
             icon: Video,
-            gradient: "from-pink-500/25 to-pink-500/5",
+            iconBg: "bg-pink-100 dark:bg-pink-900/50",
+            iconColor: "text-pink-600 dark:text-pink-400",
+            textColor: "text-slate-900 dark:text-slate-100",
           },
         ].map((stat) => {
           const Icon = stat.icon
           return (
             <Card
               key={stat.label}
-              className={cn("overflow-hidden border-white/10 bg-white/5", `bg-gradient-to-br ${stat.gradient}`)}
+              className={cn("overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1")}
             >
-              <CardContent className="flex items-center justify-between p-5">
-                <div>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  <p className="text-3xl font-semibold">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.subValue}</p>
+              <CardContent className="flex items-center justify-between p-6">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-1">{stat.label}</p>
+                  <p className={cn("text-4xl font-bold mb-1", stat.textColor)}>{stat.value}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{stat.subValue}</p>
                 </div>
-                <div className="rounded-2xl bg-black/20 p-3 text-white shadow-inner">
-                  <Icon className="h-5 w-5" />
+                <div className={cn("rounded-2xl p-4 shadow-md", stat.iconBg)}>
+                  <Icon className={cn("h-6 w-6", stat.iconColor)} />
                 </div>
               </CardContent>
             </Card>
@@ -329,16 +333,16 @@ export default function TeacherDashboard() {
         })}
       </section>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <p className="text-sm text-muted-foreground">
-          {contentStats.published} ressources publiées · {contentStats.drafts} brouillons à finaliser
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          <span className="font-semibold text-blue-600 dark:text-blue-400">{contentStats.published}</span> ressources publiées · <span className="font-semibold text-orange-600 dark:text-orange-400">{contentStats.drafts}</span> brouillons à finaliser
         </p>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+        <div className="flex gap-3">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} className="border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
             {refreshing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Actualiser les données
           </Button>
-          <Button size="sm" asChild className="bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white">
+          <Button size="sm" asChild className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200">
             <Link href="/admin/professeur/cours">
               Ajouter un contenu
               <ArrowUpRight className="ml-2 h-3.5 w-3.5" />
@@ -348,20 +352,20 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-7">
-        <Card className="lg:col-span-4 border-white/10 bg-white/5">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="lg:col-span-4 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
             <div>
-              <CardTitle>Activité récente</CardTitle>
-              <CardDescription>Dernières ressources mises à jour ou publiées</CardDescription>
+              <CardTitle className="text-slate-900 dark:text-slate-100 text-xl">Activité récente</CardTitle>
+              <CardDescription className="text-slate-600 dark:text-slate-400">Dernières ressources mises à jour ou publiées</CardDescription>
             </div>
-            <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary">
+            <Badge variant="outline" className="border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-400 font-medium">
               Temps réel
             </Badge>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 pt-6">
             {recentContent.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-muted-foreground">
-                Aucun contenu pour le moment. Publiez votre premier cours pour voir vos analytics ici.
+              <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-8 text-center">
+                <p className="text-sm text-slate-600 dark:text-slate-400">Aucun contenu pour le moment. Publiez votre premier cours pour voir vos analytics ici.</p>
               </div>
             ) : (
               recentContent.map((item) => {
@@ -370,23 +374,23 @@ export default function TeacherDashboard() {
                 return (
                   <div
                     key={item.id}
-                    className="group rounded-2xl border border-white/5 bg-white/[0.02] p-4 transition hover:border-primary/30 hover:bg-primary/5"
+                    className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-4 transition-all duration-200 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 hover:shadow-md"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="rounded-2xl bg-white/5 p-2 text-muted-foreground">
+                      <div className={cn("rounded-xl p-2.5 shadow-sm", meta.badgeClass)}>
                         <Icon className="h-4 w-4" />
                       </div>
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-semibold text-white">{item.title}</p>
-                          <Badge className={cn("text-xs", meta.badgeClass)}>{meta.label}</Badge>
+                          <p className="font-semibold text-slate-900 dark:text-slate-100">{item.title}</p>
+                          <Badge className={cn("text-xs font-medium", meta.badgeClass)}>{meta.label}</Badge>
                           {item.status && (
-                            <Badge variant="outline" className="border-white/20 text-xs text-muted-foreground">
+                            <Badge variant="outline" className="border-slate-300 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-400">
                               {item.status === "published" ? "Publié" : item.status === "draft" ? "Brouillon" : item.status}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                           {item.level} • {item.subject} · {formatRelative(item.updatedAt)}
                         </p>
                       </div>
@@ -398,39 +402,39 @@ export default function TeacherDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-3 border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle>Élèves connectés</CardTitle>
-            <CardDescription>Les accès actifs à vos contenus</CardDescription>
+        <Card className="lg:col-span-3 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
+          <CardHeader className="border-b border-slate-200 dark:border-slate-800 pb-4">
+            <CardTitle className="text-slate-900 dark:text-slate-100 text-xl">Élèves connectés</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">Les accès actifs à vos contenus</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 pt-6">
             {studentsSorted.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 p-6 text-center text-sm text-muted-foreground">
-                Aucun élève n&apos;a encore accès à vos cours.
+              <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-8 text-center">
+                <p className="text-sm text-slate-600 dark:text-slate-400">Aucun élève n&apos;a encore accès à vos cours.</p>
               </div>
             ) : (
               studentsSorted.slice(0, 5).map((student) => (
-                <div key={student.id} className="flex items-center gap-3 rounded-2xl bg-white/5 p-3">
-                  <Avatar className="h-10 w-10">
+                <div key={student.id} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-3 hover:shadow-md transition-all duration-200">
+                  <Avatar className="h-10 w-10 ring-2 ring-blue-200 dark:ring-blue-900">
                     <AvatarImage src="" alt={student.studentName} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
+                    <AvatarFallback className="bg-blue-600 text-white font-semibold">
                       {getInitials(student.studentName)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1">
-                    <p className="font-medium text-white">{student.studentName}</p>
-                    <p className="text-xs text-muted-foreground">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">{student.studentName}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                       {student.formule} · {student.subject || "Mathématiques"} · {formatRelative(student.grantedAt?.toDate())}
                     </p>
                   </div>
-                  <Badge variant="outline" className="border-emerald-500/40 bg-emerald-500/10 text-emerald-300">
+                  <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 font-medium">
                     Actif
                   </Badge>
                 </div>
               ))
             )}
             {studentsSorted.length > 5 && (
-              <Button asChild variant="ghost" className="w-full text-primary">
+              <Button asChild variant="ghost" className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50">
                 <Link href="/admin/professeur/demandes">Voir tous les accès</Link>
               </Button>
             )}
@@ -439,107 +443,133 @@ export default function TeacherDashboard() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle>Qualité & statut</CardTitle>
-            <CardDescription>Suivez vos contenus publiés vs brouillons</CardDescription>
+        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
+          <CardHeader className="border-b border-slate-200 dark:border-slate-800 pb-4">
+            <CardTitle className="text-slate-900 dark:text-slate-100 text-xl">Qualité & statut</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">Suivez vos contenus publiés vs brouillons</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-5 pt-6">
             {[
-              { label: "Cours", total: courses.length, published: courses.filter((c) => c.status === "published").length },
+              { label: "Cours", total: courses.length, published: courses.filter((c) => c.status === "published").length, color: "blue" },
               {
                 label: "Exercices",
                 total: exercises.length,
                 published: exercises.filter((c) => c.status === "published").length,
+                color: "purple",
               },
-              { label: "Quiz", total: quizzes.length, published: quizzes.filter((c) => c.status === "published").length },
-              { label: "Vidéos", total: videos.length, published: videos.filter((c) => c.status === "published").length },
-            ].map((row) => (
-              <div key={row.label}>
-                <div className="flex items-center justify-between text-sm">
-                  <span>{row.label}</span>
-                  <span className="text-muted-foreground">
-                    {row.published}/{row.total}
-                  </span>
+              { label: "Quiz", total: quizzes.length, published: quizzes.filter((c) => c.status === "published").length, color: "orange" },
+              { label: "Vidéos", total: videos.length, published: videos.filter((c) => c.status === "published").length, color: "pink" },
+            ].map((row) => {
+              const percentage = row.total === 0 ? 0 : (row.published / row.total) * 100
+              const colorClasses = {
+                blue: "bg-blue-500",
+                purple: "bg-purple-500",
+                orange: "bg-orange-500",
+                pink: "bg-pink-500",
+              }
+              return (
+                <div key={row.label}>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{row.label}</span>
+                    <span className="text-slate-600 dark:text-slate-400 font-semibold">
+                      {row.published}/{row.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full transition-all duration-500 shadow-sm", colorClasses[row.color as keyof typeof colorClasses])}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <Progress value={row.total === 0 ? 0 : (row.published / row.total) * 100} className="mt-2 h-2" />
-              </div>
-            ))}
+              )
+            })}
           </CardContent>
         </Card>
 
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle>Actions rapides</CardTitle>
-            <CardDescription>Gagnez du temps sur vos tâches récurrentes</CardDescription>
+        <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg">
+          <CardHeader className="border-b border-slate-200 dark:border-slate-800 pb-4">
+            <CardTitle className="text-slate-900 dark:text-slate-100 text-xl">Actions rapides</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">Gagnez du temps sur vos tâches récurrentes</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-3 pt-6">
             {[
               {
                 label: "Créer un nouveau cours",
                 href: "/admin/professeur/cours",
                 hint: "Gabarits prêts à l'emploi",
+                icon: "📚",
               },
               {
                 label: "Ajouter un quiz adaptatif",
                 href: "/admin/professeur/quiz",
                 hint: "15 min pour le publier",
+                icon: "✨",
               },
               {
                 label: "Uploader une vidéo premium",
                 href: "/admin/professeur/videos",
                 hint: "Support YouTube ou MP4",
+                icon: "🎥",
               },
               {
                 label: "Traiter les copies envoyées",
                 href: "/admin/professeur/soumissions",
                 hint: "Notifiez vos élèves",
+                icon: "📝",
               },
             ].map((action) => (
               <Link
                 key={action.href}
                 href={action.href}
-                className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm transition hover:border-primary/40 hover:bg-primary/5"
+                className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 px-4 py-3.5 text-sm transition-all duration-200 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:shadow-md group"
               >
-                <div>
-                  <p className="font-medium text-white">{action.label}</p>
-                  <p className="text-xs text-muted-foreground">{action.hint}</p>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{action.icon}</span>
+                  <div>
+                    <p className="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{action.label}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{action.hint}</p>
+                  </div>
                 </div>
-                <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                <ArrowUpRight className="h-4 w-4 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
               </Link>
             ))}
           </CardContent>
         </Card>
 
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle>Observations</CardTitle>
-            <CardDescription>État global de votre espace professeur</CardDescription>
+        <Card className="border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 shadow-lg">
+          <CardHeader className="border-b border-blue-200 dark:border-blue-900 pb-4">
+            <CardTitle className="text-slate-900 dark:text-slate-100 text-xl">Observations</CardTitle>
+            <CardDescription className="text-slate-600 dark:text-slate-400">État global de votre espace professeur</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-              <p className="text-xs uppercase tracking-[0.2em] text-primary">Performances</p>
-              <p className="mt-1 text-white">
+          <CardContent className="space-y-4 pt-6 text-sm">
+            <div className="rounded-xl border border-blue-200 dark:border-blue-900 bg-white/60 dark:bg-slate-900/60 p-4 shadow-sm">
+              <p className="text-xs uppercase tracking-wider font-semibold text-blue-600 dark:text-blue-400 mb-2">Performances</p>
+              <p className="text-slate-900 dark:text-slate-100 font-medium">
                 {studentsSorted.length} élèves disposent d&apos;un accès actif à vos contenus.
               </p>
             </div>
-            <Separator className="border-white/10" />
-            <p>
-              Dernière connexion :{" "}
-              <span className="text-white">
-                {userData?.lastLogin?.toDate ? userData.lastLogin.toDate().toLocaleDateString() : "—"}
-              </span>
-            </p>
-            <p>
-              Brouillons à finaliser : <span className="text-white">{contentStats.drafts}</span>
-            </p>
-            <p>
-              Ressources publiées : <span className="text-white">{contentStats.published}</span>
-            </p>
-            <p>
-              Astuce : utilisez les onglets &quot;Cours&quot; et &quot;Quiz&quot; pour dupliquer vos meilleurs contenus
-              plutôt que de repartir de zéro.
-            </p>
+            <Separator className="border-slate-200 dark:border-slate-800" />
+            <div className="space-y-2 text-slate-600 dark:text-slate-400">
+              <p>
+                Dernière connexion :{" "}
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {userData?.lastLogin?.toDate ? userData.lastLogin.toDate().toLocaleDateString() : "—"}
+                </span>
+              </p>
+              <p>
+                Brouillons à finaliser : <span className="font-semibold text-orange-600 dark:text-orange-400">{contentStats.drafts}</span>
+              </p>
+              <p>
+                Ressources publiées : <span className="font-semibold text-green-600 dark:text-green-400">{contentStats.published}</span>
+              </p>
+            </div>
+            <div className="rounded-lg bg-blue-100/50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 p-3 mt-4">
+              <p className="text-xs text-slate-700 dark:text-slate-300">
+                💡 <span className="font-medium">Astuce :</span> utilisez les onglets &quot;Cours&quot; et &quot;Quiz&quot; pour dupliquer vos meilleurs contenus
+                plutôt que de repartir de zéro.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -549,20 +579,20 @@ export default function TeacherDashboard() {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-8">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="space-y-8 -m-6 p-6 bg-slate-50 dark:bg-slate-950 min-h-[calc(100vh-4rem)]">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton key={index} className="h-32 rounded-2xl bg-white/5" />
+          <Skeleton key={index} className="h-32 rounded-2xl bg-white/80 dark:bg-slate-900/80 shadow-lg" />
         ))}
       </div>
-      <Skeleton className="h-10 w-64 rounded-full bg-white/5" />
+      <Skeleton className="h-16 w-full rounded-2xl bg-white/80 dark:bg-slate-900/80 shadow-lg" />
       <div className="grid gap-6 lg:grid-cols-7">
-        <Skeleton className="h-80 rounded-3xl bg-white/5 lg:col-span-4" />
-        <Skeleton className="h-80 rounded-3xl bg-white/5 lg:col-span-3" />
+        <Skeleton className="h-80 rounded-2xl bg-white/80 dark:bg-slate-900/80 shadow-xl lg:col-span-4" />
+        <Skeleton className="h-80 rounded-2xl bg-white/80 dark:bg-slate-900/80 shadow-xl lg:col-span-3" />
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
         {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="h-64 rounded-3xl bg-white/5" />
+          <Skeleton key={index} className="h-64 rounded-2xl bg-white/80 dark:bg-slate-900/80 shadow-xl" />
         ))}
       </div>
     </div>

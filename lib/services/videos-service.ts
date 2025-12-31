@@ -44,6 +44,12 @@ export function getYouTubeUrl(youtubeId: string): string {
 
 // Fonction pour obtenir la thumbnail YouTube
 export function getYouTubeThumbnail(youtubeId: string, quality: "default" | "medium" | "high" | "maxres" = "maxres"): string {
-  return `https://img.youtube.com/vi/${youtubeId}/${quality}default.jpg`
+  const qualityMap = {
+    default: "default",
+    medium: "mqdefault",
+    high: "hqdefault",
+    maxres: "maxresdefault",
+  }
+  return `https://img.youtube.com/vi/${youtubeId}/${qualityMap[quality]}.jpg`
 }
 

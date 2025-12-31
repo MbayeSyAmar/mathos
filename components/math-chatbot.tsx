@@ -58,10 +58,14 @@ export default function MathChatbot() {
     setIsLoading(true)
 
     try {
-      const conversationHistory = [...messages, userMessage].slice(-6).map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }))
+      // Exclure le message de bienvenue et ne garder que les vrais échanges
+      const conversationHistory = [...messages, userMessage]
+        .filter((msg) => msg.id !== "welcome") // Exclure le message de bienvenue
+        .slice(-6) // Garder les 6 derniers messages
+        .map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        }))
 
       const response = await fetch("/api/gemini", {
         method: "POST",
@@ -74,11 +78,13 @@ export default function MathChatbot() {
         }),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error("Réponse invalide")
+        const errorMsg = data?.error || "Erreur lors de la communication avec l'API"
+        throw new Error(errorMsg)
       }
 
-      const data = await response.json()
       const reply =
         typeof data.reply === "string" && data.reply.trim().length > 0
           ? data.reply.trim()
@@ -92,14 +98,18 @@ export default function MathChatbot() {
       }
 
       setMessages((prev) => [...prev, assistantMessage])
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erreur lors de la génération de la réponse:", error)
 
-      // Message d'erreur
+      // Message d'erreur avec détails
+      const errorDetails = error?.message || "Erreur inconnue"
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content:
-          "Désolé, j'ai rencontré une erreur en essayant de répondre à votre question. Pourriez-vous reformuler ou essayer plus tard ?",
+        content: `Désolé, j'ai rencontré une erreur : ${errorDetails}. ${
+          errorDetails.includes("API Gemini non configurée") 
+            ? "Veuillez configurer GEMINI_API_KEY dans le fichier .env.local" 
+            : "Pourriez-vous reformuler ou essayer plus tard ?"
+        }`,
         role: "assistant",
         timestamp: new Date(),
       }

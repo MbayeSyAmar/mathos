@@ -37,8 +37,6 @@ interface Order {
   items: OrderItem[]
   total: number
   subtotal: number
-  deliveryMode: string
-  deliveryCost: number
   status: string
   paymentMethod: string
   createdAt: any
@@ -261,13 +259,9 @@ export default function ConfirmationPage() {
               <div className="flex items-center gap-3">
                 <Truck className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">
-                    Livraison {order.deliveryMode === "express" ? "Express" : "Standard"}
-                  </p>
+                  <p className="font-medium">Livraison</p>
                   <p className="text-sm text-muted-foreground">
-                    {order.deliveryMode === "express"
-                      ? "2-3 jours ouvrables"
-                      : "5-7 jours ouvrables"}
+                    Les détails de livraison seront discutés avec l'administrateur selon votre localisation
                   </p>
                 </div>
               </div>
@@ -312,7 +306,7 @@ export default function ConfirmationPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Livraison</span>
-                  <span>{order.deliveryCost.toLocaleString()} FCFA</span>
+                  <span className="text-muted-foreground">À discuter</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">

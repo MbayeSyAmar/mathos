@@ -8,10 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Truck, ShieldCheck } from "lucide-react"
+import { ShieldCheck } from "lucide-react"
 import { motion } from "framer-motion"
 import { useCart } from "@/components/cart-provider"
 import {
@@ -34,10 +33,8 @@ export default function CheckoutPage() {
   const { items: cart, totalPrice: total, clearCart } = useCart()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
-  const [deliveryMode, setDeliveryMode] = useState("standard")
   const [orderConfirmation, setOrderConfirmation] = useState<{
     orderNumber: string
-    deliveryMode: string
     trackingUrl: string
   } | null>(null)
   const [lastOrderSnapshot, setLastOrderSnapshot] = useState<any>(null)
@@ -60,27 +57,7 @@ export default function CheckoutPage() {
   const formatPrice = (amount: number) => (amount <= 0 ? "Gratuit" : `${amount.toLocaleString("fr-FR")} FCFA`)
   const subtotal = total || 0
   const vatAmount = subtotal * 0.18
-  const getDeliveryPrice = (mode: string) => {
-    switch (mode) {
-      case "standard":
-        return subtotal >= 30000 ? 0 : 3000
-      case "express":
-        return 6500
-      case "pickup":
-        return 0
-      default:
-        return 0
-    }
-  }
-  const deliveryPriceLabel = (mode: string) => formatPrice(getDeliveryPrice(mode))
-  const selectedDeliveryCost = getDeliveryPrice(deliveryMode)
-  const estimatedTotal = subtotal + selectedDeliveryCost
-
-  const deliveryModeLabels: Record<string, string> = {
-    standard: "Livraison standard",
-    express: "Livraison express",
-    pickup: "Retrait en magasin",
-  }
+  const estimatedTotal = subtotal
 
   const statusLabels: Record<string, string> = {
     pending: "En attente",
@@ -187,9 +164,9 @@ export default function CheckoutPage() {
                   <p className="text-xl font-semibold tracking-tight">{statusLabels[adminStatus] || statusLabels.pending}</p>
                 </div>
                 <div className="rounded-2xl border border-muted p-4">
-                  <p className="text-sm text-muted-foreground">Mode de livraison</p>
-                  <p className="font-semibold">{deliveryModeLabels[orderConfirmation.deliveryMode]}</p>
-                  <p className="text-xs text-muted-foreground">{formatPrice(lastOrderSnapshot.deliveryCost)}</p>
+                  <p className="text-sm text-muted-foreground">Livraison</p>
+                  <p className="font-semibold">À discuter avec l'administrateur</p>
+                  <p className="text-xs text-muted-foreground">Les détails de livraison seront convenus selon votre localisation</p>
                 </div>
                 <div className="rounded-2xl border border-muted p-4">
                   <p className="text-sm text-muted-foreground">Paiement</p>
@@ -210,7 +187,7 @@ export default function CheckoutPage() {
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                Un email récapitulatif vient de vous être envoyé et l&apos;administrateur est déjà informé pour préparer l&apos;expédition.
+                Un email récapitulatif vient de vous être envoyé. L&apos;administrateur vous contactera prochainement pour discuter des détails de livraison selon votre localisation ({lastOrderSnapshot.userInfo.city}, {lastOrderSnapshot.userInfo.country}).
               </p>
             </CardContent>
           </Card>
@@ -286,10 +263,10 @@ export default function CheckoutPage() {
                     <span>Sous-total</span>
                     <span>{formatPrice(lastOrderSnapshot.subtotal)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Livraison ({deliveryModeLabels[lastOrderSnapshot.deliveryMode]})</span>
-                    <span>{formatPrice(lastOrderSnapshot.deliveryCost)}</span>
-                  </div>
+                <div className="flex justify-between">
+                  <span>Livraison</span>
+                  <span className="text-muted-foreground">À discuter</span>
+                </div>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold text-lg">
@@ -354,9 +331,6 @@ export default function CheckoutPage() {
       const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
       const orderNumber = `CMD-${timestamp}-${random}`
 
-      // Calculer les frais de livraison
-      const deliveryCost = getDeliveryPrice(deliveryMode)
-
       // Préparer les données de la commande
       const orderData = {
         orderNumber,
@@ -379,12 +353,11 @@ export default function CheckoutPage() {
           image: item.image || "",
           category: item.category || "",
         })),
-        total: subtotal + deliveryCost,
+        total: subtotal,
         subtotal,
-        deliveryMode,
-        deliveryCost,
         status: "pending", // En attente de validation
         paymentMethod: paymentPlaceholder,
+        deliveryNote: "Les détails de livraison seront discutés avec l'administrateur selon la localisation du client.",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }
@@ -392,12 +365,23 @@ export default function CheckoutPage() {
       // Sauvegarder la commande dans Firestore
       const orderRef = await addDoc(collection(db, "orders"), orderData)
 
-      // Alerter l'admin
+      // Alerter l'admin avec tous les détails de la commande
       await addDoc(collection(db, "admin_notifications"), {
         type: "new_order",
         orderNumber,
         orderId: orderRef.id,
         userId: user.uid,
+        userInfo: {
+          firstName,
+          lastName,
+          email,
+          phone,
+          address,
+          city,
+          postalCode,
+          country,
+        },
+        message: `Nouvelle commande ${orderNumber}. Contactez le client pour discuter des détails de livraison selon sa localisation (${city}, ${country}).`,
         createdAt: serverTimestamp(),
       })
 
@@ -408,7 +392,6 @@ export default function CheckoutPage() {
 
       setOrderConfirmation({
         orderNumber,
-        deliveryMode,
         trackingUrl: `/boutique/suivi?orderNumber=${orderNumber}`,
       })
       setLastOrderSnapshot(orderData)
@@ -438,8 +421,8 @@ export default function CheckoutPage() {
         <motion.div initial="hidden" animate="visible" variants={fadeIn} className="lg:col-span-2 space-y-8">
           <Card>
             <CardHeader>
-              <CardTitle>Informations de livraison</CardTitle>
-              <CardDescription>Entrez vos coordonnées pour la livraison</CardDescription>
+              <CardTitle>Informations de contact</CardTitle>
+              <CardDescription>Entrez vos coordonnées. L'administrateur vous contactera pour discuter de la livraison selon votre localisation.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -532,56 +515,6 @@ export default function CheckoutPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Mode de livraison</CardTitle>
-              <CardDescription>Choisissez votre mode de livraison préféré</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <RadioGroup value={deliveryMode} onValueChange={setDeliveryMode} className="space-y-4">
-                <div className="flex items-center justify-between space-x-2 border p-4 rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="standard" id="standard" />
-                    <Label htmlFor="standard" className="flex items-center gap-2 cursor-pointer">
-                      <Truck className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">Livraison standard</div>
-                        <div className="text-sm text-muted-foreground">3-5 jours ouvrés</div>
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="font-medium">{deliveryPriceLabel("standard")}</div>
-                </div>
-                <div className="flex items-center justify-between space-x-2 border p-4 rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="express" id="express" />
-                    <Label htmlFor="express" className="flex items-center gap-2 cursor-pointer">
-                      <Truck className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">Livraison express</div>
-                        <div className="text-sm text-muted-foreground">1-2 jours ouvrés</div>
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="font-medium">{deliveryPriceLabel("express")}</div>
-                </div>
-                <div className="flex items-center justify-between space-x-2 border p-4 rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="pickup" id="pickup" />
-                    <Label htmlFor="pickup" className="flex items-center gap-2 cursor-pointer">
-                      <Truck className="h-4 w-4" />
-                      <div>
-                        <div className="font-medium">Retrait en magasin</div>
-                        <div className="text-sm text-muted-foreground">Disponible sous 24h</div>
-                      </div>
-                    </Label>
-                  </div>
-                  <div className="font-medium">{deliveryPriceLabel("pickup")}</div>
-                </div>
-              </RadioGroup>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Paiement</CardTitle>
               <CardDescription>Validation sécurisée après contrôle</CardDescription>
             </CardHeader>
@@ -625,7 +558,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Livraison</span>
-                  <span>{deliveryPriceLabel(deliveryMode)}</span>
+                  <span className="text-muted-foreground">À discuter avec l'administrateur</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">TVA (18%)</span>
