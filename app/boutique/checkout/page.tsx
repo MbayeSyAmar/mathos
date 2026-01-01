@@ -176,12 +176,6 @@ export default function CheckoutPage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <Button asChild className="gap-2 bg-gradient-to-r from-primary via-purple-600 to-pink-600 text-white hover:opacity-90">
-                  <Link href={orderConfirmation.trackingUrl}>
-                    Suivre ma commande
-                    <ShieldCheck className="h-4 w-4" />
-                  </Link>
-                </Button>
                 <Button variant="outline" className="gap-2 border-dashed border-primary/40 text-primary hover:bg-primary/10" asChild>
                   <Link href="/boutique">Continuer mes achats</Link>
                 </Button>

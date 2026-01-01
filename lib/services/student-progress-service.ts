@@ -21,6 +21,24 @@ import {
 import { db } from "@/lib/firebase"
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Supprime les propriétés avec des valeurs undefined d'un objet
+ * Firestore n'accepte pas les valeurs undefined
+ */
+function removeUndefinedFields<T extends Record<string, any>>(obj: T): Partial<T> {
+  const cleaned: Partial<T> = {}
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      cleaned[key] = obj[key]
+    }
+  }
+  return cleaned
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -181,8 +199,9 @@ export async function updateStudentStats(
 ): Promise<void> {
   try {
     const docRef = doc(db, "student_progress", userId)
+    const cleanedUpdates = removeUndefinedFields(updates)
     await updateDoc(docRef, {
-      ...updates,
+      ...cleanedUpdates,
       updatedAt: serverTimestamp(),
       lastActivityAt: serverTimestamp(),
     })
@@ -210,7 +229,7 @@ export async function logActivity(
       type,
       title,
       description,
-      metadata,
+      ...(metadata !== undefined && { metadata }),
       createdAt: serverTimestamp(),
     })
     
@@ -388,7 +407,7 @@ export async function updateExerciseProgress(
         exerciseId,
         exerciseTitle,
         completed: isCompleted,
-        score,
+        ...(score !== undefined && { score }),
         attempts: 1,
         lastAttemptAt: serverTimestamp(),
         ...(isCompleted && { completedAt: serverTimestamp() }),

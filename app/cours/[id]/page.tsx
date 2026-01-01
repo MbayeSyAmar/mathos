@@ -21,7 +21,7 @@ import { getCourseById, type Course } from "@/lib/services/content-service"
 import { getStaticCourseById, type StaticCourse } from "@/lib/services/static-courses.service"
 import { hasAccessToTeacher } from "@/lib/services/student-access-service"
 import { getCourseContent } from "@/lib/services/content-enrichment.service"
-import { getCourseSummary } from "@/app/cours/page"
+import { getCourseById as getCourseFromPage, getCourseSummary, coursesData } from "@/app/cours/page"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 
@@ -95,10 +95,67 @@ export default function CourseDetailPage() {
           setHasAccess(access)
         }
       } else {
-        // Essayer de récupérer un cours statique (IDs 1-30)
+        // Essayer de récupérer un cours statique (IDs 1-30) ou depuis coursesData
         const numericId = parseInt(courseId)
         if (!isNaN(numericId)) {
-          const staticCourse = getStaticCourseById(numericId)
+          // D'abord essayer staticCoursesData
+          let staticCourse = getStaticCourseById(numericId)
+          
+          // Si pas trouvé, essayer depuis coursesData
+          if (!staticCourse) {
+            const courseFromPage = getCourseFromPage(numericId)
+            if (courseFromPage) {
+              // Déterminer la classe depuis coursesData
+              let classe: string = "6ème"
+              for (const [key, courses] of Object.entries(coursesData)) {
+                if (courses.some(c => c.id === numericId)) {
+                  classe = key
+                  break
+                }
+              }
+              
+              // Adapter le cours depuis coursesData au format Course
+              const isLycee = ['2nde', '1ère', '1ere', 'Terminale', 'Term'].some(l => 
+                classe.includes(l)
+              )
+              const levelType = isLycee ? 'Lycée' : 'Collège'
+              
+              const adaptedCourse: any = {
+                id: courseId,
+                title: courseFromPage.title,
+                description: courseFromPage.description,
+                level: levelType,
+                classe: classe,
+                subject: "Mathématiques",
+                duration: courseFromPage.duration,
+                image: courseFromPage.image,
+                teacherId: "",
+                teacherName: "Équipe Mathosphère",
+                content: courseFromPage.content || "",
+                status: "published",
+                studentsEnrolled: 0,
+                rating: 0,
+                totalRatings: 0,
+                summary: courseFromPage.summary,
+                objectives: courseFromPage.objectives || [],
+                prerequisites: courseFromPage.prerequisites || [],
+              }
+              setCourse(adaptedCourse)
+              setIsStaticCourse(true)
+              
+              // Charger le contenu enrichi ou PDF
+              const content = await getCourseContent(numericId, levelType, classe)
+              setHasPDF(content.hasPDF)
+              if (content.hasPDF && content.pdfUrl) {
+                setPdfUrl(content.pdfUrl)
+              } else if (content.content) {
+                setEnrichedContent(content.content)
+              } else if (courseFromPage.content) {
+                setEnrichedContent(courseFromPage.content)
+              }
+              return
+            }
+          }
           
           if (staticCourse) {
             // Récupérer le résumé depuis les données de la page cours

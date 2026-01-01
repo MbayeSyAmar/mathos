@@ -11,12 +11,226 @@ import { MessageSquare, Send, X, Bot, Sparkles, ArrowDown, Loader2 } from "lucid
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 
+// Fonction pour nettoyer le LaTeX et le convertir en texte lisible
+function cleanLatex(text: string): string {
+  let cleaned = text
+
+  // Supprimer les délimiteurs LaTeX inline ($...$)
+  cleaned = cleaned.replace(/\$([^$]+)\$/g, "$1")
+
+  // Supprimer les délimiteurs LaTeX display ($$...$$)
+  cleaned = cleaned.replace(/\$\$([^$]+)\$\$/g, "$1")
+
+  // Convertir \frac{a}{b} en a/b
+  cleaned = cleaned.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "($1)/($2)")
+
+  // Convertir \sqrt{x} en √x
+  cleaned = cleaned.replace(/\\sqrt\{([^}]+)\}/g, "√$1")
+  cleaned = cleaned.replace(/\\sqrt\[([^\]]+)\]\{([^}]+)\}/g, "√[$1]($2)")
+
+  // Convertir \times en ×
+  cleaned = cleaned.replace(/\\times/g, "×")
+
+  // Convertir \cdot en ·
+  cleaned = cleaned.replace(/\\cdot/g, "·")
+
+  // Convertir \div en ÷
+  cleaned = cleaned.replace(/\\div/g, "÷")
+
+  // Convertir \pm en ±
+  cleaned = cleaned.replace(/\\pm/g, "±")
+
+  // Convertir \leq en ≤
+  cleaned = cleaned.replace(/\\leq/g, "≤")
+
+  // Convertir \geq en ≥
+  cleaned = cleaned.replace(/\\geq/g, "≥")
+
+  // Convertir \neq en ≠
+  cleaned = cleaned.replace(/\\neq/g, "≠")
+
+  // Convertir \approx en ≈
+  cleaned = cleaned.replace(/\\approx/g, "≈")
+
+  // Convertir \sum en Σ
+  cleaned = cleaned.replace(/\\sum/g, "Σ")
+
+  // Convertir \prod en Π
+  cleaned = cleaned.replace(/\\prod/g, "Π")
+
+  // Convertir \int en ∫
+  cleaned = cleaned.replace(/\\int/g, "∫")
+
+  // Convertir \infty en ∞
+  cleaned = cleaned.replace(/\\infty/g, "∞")
+
+  // Convertir \pi en π
+  cleaned = cleaned.replace(/\\pi/g, "π")
+
+  // Convertir \alpha en α
+  cleaned = cleaned.replace(/\\alpha/g, "α")
+
+  // Convertir \beta en β
+  cleaned = cleaned.replace(/\\beta/g, "β")
+
+  // Convertir \theta en θ
+  cleaned = cleaned.replace(/\\theta/g, "θ")
+
+  // Convertir \lambda en λ
+  cleaned = cleaned.replace(/\\lambda/g, "λ")
+
+  // Convertir les puissances ^{x} en ^x
+  cleaned = cleaned.replace(/\^\{([^}]+)\}/g, "^$1")
+
+  // Convertir les indices _{x} en _x
+  cleaned = cleaned.replace(/_\{([^}]+)\}/g, "_$1")
+
+  // Nettoyer les accolades restantes simples
+  cleaned = cleaned.replace(/\{([^}]+)\}/g, "$1")
+
+  // Nettoyer les espaces multiples
+  cleaned = cleaned.replace(/\s+/g, " ")
+
+  return cleaned.trim()
+}
+
 // Types pour les messages
 type Message = {
   id: string
   content: string
   role: "user" | "assistant"
   timestamp: Date
+}
+
+// Fonction pour convertir le LaTeX en texte lisible
+function convertLatexToReadable(text: string): string {
+  let result = text
+
+  // Nettoyer le formatage Markdown (astérisques pour gras/italique/listes)
+  // D'abord, supprimer les astérisques dans les listes numérotées (ex: "1. **texte**" → "1. texte")
+  result = result.replace(/^(\s*\d+\.\s+)\*\*([^*]+)\*\*/gm, "$1$2") // "1. **texte**" → "1. texte"
+  result = result.replace(/^(\s*\d+\.\s+)\*([^*]+)\*/gm, "$1$2") // "1. *texte*" → "1. texte"
+  
+  // Ensuite, supprimer les astérisques pour le gras/italique dans le texte
+  result = result.replace(/\*\*\*([^*]+)\*\*\*/g, "$1") // ***texte*** → texte
+  result = result.replace(/\*\*([^*]+)\*\*/g, "$1") // **texte** → texte (gras)
+  result = result.replace(/\*([^*]+)\*/g, "$1") // *texte* → texte (italique)
+  
+  // Convertir les listes à puces avec astérisques
+  result = result.replace(/^\s*\*\s+/gm, "• ") // Liste avec * → • (puce)
+
+  // Supprimer les délimiteurs LaTeX inline et de bloc
+  result = result.replace(/\$\$([^$]+)\$\$/g, "$1") // $$...$$
+  result = result.replace(/\$([^$]+)\$/g, "$1") // $...$
+
+  // Fonction helper pour convertir les chiffres en exposants/indices
+  const toSuperscript = (num: string) => {
+    const superscripts: { [key: string]: string } = {
+      "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
+      "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+      "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾"
+    }
+    return num.split("").map(c => superscripts[c] || c).join("")
+  }
+
+  const toSubscript = (num: string) => {
+    const subscripts: { [key: string]: string } = {
+      "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄",
+      "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+      "+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎"
+    }
+    return num.split("").map(c => subscripts[c] || c).join("")
+  }
+
+  // Remplacer les commandes LaTeX courantes (ordre important)
+  result = result.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "($1)/($2)") // \frac{a}{b} → (a)/(b)
+  result = result.replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, "racine $1-ième de ($2)") // \sqrt[n]{x}
+  result = result.replace(/\\sqrt\{([^}]+)\}/g, "√($1)") // \sqrt{x} → √(x)
+  
+  // Exposants avec accolades
+  result = result.replace(/\^\{([^}]+)\}/g, (match, content) => {
+    if (/^\d+$/.test(content)) {
+      return toSuperscript(content)
+    }
+    return "^(" + content + ")"
+  })
+  
+  // Exposants simples
+  result = result.replace(/\^(\d+)/g, (match, num) => toSuperscript(num))
+  
+  // Indices avec accolades
+  result = result.replace(/_\{([^}]+)\}/g, (match, content) => {
+    if (/^\d+$/.test(content)) {
+      return toSubscript(content)
+    }
+    return "_(" + content + ")"
+  })
+  
+  // Indices simples
+  result = result.replace(/_(\d+)/g, (match, num) => toSubscript(num))
+
+  // Symboles mathématiques courants
+  result = result.replace(/\\times/g, "×")
+  result = result.replace(/\\cdot/g, "·")
+  result = result.replace(/\\div/g, "÷")
+  result = result.replace(/\\pm/g, "±")
+  result = result.replace(/\\mp/g, "∓")
+  result = result.replace(/\\leq/g, "≤")
+  result = result.replace(/\\geq/g, "≥")
+  result = result.replace(/\\neq/g, "≠")
+  result = result.replace(/\\approx/g, "≈")
+  result = result.replace(/\\equiv/g, "≡")
+  result = result.replace(/\\sim/g, "∼")
+  result = result.replace(/\\propto/g, "∝")
+  result = result.replace(/\\infty/g, "∞")
+  result = result.replace(/\\sum/g, "∑")
+  result = result.replace(/\\prod/g, "∏")
+  result = result.replace(/\\int/g, "∫")
+  result = result.replace(/\\partial/g, "∂")
+  result = result.replace(/\\nabla/g, "∇")
+  result = result.replace(/\\in/g, "∈")
+  result = result.replace(/\\notin/g, "∉")
+  result = result.replace(/\\subset/g, "⊂")
+  result = result.replace(/\\subseteq/g, "⊆")
+  result = result.replace(/\\cup/g, "∪")
+  result = result.replace(/\\cap/g, "∩")
+  result = result.replace(/\\emptyset/g, "∅")
+  result = result.replace(/\\forall/g, "∀")
+  result = result.replace(/\\exists/g, "∃")
+  
+  // Lettres grecques
+  result = result.replace(/\\alpha/g, "α")
+  result = result.replace(/\\beta/g, "β")
+  result = result.replace(/\\gamma/g, "γ")
+  result = result.replace(/\\delta/g, "δ")
+  result = result.replace(/\\epsilon/g, "ε")
+  result = result.replace(/\\varepsilon/g, "ε")
+  result = result.replace(/\\pi/g, "π")
+  result = result.replace(/\\theta/g, "θ")
+  result = result.replace(/\\lambda/g, "λ")
+  result = result.replace(/\\mu/g, "μ")
+  result = result.replace(/\\sigma/g, "σ")
+  result = result.replace(/\\phi/g, "φ")
+  result = result.replace(/\\varphi/g, "φ")
+  result = result.replace(/\\omega/g, "ω")
+  result = result.replace(/\\Omega/g, "Ω")
+  result = result.replace(/\\Delta/g, "Δ")
+  result = result.replace(/\\Gamma/g, "Γ")
+  result = result.replace(/\\Lambda/g, "Λ")
+  result = result.replace(/\\Sigma/g, "Σ")
+  result = result.replace(/\\Phi/g, "Φ")
+  result = result.replace(/\\Theta/g, "Θ")
+
+  // Nettoyer les accolades restantes (mais pas celles dans les parenthèses)
+  result = result.replace(/\{([^}]+)\}/g, "$1") // {x} → x
+
+  // Nettoyer les backslashes restants
+  result = result.replace(/\\([a-zA-Z]+)/g, "$1") // \command → command
+
+  // Nettoyer les espaces multiples
+  result = result.replace(/\s+/g, " ")
+
+  return result.trim()
 }
 
 export default function MathChatbot() {
@@ -85,10 +299,13 @@ export default function MathChatbot() {
         throw new Error(errorMsg)
       }
 
-      const reply =
+      let reply =
         typeof data.reply === "string" && data.reply.trim().length > 0
           ? data.reply.trim()
           : "Désolé, je n'ai pas pu formuler de réponse précise cette fois-ci."
+
+      // Nettoyer le LaTeX restant si présent
+      reply = cleanLatex(reply)
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -180,7 +397,7 @@ export default function MathChatbot() {
                           message.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted",
                         )}
                       >
-                        <p className="text-sm">{message.content}</p>
+                        <p className="text-sm whitespace-pre-wrap">{convertLatexToReadable(message.content)}</p>
                         <p className="text-xs opacity-50 mt-1">
                           {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </p>
