@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -659,12 +659,13 @@ function getRelated(slug: string) {
     }))
 }
 
-export default function ArticlePage({ params }: { params: { id: string } }) {
+export default function ArticlePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const { user } = useAuth()
   const { toast } = useToast()
+  const resolvedParams = use(params)
 
-  const slug = decodeURIComponent(params.id)
+  const slug = decodeURIComponent(resolvedParams.id)
   const article = ARTICLES[slug]
 
   const [isLiked, setIsLiked] = useState(false)
