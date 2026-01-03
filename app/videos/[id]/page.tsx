@@ -28,7 +28,7 @@ import { getYouTubeEmbedUrl, getYouTubeThumbnail } from "@/lib/services/videos-s
 
 // Import des données depuis la page principale
 // En production, cela devrait venir d'une base de données
-import { videosData } from "../page"
+import { allVideos } from "../page"
 
 interface Comment {
   id: number
@@ -41,13 +41,11 @@ interface Comment {
 
 // Fonction pour récupérer une vidéo par son ID
 function getVideoById(id: number) {
-  const allVideos = Object.values(videosData).flat()
   return allVideos.find((video) => video.id === id) || null
 }
 
 // Fonction pour récupérer des vidéos similaires
 function getRelatedVideos(currentVideoId: number, limit: number = 3) {
-  const allVideos = Object.values(videosData).flat()
   return allVideos.filter((video) => video.id !== currentVideoId).slice(0, limit)
 }
 

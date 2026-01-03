@@ -47,7 +47,7 @@ const videoList = [
 ]
 
 // Créer la liste complète des vidéos
-const allVideos: Video[] = videoList.map((video, index) => ({
+export const allVideos: Video[] = videoList.map((video, index) => ({
   id: index + 1,
   title: video.title,
   description: "Découvrez cette vidéo mathématique passionnante !",
@@ -57,6 +57,9 @@ const allVideos: Video[] = videoList.map((video, index) => ({
   views: 50000,
   likes: 1500,
 }))
+
+// Export for compatibility with the detail page
+export const videosData = { all: allVideos }
 
 const formatViews = (views: number) => {
   if (views >= 1000000) {
