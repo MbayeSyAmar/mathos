@@ -147,7 +147,7 @@ export function ChatInterface({
   }
 
   return (
-    <Card className="flex flex-col h-[600px]">
+    <Card className="flex flex-col h-[70vh] min-h-[420px] max-h-[80vh]">
       <CardHeader className="border-b pb-4">
         <div className="flex items-center gap-3">
           <Avatar>
@@ -204,7 +204,11 @@ export function ChatInterface({
                         {message.senderName.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <div className={`flex flex-col gap-1 max-w-[70%] ${isCurrentUser ? "items-end" : "items-start"}`}>
+                    <div
+                      className={`flex flex-col gap-1 max-w-[85%] sm:max-w-[70%] ${
+                        isCurrentUser ? "items-end" : "items-start"
+                      }`}
+                    >
                       <div
                         className={`rounded-lg px-4 py-2 ${
                           isCurrentUser

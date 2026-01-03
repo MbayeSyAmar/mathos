@@ -72,11 +72,17 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/placeholder.svg?height=32&width=32" alt="Mathosphère Logo" width={32} height={32} />
-            <span className="font-bold text-xl">Mathosphère</span>
+      <div className="container flex h-16 items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link href="/" className="flex items-center gap-2 min-w-0">
+            <Image
+              src="/images/PHOTO-2026-01-03-19-49-48.jpg"
+              alt="Mathosphère Logo"
+              width={32}
+              height={32}
+              className="object-contain rounded"
+            />
+            <span className="font-bold text-lg sm:text-xl truncate">Mathosphère</span>
           </Link>
         </div>
 
