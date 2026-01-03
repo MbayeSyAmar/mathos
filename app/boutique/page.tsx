@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { SafeImage } from "@/components/ui/safe-image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -234,7 +235,7 @@ export default function BoutiquePage() {
                       <Card className="overflow-hidden group h-full flex flex-col hover:shadow-2xl transition-all duration-300 border-2 hover:border-primary/50 bg-gradient-to-b from-card to-card/50">
                         <div className="relative h-64 overflow-hidden">
                           <Link href={`/boutique/${product.id}`}>
-                            <Image
+                            <SafeImage
                               src={productImage}
                               alt={product.nom}
                               fill

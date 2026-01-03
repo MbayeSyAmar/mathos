@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
+import { SafeImage } from "@/components/ui/safe-image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -304,7 +305,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
         <motion.div initial="hidden" animate="visible" variants={fadeIn} className="relative">
           <div className="relative h-[400px] rounded-lg overflow-hidden">
-            <Image
+            <SafeImage
               src={product.imageUrl || "/placeholder.svg?height=400&width=400"}
               alt={product.nom}
               fill
@@ -559,7 +560,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <Card key={product.id} className="overflow-hidden group h-full flex flex-col">
                 <div className="relative h-48">
                   <Link href={`/boutique/${product.id}`}>
-                    <Image
+                    <SafeImage
                       src={product.imageUrl || "/placeholder.svg?height=200&width=400"}
                       alt={product.nom}
                       fill

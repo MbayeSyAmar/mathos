@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
+import { SafeImage } from "@/components/ui/safe-image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -532,7 +533,7 @@ export default function CheckoutPage() {
                   cart.map((item: any) => (
                     <div key={item.id} className="flex gap-3">
                       <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
-                        <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
+                        <SafeImage src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
                       </div>
                       <div className="flex-grow min-w-0">
                         <div className="font-medium text-sm line-clamp-1">{item.name}</div>
