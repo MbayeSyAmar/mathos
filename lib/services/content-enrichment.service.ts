@@ -471,83 +471,220 @@ export const enrichedCoursesData: Record<number, { title: string; content: strin
 
   // ===== LYCÉE - 2nde =====
   13: {
-    title: "Fonctions de référence",
+    title: "Calcul dans R",
     content: `
       <div class="space-y-6">
         <section>
-          <h2 class="text-2xl font-bold mb-4">Fonctions de référence</h2>
+          <h2 class="text-2xl font-bold mb-4">Calcul dans ℝ</h2>
           
-          <h3 class="text-xl font-semibold mb-3 mt-6">1. Fonction carré : f(x) = x²</h3>
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. L'ensemble ℝ des nombres réels</h3>
           <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
-            <p class="mb-3"><strong>Propriétés :</strong></p>
+            <p class="mb-3"><strong>Structure de ℝ :</strong></p>
             <ul class="list-disc pl-6 space-y-2">
-              <li>Domaine de définition : ℝ</li>
-              <li>Ensemble image : [0 ; +∞[</li>
-              <li>Parité : fonction paire (symétrie par rapport à l'axe des ordonnées)</li>
-              <li>Variations : décroissante sur ]-∞ ; 0] et croissante sur [0 ; +∞[</li>
-              <li>Minimum en x = 0 : f(0) = 0</li>
+              <li>ℕ : nombres entiers naturels (0, 1, 2, 3...)</li>
+              <li>ℤ : nombres entiers relatifs (...-2, -1, 0, 1, 2...)</li>
+              <li>ℚ : nombres rationnels (fractions p/q)</li>
+              <li>ℝ : tous les nombres (incluant √2, π...)</li>
             </ul>
           </div>
         </section>
 
         <section>
-          <h3 class="text-xl font-semibold mb-3">2. Fonction inverse : f(x) = 1/x</h3>
+          <h3 class="text-xl font-semibold mb-3">2. Opérations dans ℝ</h3>
           <div class="bg-green-50 dark:bg-green-950 p-4 rounded-lg mb-4">
-            <p class="mb-3"><strong>Propriétés :</strong></p>
-            <ul class="list-disc pl-6 space-y-2">
-              <li>Domaine de définition : ℝ* = ℝ \ {0}</li>
-              <li>Parité : fonction impaire (symétrie par rapport à l'origine)</li>
-              <li>Variations : décroissante sur ]-∞ ; 0[ et sur ]0 ; +∞[</li>
-              <li>Asymptotes : x = 0 (verticale) et y = 0 (horizontale)</li>
-            </ul>
+            <p class="mb-3"><strong>Propriétés fondamentales :</strong></p>
+            <p class="font-mono mb-2">• Commutativité : a + b = b + a</p>
+            <p class="font-mono mb-2">• Associativité : (a + b) + c = a + (b + c)</p>
+            <p class="font-mono mb-2">• Distributivité : a(b + c) = ab + ac</p>
+            <p class="font-mono">• Élément neutre : a + 0 = a, a × 1 = a</p>
           </div>
         </section>
 
         <section>
-          <h3 class="text-xl font-semibold mb-3">3. Fonction racine carrée : f(x) = √x</h3>
+          <h3 class="text-xl font-semibold mb-3">3. Valeur absolue</h3>
           <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg mb-4">
-            <p class="mb-3"><strong>Propriétés :</strong></p>
-            <ul class="list-disc pl-6 space-y-2">
-              <li>Domaine de définition : [0 ; +∞[</li>
-              <li>Ensemble image : [0 ; +∞[</li>
-              <li>Variations : croissante sur [0 ; +∞[</li>
-              <li>Point remarquable : f(0) = 0 et f(1) = 1</li>
-            </ul>
+            <p class="mb-3"><strong>Définition :</strong></p>
+            <p class="mb-2">|a| = a si a ≥ 0</p>
+            <p class="mb-3">|a| = -a si a < 0</p>
+            <p class="text-sm"><strong>Propriétés :</strong></p>
+            <p class="font-mono text-sm mb-1">|a × b| = |a| × |b|</p>
+            <p class="font-mono text-sm mb-1">|a + b| ≤ |a| + |b|</p>
+            <p class="font-mono text-sm">|a| = 0 ⟺ a = 0</p>
           </div>
         </section>
 
         <section>
-          <h3 class="text-xl font-semibold mb-3">4. Tableau comparatif</h3>
+          <h3 class="text-xl font-semibold mb-3">4. Intervalles de ℝ</h3>
           <table class="w-full border-collapse border border-gray-300 dark:border-gray-700">
             <thead>
               <tr class="bg-gray-100 dark:bg-gray-800">
-                <th class="border border-gray-300 dark:border-gray-700 p-2">Fonction</th>
-                <th class="border border-gray-300 dark:border-gray-700 p-2">Domaine</th>
-                <th class="border border-gray-300 dark:border-gray-700 p-2">Parité</th>
-                <th class="border border-gray-300 dark:border-gray-700 p-2">Variations</th>
+                <th class="border border-gray-300 dark:border-gray-700 p-2">Notation</th>
+                <th class="border border-gray-300 dark:border-gray-700 p-2">Définition</th>
+                <th class="border border-gray-300 dark:border-gray-700 p-2">Représentation</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">x²</td>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">ℝ</td>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">Paire</td>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">↘ puis ↗</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2">[a;b]</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2">a ≤ x ≤ b</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2">[——]</td>
               </tr>
               <tr>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">1/x</td>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">ℝ*</td>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">Impaire</td>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">↘ sur chaque intervalle</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2">]a;b[</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2">a < x < b</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2">(——)</td>
               </tr>
               <tr>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">√x</td>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">[0;+∞[</td>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">Ni paire ni impaire</td>
-                <td class="border border-gray-300 dark:border-gray-700 p-2">↗</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2">[a;+∞[</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2">x ≥ a</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2">[————→</td>
               </tr>
             </tbody>
           </table>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">5. Équations et inéquations</h3>
+          <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+            <p class="font-semibold mb-2">Exemple d'équation :</p>
+            <p class="font-mono mb-3">2x - 5 = 3 ⟹ 2x = 8 ⟹ x = 4</p>
+            
+            <p class="font-semibold mb-2 mt-4">Exemple d'inéquation :</p>
+            <p class="font-mono mb-1">3x - 7 > 2</p>
+            <p class="font-mono mb-1">3x > 9</p>
+            <p class="font-mono">x > 3 donc S = ]3;+∞[</p>
+          </div>
+        </section>
+      </div>
+    `
+  },
+
+  14: {
+    title: "Vecteurs",
+    content: `
+      <div class="space-y-6">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">Calcul vectoriel dans le plan</h2>
+          
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. Définition d'un vecteur</h3>
+          <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+            <p class="mb-3">Un vecteur est défini par :</p>
+            <ul class="list-disc pl-6 space-y-2">
+              <li><strong>Une direction</strong> : la droite qui le porte</li>
+              <li><strong>Un sens</strong> : indiqué par une flèche</li>
+              <li><strong>Une longueur</strong> (norme) : notée ||𝑣⃗||</li>
+            </ul>
+            <p class="mt-3">Notation : 𝐴𝐵⃗ représente le vecteur d'origine A et d'extrémité B</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">2. Opérations sur les vecteurs</h3>
+          
+          <div class="bg-green-50 dark:bg-green-950 p-4 rounded-lg mb-4">
+            <h4 class="font-semibold mb-2">Addition vectorielle (relation de Chasles)</h4>
+            <p class="font-mono text-lg mb-2">𝐴𝐵⃗ + 𝐵𝐶⃗ = 𝐴𝐶⃗</p>
+            <p class="text-sm">Les vecteurs s'additionnent "bout à bout"</p>
+          </div>
+
+          <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg mb-4">
+            <h4 class="font-semibold mb-2">Multiplication par un scalaire</h4>
+            <p class="mb-2">Si k est un nombre réel :</p>
+            <p class="font-mono">• k𝑢⃗ a même direction que 𝑢⃗</p>
+            <p class="font-mono">• ||k𝑢⃗|| = |k| × ||𝑢⃗||</p>
+            <p class="font-mono">• Même sens si k > 0, sens opposé si k < 0</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">3. Coordonnées de vecteurs</h3>
+          <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg mb-4">
+            <p class="mb-3">Dans un repère (O; 𝑖⃗, 𝑗⃗), si A(xₐ ; yₐ) et B(xᵦ ; yᵦ) :</p>
+            <p class="font-mono mb-3">𝐴𝐵⃗ (xᵦ - xₐ ; yᵦ - yₐ)</p>
+            
+            <p class="font-semibold mb-2 mt-4">Opérations avec coordonnées :</p>
+            <p class="font-mono mb-1">𝑢⃗(x; y) + 𝑣⃗(x'; y') = (x+x'; y+y')</p>
+            <p class="font-mono">k𝑢⃗(x; y) = (kx; ky)</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">4. Colinéarité</h3>
+          <div class="bg-red-50 dark:bg-red-950 p-4 rounded-lg">
+            <p class="mb-3"><strong>Deux vecteurs sont colinéaires si :</strong></p>
+            <p class="mb-2">• L'un est un multiple de l'autre : 𝑣⃗ = k𝑢⃗</p>
+            <p class="mb-3">• Avec coordonnées : xy' - x'y = 0</p>
+            
+            <p class="text-sm mt-3"><strong>Application :</strong> Trois points A, B, C sont alignés ⟺ 𝐴𝐵⃗ et 𝐴𝐶⃗ sont colinéaires</p>
+          </div>
+        </section>
+      </div>
+    `
+  },
+
+  15: {
+    title: "Statistiques",
+    content: `
+      <div class="space-y-6">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">Statistiques descriptives</h2>
+          
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. Indicateurs de position</h3>
+          
+          <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+            <h4 class="font-semibold mb-2">Moyenne</h4>
+            <p class="font-mono text-lg mb-2">x̄ = (x₁ + x₂ + ... + xₙ) / n</p>
+            <p class="text-sm">Somme des valeurs divisée par l'effectif total</p>
+          </div>
+
+          <div class="bg-green-50 dark:bg-green-950 p-4 rounded-lg mb-4">
+            <h4 class="font-semibold mb-2">Médiane</h4>
+            <p class="mb-2">Valeur qui partage la série en deux parties égales</p>
+            <p class="text-sm">• 50% des valeurs sont inférieures ou égales à la médiane</p>
+            <p class="text-sm">• 50% des valeurs sont supérieures ou égales à la médiane</p>
+          </div>
+
+          <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg mb-4">
+            <h4 class="font-semibold mb-2">Quartiles</h4>
+            <p class="mb-1">• Q₁ (premier quartile) : 25% des valeurs sont inférieures</p>
+            <p class="mb-1">• Q₂ = médiane : 50% des valeurs</p>
+            <p>• Q₃ (troisième quartile) : 75% des valeurs sont inférieures</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">2. Indicateurs de dispersion</h3>
+          
+          <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg mb-4">
+            <h4 class="font-semibold mb-2">Étendue</h4>
+            <p class="font-mono mb-2">E = maximum - minimum</p>
+            <p class="text-sm">Mesure simple de la dispersion</p>
+          </div>
+
+          <div class="bg-red-50 dark:bg-red-950 p-4 rounded-lg mb-4">
+            <h4 class="font-semibold mb-2">Écart interquartile</h4>
+            <p class="font-mono mb-2">EI = Q₃ - Q₁</p>
+            <p class="text-sm">Mesure la dispersion de 50% des valeurs centrales</p>
+          </div>
+
+          <div class="bg-indigo-50 dark:bg-indigo-950 p-4 rounded-lg">
+            <h4 class="font-semibold mb-2">Écart-type</h4>
+            <p class="mb-2">Mesure la dispersion autour de la moyenne</p>
+            <p class="text-sm">• Petit écart-type : valeurs regroupées autour de la moyenne</p>
+            <p class="text-sm">• Grand écart-type : valeurs très dispersées</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">3. Diagramme en boîte</h3>
+          <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+            <p class="mb-3">Le diagramme en boîte (box plot) représente :</p>
+            <ul class="list-disc pl-6 space-y-2">
+              <li>Minimum et maximum (extrémités des moustaches)</li>
+              <li>Q₁, Q₂ (médiane), Q₃ (limites de la boîte)</li>
+              <li>Permet de visualiser rapidement la répartition des données</li>
+            </ul>
+          </div>
         </section>
       </div>
     `
@@ -555,7 +692,7 @@ export const enrichedCoursesData: Record<number, { title: string; content: strin
 
   // ===== LYCÉE - 1ère =====
   16: {
-    title: "Dérivation",
+    title: "Dérivées",
     content: `
       <div class="space-y-6">
         <section>
@@ -2237,6 +2374,468 @@ export const enrichedCoursesData: Record<number, { title: string; content: strin
       </div>
     `
   },
+
+  // ===== COLLÈGE - 5ème (suite) =====
+  20: {
+    title: "Les triangles",
+    content: `
+      <div class="space-y-6">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">Les triangles - Propriétés et constructions</h2>
+          
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. Inégalité triangulaire</h3>
+          <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+            <p class="mb-3"><strong>Propriété fondamentale :</strong></p>
+            <p class="mb-3">Dans un triangle, la longueur de chaque côté est inférieure à la somme des longueurs des deux autres côtés.</p>
+            <p class="font-mono text-center">AB < AC + BC</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">2. Triangles particuliers</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div class="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2 text-green-700 dark:text-green-400">Triangle équilatéral</h4>
+              <ul class="list-disc pl-6 space-y-1 text-sm">
+                <li>3 côtés égaux</li>
+                <li>3 angles de 60°</li>
+                <li>3 axes de symétrie</li>
+              </ul>
+            </div>
+            <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2 text-yellow-700 dark:text-yellow-400">Triangle isocèle</h4>
+              <ul class="list-disc pl-6 space-y-1 text-sm">
+                <li>2 côtés égaux</li>
+                <li>2 angles égaux (angles à la base)</li>
+                <li>1 axe de symétrie</li>
+              </ul>
+            </div>
+            <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2 text-purple-700 dark:text-purple-400">Triangle rectangle</h4>
+              <ul class="list-disc pl-6 space-y-1 text-sm">
+                <li>1 angle droit (90°)</li>
+                <li>Hypoténuse = côté le plus long</li>
+                <li>Somme des 2 autres angles = 90°</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">3. Somme des angles</h3>
+          <div class="bg-red-50 dark:bg-red-950 p-4 rounded-lg mb-4">
+            <p class="font-semibold mb-2">Théorème fondamental :</p>
+            <p class="text-lg text-center font-mono mb-2">α + β + γ = 180°</p>
+            <p class="text-sm">La somme des mesures des angles d'un triangle vaut toujours 180°</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">4. Construction de triangles</h3>
+          <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+            <p class="font-semibold mb-3">Méthodes de construction :</p>
+            <ul class="list-disc pl-6 space-y-2">
+              <li><strong>3 côtés donnés :</strong> Utiliser le compas pour tracer les arcs</li>
+              <li><strong>2 côtés et 1 angle :</strong> Tracer l'angle puis les côtés</li>
+              <li><strong>1 côté et 2 angles :</strong> Tracer le côté puis les angles</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    `
+  },
+
+  21: {
+    title: "Les fractions",
+    content: `
+      <div class="space-y-6">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">Les fractions - Opérations et simplification</h2>
+          
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. Rappels et définitions</h3>
+          <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+            <p class="mb-3">Une fraction représente une division :</p>
+            <p class="font-mono text-xl text-center mb-3">a/b où b ≠ 0</p>
+            <p class="text-sm">• a : numérateur<br>• b : dénominateur</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">2. Simplification</h3>
+          <div class="bg-green-50 dark:bg-green-950 p-4 rounded-lg mb-4">
+            <p class="mb-3"><strong>Méthode :</strong> Diviser le numérateur et le dénominateur par leur PGCD</p>
+            <p class="font-mono text-sm mb-2">Exemple : 24/36</p>
+            <p class="font-mono text-sm">PGCD(24,36) = 12</p>
+            <p class="font-mono text-sm">24/36 = (24÷12)/(36÷12) = 2/3</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">3. Addition et soustraction</h3>
+          <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg mb-4">
+            <p class="font-semibold mb-2">Même dénominateur :</p>
+            <p class="font-mono mb-3">a/c + b/c = (a+b)/c</p>
+            
+            <p class="font-semibold mb-2 mt-4">Dénominateurs différents :</p>
+            <p class="text-sm mb-2">1. Trouver un dénominateur commun</p>
+            <p class="text-sm mb-2">2. Réduire au même dénominateur</p>
+            <p class="text-sm">3. Additionner les numérateurs</p>
+            <p class="font-mono mt-3">Exemple : 1/3 + 1/4 = 4/12 + 3/12 = 7/12</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">4. Multiplication et division</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2">Multiplication</h4>
+              <p class="font-mono mb-2">a/b × c/d = (a×c)/(b×d)</p>
+              <p class="text-sm">Exemple : 2/3 × 4/5 = 8/15</p>
+            </div>
+            <div class="bg-red-50 dark:bg-red-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2">Division</h4>
+              <p class="font-mono mb-2">a/b ÷ c/d = a/b × d/c</p>
+              <p class="text-sm">Exemple : 2/3 ÷ 4/5 = 2/3 × 5/4 = 10/12 = 5/6</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    `
+  },
+
+  22: {
+    title: "Les angles",
+    content: `
+      <div class="space-y-6">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">Les angles - Mesure et propriétés</h2>
+          
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. Définition et notation</h3>
+          <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+            <p class="mb-3">Un angle est formé par deux demi-droites de même origine.</p>
+            <p class="text-sm mb-2"><strong>Notation :</strong> On note un angle ABC avec B au sommet</p>
+            <p class="text-sm"><strong>Mesure :</strong> En degrés (°) ou en radians</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">2. Types d'angles</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div class="bg-green-50 dark:bg-green-950 p-3 rounded-lg text-center">
+              <p class="font-semibold text-sm">Aigu</p>
+              <p class="text-xs mt-1">0° < α < 90°</p>
+            </div>
+            <div class="bg-yellow-50 dark:bg-yellow-950 p-3 rounded-lg text-center">
+              <p class="font-semibold text-sm">Droit</p>
+              <p class="text-xs mt-1">α = 90°</p>
+            </div>
+            <div class="bg-orange-50 dark:bg-orange-950 p-3 rounded-lg text-center">
+              <p class="font-semibold text-sm">Obtus</p>
+              <p class="text-xs mt-1">90° < α < 180°</p>
+            </div>
+            <div class="bg-red-50 dark:bg-red-950 p-3 rounded-lg text-center">
+              <p class="font-semibold text-sm">Plat</p>
+              <p class="text-xs mt-1">α = 180°</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">3. Angles adjacents et opposés</h3>
+          <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg mb-4">
+            <p class="font-semibold mb-2">Angles adjacents :</p>
+            <p class="text-sm mb-3">• Même sommet, un côté commun, de part et d'autre du côté commun</p>
+            
+            <p class="font-semibold mb-2">Angles opposés par le sommet :</p>
+            <p class="text-sm mb-1">• Même sommet, côtés dans le prolongement l'un de l'autre</p>
+            <p class="text-sm font-semibold">• Ils sont ÉGAUX</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">4. Angles et droites parallèles</h3>
+          <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+            <p class="mb-3"><strong>Si deux droites parallèles sont coupées par une sécante :</strong></p>
+            <ul class="list-disc pl-6 space-y-2 text-sm">
+              <li><strong>Angles correspondants :</strong> ÉGAUX</li>
+              <li><strong>Angles alternes-internes :</strong> ÉGAUX</li>
+              <li><strong>Angles alternes-externes :</strong> ÉGAUX</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    `
+  },
+
+  23: {
+    title: "La symétrie centrale",
+    content: `
+      <div class="space-y-6">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">La symétrie centrale</h2>
+          
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. Définition</h3>
+          <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+            <p class="mb-3">La symétrie centrale de centre O transforme tout point M en un point M' tel que :</p>
+            <p class="font-mono text-center mb-2">O est le milieu de [MM']</p>
+            <p class="text-sm">On dit que M et M' sont symétriques par rapport à O</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">2. Construction du symétrique</h3>
+          <div class="bg-green-50 dark:bg-green-950 p-4 rounded-lg mb-4">
+            <p class="font-semibold mb-3">Pour construire le symétrique de M par rapport à O :</p>
+            <ol class="list-decimal pl-6 space-y-2 text-sm">
+              <li>Tracer la droite (OM)</li>
+              <li>Prolonger la droite au-delà de O</li>
+              <li>Reporter la longueur OM de l'autre côté de O</li>
+              <li>Marquer le point M'</li>
+            </ol>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">3. Propriétés de conservation</h3>
+          <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg mb-4">
+            <p class="mb-3">La symétrie centrale conserve :</p>
+            <ul class="list-disc pl-6 space-y-2 text-sm">
+              <li><strong>Les longueurs :</strong> AB = A'B'</li>
+              <li><strong>Les angles :</strong> ABC = A'B'C'</li>
+              <li><strong>Les aires</strong></li>
+              <li><strong>L'alignement</strong></li>
+              <li><strong>Le parallélisme</strong></li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">4. Centre de symétrie d'une figure</h3>
+          <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+            <p class="mb-3">Une figure admet O comme centre de symétrie si elle est invariante par symétrie centrale de centre O.</p>
+            <p class="text-sm mb-2"><strong>Exemples :</strong></p>
+            <ul class="list-disc pl-6 space-y-1 text-sm">
+              <li>Le parallélogramme (intersection des diagonales)</li>
+              <li>Le cercle (son centre)</li>
+              <li>Le segment (son milieu)</li>
+            </ul>
+          </div>
+        </section>
+      </div>
+    `
+  },
+
+  24: {
+    title: "Multiples et diviseurs",
+    content: `
+      <div class="space-y-6">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">Multiples et diviseurs dans ℕ</h2>
+          
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. Définitions</h3>
+          <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+            <p class="mb-3"><strong>Multiple :</strong> b est un multiple de a si b = a × k (avec k ∈ ℕ)</p>
+            <p class="font-mono mb-3">Exemple : 15 est un multiple de 3 car 15 = 3 × 5</p>
+            
+            <p class="mb-3 mt-4"><strong>Diviseur :</strong> a est un diviseur de b si b est un multiple de a</p>
+            <p class="font-mono">Exemple : 3 est un diviseur de 15 car 15 ÷ 3 = 5</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">2. Critères de divisibilité</h3>
+          <table class="w-full border-collapse border border-gray-300 dark:border-gray-700 mb-4">
+            <thead>
+              <tr class="bg-gray-100 dark:bg-gray-800">
+                <th class="border border-gray-300 dark:border-gray-700 p-2">Divisible par</th>
+                <th class="border border-gray-300 dark:border-gray-700 p-2">Critère</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 font-semibold">2</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 text-sm">Chiffre des unités pair (0, 2, 4, 6, 8)</td>
+              </tr>
+              <tr>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 font-semibold">3</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 text-sm">Somme des chiffres divisible par 3</td>
+              </tr>
+              <tr>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 font-semibold">5</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 text-sm">Chiffre des unités 0 ou 5</td>
+              </tr>
+              <tr>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 font-semibold">9</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 text-sm">Somme des chiffres divisible par 9</td>
+              </tr>
+              <tr>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 font-semibold">10</td>
+                <td class="border border-gray-300 dark:border-gray-700 p-2 text-sm">Chiffre des unités 0</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">3. Nombres premiers</h3>
+          <div class="bg-green-50 dark:bg-green-950 p-4 rounded-lg mb-4">
+            <p class="mb-3"><strong>Définition :</strong> Un nombre premier n'a que deux diviseurs : 1 et lui-même</p>
+            <p class="font-mono mb-3">Premiers jusqu'à 30 : 2, 3, 5, 7, 11, 13, 17, 19, 23, 29</p>
+            <p class="text-sm"><strong>Remarque :</strong> 1 n'est pas premier</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">4. PGCD et PPCM</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2">PGCD</h4>
+              <p class="text-sm mb-2">Plus Grand Commun Diviseur</p>
+              <p class="text-sm">Le plus grand nombre qui divise à la fois a et b</p>
+            </div>
+            <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2">PPCM</h4>
+              <p class="text-sm mb-2">Plus Petit Commun Multiple</p>
+              <p class="text-sm">Le plus petit nombre divisible à la fois par a et b</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    `
+  },
+
+  25: {
+    title: "Calcul dans D",
+    content: `
+      <div class="space-y-6">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">Calcul dans l'ensemble D des nombres décimaux</h2>
+          
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. L'ensemble D</h3>
+          <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+            <p class="mb-3">D est l'ensemble des nombres décimaux (positifs et négatifs).</p>
+            <p class="font-mono mb-2">Exemples : 5,7 ; -3,14 ; 0 ; 12 ∈ D</p>
+            <p class="text-sm">Structure : ℕ ⊂ ℤ ⊂ D ⊂ ℚ ⊂ ℝ</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">2. Opérations dans D</h3>
+          <div class="space-y-4">
+            <div class="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2">Addition</h4>
+              <p class="text-sm mb-2">Aligner les virgules :</p>
+              <div class="font-mono text-sm">
+                <pre>   12,5
++   3,75
+--------
+   16,25</pre>
+              </div>
+            </div>
+            
+            <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2">Multiplication</h4>
+              <p class="text-sm mb-2">Nombre de chiffres après la virgule = somme des chiffres après virgule des facteurs</p>
+              <p class="font-mono text-sm">2,5 × 1,2 = 3,00 (2 chiffres après virgule)</p>
+            </div>
+            
+            <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+              <h4 class="font-semibold mb-2">Division</h4>
+              <p class="text-sm mb-2">Éliminer la virgule au diviseur en multipliant les deux termes par une puissance de 10</p>
+              <p class="font-mono text-sm">12,6 ÷ 0,3 = 126 ÷ 3 = 42</p>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">3. Priorités opératoires</h3>
+          <div class="bg-red-50 dark:bg-red-950 p-4 rounded-lg mb-4">
+            <ol class="list-decimal pl-6 space-y-2 text-sm">
+              <li><strong>Parenthèses</strong> en premier</li>
+              <li><strong>Multiplications et divisions</strong> de gauche à droite</li>
+              <li><strong>Additions et soustractions</strong> de gauche à droite</li>
+            </ol>
+            <p class="font-mono mt-3 text-sm">Exemple : 5 + 3 × 2 = 5 + 6 = 11</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">4. Distributivité</h3>
+          <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+            <p class="mb-3"><strong>Propriété fondamentale :</strong></p>
+            <p class="font-mono text-center mb-3">a(b + c) = ab + ac</p>
+            <p class="text-sm mb-2"><strong>Exemples :</strong></p>
+            <p class="font-mono text-sm">5(3 + 2) = 5×3 + 5×2 = 15 + 10 = 25</p>
+          </div>
+        </section>
+      </div>
+    `
+  },
+
+  26: {
+    title: "Les nombres décimaux relatifs",
+    content: `
+      <div class="space-y-6">
+        <section>
+          <h2 class="text-2xl font-bold mb-4">Les nombres décimaux relatifs</h2>
+          
+          <h3 class="text-xl font-semibold mb-3 mt-6">1. Définition</h3>
+          <div class="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg mb-4">
+            <p class="mb-3">Les nombres décimaux relatifs incluent les nombres positifs ET négatifs.</p>
+            <p class="font-mono mb-3">Exemples : +5,7 ; -3,14 ; 0 ; -12,5</p>
+            <ul class="list-disc pl-6 space-y-1 text-sm">
+              <li><strong>Positif :</strong> nombre > 0 (signe +)</li>
+              <li><strong>Négatif :</strong> nombre < 0 (signe -)</li>
+              <li><strong>0 :</strong> ni positif, ni négatif</li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">2. Droite graduée</h3>
+          <div class="bg-green-50 dark:bg-green-950 p-4 rounded-lg mb-4">
+            <p class="mb-3">On représente les nombres relatifs sur une droite graduée :</p>
+            <p class="text-center font-mono mb-2">... -3 -2 -1 0 +1 +2 +3 ...</p>
+            <p class="text-sm">• Nombres négatifs à gauche de 0</p>
+            <p class="text-sm">• Nombres positifs à droite de 0</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">3. Comparaison</h3>
+          <div class="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg mb-4">
+            <p class="mb-3"><strong>Règles :</strong></p>
+            <ul class="list-disc pl-6 space-y-2 text-sm">
+              <li>Un nombre positif est toujours supérieur à un nombre négatif</li>
+              <li>0 est supérieur à tout nombre négatif</li>
+              <li>Entre deux négatifs, le plus grand est celui qui a la plus petite distance à zéro</li>
+            </ul>
+            <p class="font-mono mt-3">Exemples : -2 < -1 < 0 < 1 < 2</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-xl font-semibold mb-3">4. Addition de relatifs</h3>
+          <div class="space-y-3">
+            <div class="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
+              <p class="font-semibold mb-2">Même signe :</p>
+              <p class="text-sm">On additionne les distances à zéro et on garde le signe commun</p>
+              <p class="font-mono text-sm mt-1">(+5) + (+3) = +8</p>
+              <p class="font-mono text-sm">(-5) + (-3) = -8</p>
+            </div>
+            
+            <div class="bg-red-50 dark:bg-red-950 p-4 rounded-lg">
+              <p class="font-semibold mb-2">Signes différents :</p>
+              <p class="text-sm">On soustrait les distances à zéro et on garde le signe du plus grand</p>
+              <p class="font-mono text-sm mt-1">(+5) + (-3) = +2</p>
+              <p class="font-mono text-sm">(-5) + (+3) = -2</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    `
+  },
+
 };
 
 /**
