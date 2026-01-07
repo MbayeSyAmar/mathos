@@ -20,8 +20,8 @@ export default function ConnexionPage() {
   const from = searchParams.get("from")
 
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("demo@mathosphere.fr")
-  const [password, setPassword] = useState("mathosphere123")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
@@ -237,23 +237,6 @@ export default function ConnexionPage() {
                     Connexion admin
                   </Link>
                 </p>
-              </div>
-              <div className="text-xs text-center text-muted-foreground border-t pt-4 mt-2">
-                <p className="mb-2">Identifiants de démonstration :</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mb-2"
-                  onClick={() => {
-                    setEmail("demo@mathosphere.fr")
-                    setPassword("mathosphere123")
-                  }}
-                >
-                  Remplir les identifiants de démo
-                </Button>
-                <p className="text-xs mt-2">Email : demo@mathosphere.fr</p>
-                <p className="text-xs">Mot de passe : mathosphere123</p>
               </div>
             </CardFooter>
           </form>
