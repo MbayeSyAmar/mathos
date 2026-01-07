@@ -464,13 +464,6 @@ export const coursesData: Record<ClasseKey, Course[]> = {
   ],
   "2nde": [
     {
-      id: 13,
-      title: "Calcul dans R",
-      description: "Opérations et propriétés dans l'ensemble des réels. Maîtrisez les opérations dans R, résolvez des équations et inéquations. Manipulez les valeurs absolues avec aisance.",
-      image: "/placeholder.svg?height=200&width=400",
-      duration: "3h",
-    },
-    {
       id: 14,
       title: "Vecteurs",
       description: "Opérations vectorielles dans le plan. Découvrez la notion de vecteur, effectuez des opérations et utilisez les coordonnées. Appliquez la colinéarité dans des problèmes géométriques.",
